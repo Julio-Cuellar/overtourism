@@ -1,0 +1,85 @@
+# ============================================================
+# .gitignore del proyecto Negocio 360
+# Regla de oro: lo que se genera o es secreto no se sube.
+# NO ignores .agent/ (skills y reglas del equipo), docs/, CLAUDE.md ni README.md.
+# ============================================================
+
+# --- Secretos y configuración local (nunca se suben) ---
+# Claves de IA, tokens de Telegram o WhatsApp, contraseñas, etc.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+secrets/
+*.secret
+application-local.*
+application-secret*.*
+
+# --- Java, Maven y Gradle ---
+target/
+build/
+out/
+.gradle/
+*.class
+hs_err_pid*
+replay_pid*
+
+# --- Registros ---
+*.log
+logs/
+
+# --- Pruebas y cobertura (se generan) ---
+test-output/
+coverage/
+*.exec
+jacoco*.exec
+
+# --- Frontend (por si se usa Node) ---
+node_modules/
+dist/
+.next/
+.nuxt/
+.vite/
+.cache/
+
+# --- Editores e IDE ---
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+nbproject/
+*.swp
+*~
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Archivos temporales de Office y de OneDrive ---
+~$*
+*.tmp
+
+# --- Respaldos y volcados de bases de datos ---
+*.dump
+*.bak
+*.sqlite
+*.sqlite3
+*.db
+
+# --- Herramientas de agentes: solo lo local ---
+.claude/settings.local.json
+.claude/worktrees/
+
+# --- Datos del proyecto (descomenta si el equipo usa estas carpetas) ---
+# Los datos crudos o sensibles del piloto no deben subirse sin decidirlo antes.
+# datos/crudos/
+# datos/piloto/
