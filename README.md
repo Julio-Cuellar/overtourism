@@ -63,9 +63,9 @@ julio ──▶ julio-testing ──┘
 
 Notas:
 - Los nombres llevan guion (`liz-testing`) y no barra (`liz/testing`) porque git no permite tener una rama `liz` y otra `liz/testing` al mismo tiempo.
-- Las ramas se crearon el 2026-10-08 **solo en local**, a partir del primer commit. Todavía no están en GitHub. Para subir una: `git push -u origin <rama>`.
+- Las ramas se crearon y se subieron a GitHub el 2026-10-08, a partir del primer commit. **Hoy están un commit atrás de `main`:** no incluyen `docs/`, `.agent/`, `CLAUDE.md` ni `.gitignore`, que entraron a `main` en el commit `7de219d`. Antes de trabajar en una, actualízala con `main`: `git switch <tu-rama>` y `git merge main`.
 - Se recomienda proteger `main` y `pre-main` en la configuración del repositorio en GitHub, para que solo se les pueda integrar por pull request.
-- Antes de cambiar de rama, ten en cuenta que `docs/`, `.agent/`, `CLAUDE.md` y `.gitignore` aún no están confirmados: no pertenecen a ninguna rama y te acompañan al cambiar de una a otra hasta que alguien los confirme.
+- Cuando se integre algo a `pre-main` o a `main`, conviene que las demás ramas se actualicen con `git merge` desde la rama destino, para no trabajar sobre una versión vieja.
 
 ---
 

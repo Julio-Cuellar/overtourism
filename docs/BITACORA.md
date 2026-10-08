@@ -125,7 +125,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-28 | `registrarConsumo` acepta `eventoCausaId` opcional | PROPUESTA | 2026-10-08 | Para llenar `causa_id` en los eventos |
 | D-29 | `preparacion` guarda además el `comando` completo (jsonb) | PROPUESTA | 2026-10-08 | `confirmar` lo necesita para ejecutar lo que se preparó |
 | D-30 | Una venta de artículo con serie y sin serie sí descuenta el saldo; `AsignarSerie` solo marca la serie como `VENDIDA` | PROPUESTA | 2026-10-08 | Precisa S-04 |
-| D-31 | Estructura de ramas: `liz`, `uriel` y `julio`, cada una con su rama de testing (`liz-testing`, `uriel-testing`, `julio-testing`), y una rama `pre-main` que es la última antes de `main` | ACEPTADA | 2026-10-08 | Dicho por el usuario. Creadas solo en local |
+| D-31 | Estructura de ramas: `liz`, `uriel` y `julio`, cada una con su rama de testing (`liz-testing`, `uriel-testing`, `julio-testing`), y una rama `pre-main` que es la última antes de `main` | ACEPTADA | 2026-10-08 | Dicho por el usuario. Creadas y subidas a GitHub el 2026-10-08, un commit atrás de `main` |
 | D-32 | Reglas del flujo de ramas: cada persona trabaja en su rama, prueba en su rama de testing, integra a `pre-main` por pull request revisado por otra persona y de ahí pasa a `main`; `main` y `pre-main` protegidas en GitHub; nombres con guion y no con barra | PROPUESTA | 2026-10-08 | El usuario definió las ramas, no el flujo de integración. Git no permite `liz` y `liz/testing` a la vez |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
@@ -149,7 +149,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | Gradle | No instalado |
 | Docker | Instalado pero **apagado** (no responde la API de Docker Desktop) |
 | Postgres / `psql` | No instalados localmente |
-| Repositorio | Carpeta `C:\Users\Julio\OneDrive\Documentos\BUAP\Hackathon_Turismo_puebla`. **Ya es un repositorio git** (actualizado el 2026-10-08): tiene `.git`, rama `main`, remoto `origin` en GitHub (`Julio-Cuellar/overtourism`) y un primer commit. No se verificó qué archivos están confirmados ni subidos, y no hay `.gitignore`. Está dentro de OneDrive (puede bloquear archivos de compilación y conviene excluir `target/`; tener `.git` dentro de OneDrive puede generar conflictos de sincronización) |
+| Repositorio | Carpeta `C:\Users\Julio\OneDrive\Documentos\BUAP\Hackathon_Turismo_puebla`. **Ya es un repositorio git** (actualizado el 2026-10-08): tiene `.git`, rama `main`, remoto `origin` en GitHub (`Julio-Cuellar/overtourism`) y, al 2026-10-08, dos commits: `5e20223` («first commit») y `7de219d` («skills e inicio del proyecto»), que subió alguien del equipo e incluye documentos, skills, regla permanente y `.gitignore`. Hay además siete ramas de trabajo (ver D-31). Está dentro de OneDrive (puede bloquear archivos de compilación y conviene excluir `target/`; tener `.git` dentro de OneDrive puede generar conflictos de sincronización) |
 | Código existente | **Ninguno.** Solo `CLAUDE.md` y estos documentos |
 | Fecha de hoy / demo | 2026-10-08 / 2026-10-15 al 17. Quedan 7 días |
 
@@ -417,4 +417,29 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 - Confirmar el flujo de integración (D-32).
 
 **Archivos creados:** ninguno. Se crearon siete ramas locales en `.git`.
+**Archivos modificados:** `README.md`, `docs/BITACORA.md`.
+
+### 2026-10-08 — Ramas subidas a GitHub
+**Pedido del usuario:** subir las ramas al repositorio remoto.
+
+**Qué se vio:**
+1. Se ejecutó `git push -u origin` con las siete ramas (`liz`, `liz-testing`, `uriel`, `uriel-testing`, `julio`, `julio-testing`, `pre-main`). Todas se crearon en `origin` y quedaron con seguimiento hacia su copia remota. No se subió `main`, no se usó `--force` y no se subió ningún commit nuevo. Se verificó con `git ls-remote --heads origin`.
+2. **Hallazgo:** `main` en GitHub estaba en el commit `7de219d` («skills e inicio del proyecto»), posterior a `5e20223`. Alguien del equipo confirmó y subió a `main` los documentos, las skills, la regla permanente, `CLAUDE.md`, `README.md` y `.gitignore` mientras se creaban las ramas. Se hizo `git fetch` para verlo; el `main` local ya coincidía con `origin/main`.
+3. Se comparó el contenido: los 31 archivos de ese commit son **idénticos** a los de la carpeta de trabajo y no hay cambios pendientes.
+4. **Consecuencia:** las siete ramas apuntan a `5e20223` y están **un commit atrás de `main`**. No contienen `docs/`, `.agent/`, `CLAUDE.md` ni `.gitignore`. Quien cree su trabajo en una de ellas empezaría sin el diseño ni las skills.
+
+**Decisiones:** ninguna nueva.
+
+**Observaciones para quien continúe:**
+- Se corrigió la nota anterior de «archivos sin confirmar»: ya están confirmados en `main`.
+- No se actualizaron las ramas para que incluyan `7de219d`. Hacerlo implica mover las siete ramas en el remoto (avance sin `--force`), y se dejó para que el equipo lo decida.
+- La compuerta de seguridad marcó como destructivos comandos que solo leen, y rechazó un reintento en el que se había cambiado el texto de una etiqueta; hay que repetir el comando idéntico.
+- Siguen sin configurarse protecciones de rama en GitHub.
+
+**Pendiente:**
+- Decidir si se llevan las siete ramas a `7de219d` (recomendado) o se dejan en `5e20223` y cada quien hace `git merge main`.
+- Proteger `main` y `pre-main` en GitHub.
+- Confirmar el flujo de integración (D-32).
+
+**Archivos creados:** ninguno.
 **Archivos modificados:** `README.md`, `docs/BITACORA.md`.
