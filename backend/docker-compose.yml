@@ -1,0 +1,39 @@
+# Base de datos de desarrollo de Negocio 360: PostgreSQL con la imagen postgres:17-alpine.
+#
+#   Levantar:   docker compose up -d        (desde esta carpeta, backend/)
+#   Detener:    docker compose down         (los datos se conservan en el volumen)
+#   Borrar todo: docker compose down -v     (borra la base y su volumen)
+#
+# Las contraseñas vienen del archivo .env (copia .env.example y rellénalo; .env no se sube a git).
+# El puerto de la computadora es 5433, no 5432, para no chocar con un PostgreSQL local; y solo escucha en 127.0.0.1.
+# Los contenedores de otros proyectos no se tocan: este se llama negocio360-postgres y tiene su propio volumen.
+name: negocio360
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: negocio360-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: negocio360
+      # Dueño de la base: corre las migraciones de Flyway. Es superusuario del contenedor, así que NO lo usa la aplicación.
+      POSTGRES_USER: ${NEGOCIO360_DB_USER:-negocio360}
+      POSTGRES_PASSWORD: "${NEGOCIO360_DB_PASSWORD:?Falta NEGOCIO360_DB_PASSWORD en backend/.env (copia .env.example y rellénalo)}"
+      # Rol que usa la aplicación: sin superusuario y sujeto a la seguridad por fila. Lo crea docker/postgres/01-roles.sh.
+      NEGOCIO360_APP_USER: ${NEGOCIO360_APP_USER:-negocio360_app}
+      NEGOCIO360_APP_PASSWORD: "${NEGOCIO360_APP_PASSWORD:?Falta NEGOCIO360_APP_PASSWORD en backend/.env (copia .env.example y rellénalo)}"
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - negocio360-postgres-datos:/var/lib/postgresql/data
+      - ./docker/postgres/01-roles.sh:/docker-entrypoint-initdb.d/01-roles.sh:ro
+    healthcheck:
+      # -h 127.0.0.1 (TCP): el servidor temporal de la inicialización solo escucha por socket, así que no da «sano»
+      # antes de que 01-roles.sh termine.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  negocio360-postgres-datos:

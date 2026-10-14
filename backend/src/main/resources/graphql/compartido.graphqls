@@ -1,0 +1,35 @@
+# Piezas comunes de la plataforma. Cada modulo extiende Query en su propio archivo.
+
+"Decimal exacto como cadena, por ejemplo \"207.00\". Nunca punto flotante."
+scalar Decimal
+"Fecha ISO-8601 sin hora."
+scalar Date
+"Fecha y hora ISO-8601 en UTC."
+scalar DateTime
+
+type Query
+
+# El par prepararComando y confirmarComando es de la plataforma (D-55): cada modulo agrega variantes a ComandoInput.
+type Mutation {
+  prepararComando(input: ComandoInput!): Preparacion!
+  confirmarComando(token: String!): Resultado!
+}
+
+type Preparacion {
+  token: String!
+  resumen: String!
+  expiraEn: DateTime!
+  advertencias: [String!]!
+}
+
+type Resultado {
+  ok: Boolean!
+  codigo: String!
+  mensajePlantilla: String!
+  recursoId: ID
+}
+
+type PageInfo {
+  hayMas: Boolean!
+  cursorFinal: String
+}

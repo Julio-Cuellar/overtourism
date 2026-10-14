@@ -1,0 +1,6 @@
+# Perfil de desarrollo y demo: mvn spring-boot:run -Dspring-boot.run.profiles=desarrollo
+# Habilita el canal de codigos simulado de Identidad, que no envia nada y deja leer el ultimo codigo en
+# GET /dev/canal/codigo, y los repositorios en memoria. NUNCA en un servidor que alguien mas pueda alcanzar.
+identidad:
+  canal-simulado:
+    habilitado: true

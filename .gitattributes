@@ -1,0 +1,4 @@
+# Los scripts que corren dentro de contenedores Linux deben terminar líneas con LF, aunque Git en Windows
+# convierta a CRLF (core.autocrlf=true): con CRLF, `set -e\r` falla y la base no se inicializa.
+*.sh text eol=lf
+backend/docker/** text eol=lf
