@@ -1,0 +1,2 @@
+# Solo pruebas: todo contexto de Spring Boot usa el PostgreSQL de Testcontainers.
+org.springframework.context.ApplicationContextInitializer=mx.negocio360.persistencia.PostgresDePruebasInicializador

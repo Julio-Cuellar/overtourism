@@ -1,0 +1,1040 @@
+{
+  "info": {
+    "name": "Identidad: acceso (IDN-1)",
+    "description": "Pruebas del acceso del modulo de Identidad: codigo por telefono, sesion con token opaco, perfil, cierre y cambio de nombre.\n\nCOMO CORRERLA\n1. Levanta la base de datos (una vez, desde backend/): docker compose up -d. Necesita backend/.env con las contraseñas; copia .env.example y rellénalo. Después arranca el backend con el perfil de desarrollo: mvn spring-boot:run \"-Dspring-boot.run.profiles=desarrollo\". Sin ese perfil (o sin identidad.canal-simulado.habilitado=true) la aplicacion no arranca a proposito: el canal de codigos simulado no debe existir por descuido. Para repetir la coleccion varias veces seguidas sube el tope por IP: \"-Dspring-boot.run.arguments=--identidad.politica.solicitudes-por-ip=1000\" (el diseño permite 20 cada 15 minutos).\n2. Importa esta coleccion y el entorno identidad.local y ejecutala en orden (Runner) o con Newman.\n\nNOTAS\n- El canal de codigos es simulado: GET /dev/canal/codigo entrega el ultimo codigo. Ese endpoint no existe con el perfil produccion.\n- Los telefonos son inventados y se generan al azar. Nunca uses telefonos reales.\n- Solo cubre lo que existe hoy: negocios, roles y permisos llegan con IDN-2 en adelante.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Flujo completo de acceso",
+      "description": "Se corre en orden: cada paso usa lo que guardo el anterior.",
+      "item": [
+        {
+          "name": "1.1 Pedir codigo",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('telefono', '2229' + String(Math.floor(Math.random() * 1000000)).padStart(6, '0'));",
+                  "pm.collectionVariables.set('nombre', 'Ana Prueba');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202 sin cuerpo', function () { pm.response.to.have.status(202); pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "description": "Genera un telefono de prueba nuevo y pide el codigo. Responde 202 sin cuerpo exista o no la cuenta (SI-02).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"telefono\":\"{{telefono}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.2 Leer el codigo (solo desarrollo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200 con un codigo de 6 digitos', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.match(/^\\d{6}$/);",
+                  "  pm.collectionVariables.set('codigo', j.codigo);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dev/canal/codigo?telefono={{telefono}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "canal",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "telefono",
+                  "value": "{{telefono}}"
+                }
+              ]
+            },
+            "description": "El canal simulado no envia nada: este endpoint entrega el ultimo codigo. No existe con el perfil produccion."
+          }
+        },
+        {
+          "name": "1.3 Iniciar sesion sin nombre (cuenta nueva)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('el codigo de error es NOMBRE_REQUERIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NOMBRE_REQUERIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "description": "AS-04: una cuenta nueva sin nombre recibe 422 y el codigo no se gasta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"telefono\":\"{{telefono}}\",\"codigo\":\"{{codigo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.4 Iniciar sesion con nombre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200 y no se guarda en cache (SI-17)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+                  "});",
+                  "const j = pm.response.json();",
+                  "pm.test('el token es opaco de 43 caracteres y se guarda', function () {",
+                  "  pm.expect(j.token).to.match(/^[A-Za-z0-9_-]{43}$/);",
+                  "  pm.collectionVariables.set('token', j.token);",
+                  "});",
+                  "pm.test('expiraEn es una fecha ISO en UTC', function () { pm.expect(j.expiraEn).to.match(/^\\d{4}-\\d{2}-\\d{2}T.*Z$/); });",
+                  "pm.test('la cuenta lleva el nombre y el telefono E.164', function () {",
+                  "  pm.expect(j.cuenta.nombre).to.eql(pm.collectionVariables.get('nombre'));",
+                  "  pm.expect(j.cuenta.telefono).to.eql('+52' + pm.collectionVariables.get('telefono'));",
+                  "});",
+                  "pm.test('todavia no hay negocios ni negocio activo (IDN-2)', function () {",
+                  "  pm.expect(j.negocios).to.be.an('array').that.is.empty;",
+                  "  pm.expect(j.negocioActivo).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "description": "Con el mismo codigo y el nombre, abre la sesion. Guarda el token en la variable token.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"telefono\":\"{{telefono}}\",\"codigo\":\"{{codigo}}\",\"nombre\":\"{{nombre}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.5 Ver mi perfil",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200 con mi cuenta', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().cuenta.nombre).to.eql(pm.collectionVariables.get('nombre'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.6 Cambiar mi nombre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200 con el nombre normalizado', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().nombre).to.eql('Ana María Prueba');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cuenta",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cuenta"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"  Ana   María Prueba \"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.7 Cerrar esta sesion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 204 sin cuerpo', function () { pm.response.to.have.status(204); pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.8 El token cerrado ya no sirve",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401 NO_AUTENTICADO con Bearer en WWW-Authenticate', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(pm.response.headers.get('WWW-Authenticate')).to.eql('Bearer');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Errores de acceso",
+      "description": "Cada error responde con un codigo y un texto fijos, sin trazas.",
+      "item": [
+        {
+          "name": "2.1 Telefono invalido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es TELEFONO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('TELEFONO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"telefono\":\"123\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "2.2 Codigo incorrecto",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function post(ruta, cuerpo, cb) { pm.sendRequest({ url: pm.variables.get('baseUrl') + ruta, method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify(cuerpo) } }, cb); }",
+                  "function codigoDe(tel, cb) { pm.sendRequest(pm.variables.get('baseUrl') + '/dev/canal/codigo?telefono=' + tel, function (e, r) { cb(r.json().codigo); }); }",
+                  "function telefonoNuevo() { return '2229' + String(Math.floor(Math.random() * 1000000)).padStart(6, '0'); }",
+                  "const tel = telefonoNuevo();",
+                  "pm.collectionVariables.set('telefonoB', tel);",
+                  "post('/auth/codigo', { telefono: tel }, function () {",
+                  "  codigoDe(tel, function (c) { pm.collectionVariables.set('codigoMalo', c === '000000' ? '000001' : '000000'); });",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es CODIGO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('CODIGO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "description": "Pide un codigo para un telefono nuevo y envia otro distinto.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"telefono\":\"{{telefonoB}}\",\"codigo\":\"{{codigoMalo}}\",\"nombre\":\"Beto Ruiz\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "2.3 Codigo agotado tras 5 fallos",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function post(ruta, cuerpo, cb) { pm.sendRequest({ url: pm.variables.get('baseUrl') + ruta, method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify(cuerpo) } }, cb); }",
+                  "function codigoDe(tel, cb) { pm.sendRequest(pm.variables.get('baseUrl') + '/dev/canal/codigo?telefono=' + tel, function (e, r) { cb(r.json().codigo); }); }",
+                  "function telefonoNuevo() { return '2229' + String(Math.floor(Math.random() * 1000000)).padStart(6, '0'); }",
+                  "const tel = telefonoNuevo();",
+                  "pm.collectionVariables.set('telefonoC', tel);",
+                  "function fallar(n, listo) { if (n === 0) { return listo(); } post('/auth/sesion', { telefono: tel, codigo: pm.collectionVariables.get('codigoMaloC'), nombre: 'Ana' }, function () { fallar(n - 1, listo); }); }",
+                  "post('/auth/codigo', { telefono: tel }, function () {",
+                  "  codigoDe(tel, function (c) {",
+                  "    pm.collectionVariables.set('codigoC', c);",
+                  "    pm.collectionVariables.set('codigoMaloC', c === '000000' ? '000001' : '000000');",
+                  "    fallar(5, function () {});",
+                  "  });",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es CODIGO_AGOTADO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('CODIGO_AGOTADO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "description": "AS-02: cinco intentos fallidos agotan el codigo; despues falla aunque se envie el correcto.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"telefono\":\"{{telefonoC}}\",\"codigo\":\"{{codigoC}}\",\"nombre\":\"Ana Prueba\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "2.4 Perfil sin token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401 NO_AUTENTICADO con Bearer en WWW-Authenticate', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(pm.response.headers.get('WWW-Authenticate')).to.eql('Bearer');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.5 Perfil con otro esquema (Basic)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401 NO_AUTENTICADO con Bearer en WWW-Authenticate', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(pm.response.headers.get('WWW-Authenticate')).to.eql('Bearer');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Basic YWRtaW46YWRtaW4="
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.6 Perfil con un token inventado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401 NO_AUTENTICADO con Bearer en WWW-Authenticate', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(pm.response.headers.get('WWW-Authenticate')).to.eql('Bearer');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.7 JSON mal formado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es SOLICITUD_INVALIDA y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('SOLICITUD_INVALIDA');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});",
+                  "pm.test('no repite el telefono enviado', function () { pm.expect(pm.response.text()).to.not.include('2229000000'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "description": "El error no repite lo que se envio.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"telefono\": \"2229000000"
+            }
+          }
+        },
+        {
+          "name": "2.8 Formulario en lugar de JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 415', function () { pm.response.to.have.status(415); });",
+                  "pm.test('el codigo de error es SOLICITUD_INVALIDA y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('SOLICITUD_INVALIDA');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "telefono=2229000000"
+            }
+          }
+        },
+        {
+          "name": "2.9 Texto enorme en el nombre",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('enorme', 'x'.repeat(11000));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es SOLICITUD_INVALIDA y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('SOLICITUD_INVALIDA');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});",
+                  "pm.test('no repite el texto enviado', function () { pm.expect(pm.response.text()).to.not.include('xxxxxxxxxx'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "description": "SI-16: un texto de mas de 10 000 caracteres se rechaza al leer el cuerpo, sin repetirlo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"telefono\":\"2229000001\",\"codigo\":\"123456\",\"nombre\":\"{{enorme}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "2.10 Tope de solicitudes por telefono",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function post(ruta, cuerpo, cb) { pm.sendRequest({ url: pm.variables.get('baseUrl') + ruta, method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify(cuerpo) } }, cb); }",
+                  "function codigoDe(tel, cb) { pm.sendRequest(pm.variables.get('baseUrl') + '/dev/canal/codigo?telefono=' + tel, function (e, r) { cb(r.json().codigo); }); }",
+                  "function telefonoNuevo() { return '2229' + String(Math.floor(Math.random() * 1000000)).padStart(6, '0'); }",
+                  "const tel = telefonoNuevo();",
+                  "pm.collectionVariables.set('telefonoD', tel);",
+                  "post('/auth/codigo', { telefono: tel }, function () {",
+                  "  post('/auth/codigo', { telefono: tel }, function () {",
+                  "    post('/auth/codigo', { telefono: tel }, function () {});",
+                  "  });",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 429', function () { pm.response.to.have.status(429); });",
+                  "pm.test('el codigo de error es TASA_EXCEDIDA y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('TASA_EXCEDIDA');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "description": "AS-03: tres solicitudes por telefono cada 15 minutos. La cuarta responde 429.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"telefono\":\"{{telefonoD}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Sesiones",
+      "description": "Cierre de todas las sesiones de una cuenta.",
+      "item": [
+        {
+          "name": "3.1 Cerrar todas las sesiones",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function post(ruta, cuerpo, cb) { pm.sendRequest({ url: pm.variables.get('baseUrl') + ruta, method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify(cuerpo) } }, cb); }",
+                  "function codigoDe(tel, cb) { pm.sendRequest(pm.variables.get('baseUrl') + '/dev/canal/codigo?telefono=' + tel, function (e, r) { cb(r.json().codigo); }); }",
+                  "function telefonoNuevo() { return '2229' + String(Math.floor(Math.random() * 1000000)).padStart(6, '0'); }",
+                  "const tel = telefonoNuevo();",
+                  "function entrar(nombre, listo) {",
+                  "  post('/auth/codigo', { telefono: tel }, function () {",
+                  "    codigoDe(tel, function (c) {",
+                  "      post('/auth/sesion', { telefono: tel, codigo: c, nombre: nombre }, function (e, r) { listo(r.json().token); });",
+                  "    });",
+                  "  });",
+                  "}",
+                  "entrar('Ana Prueba', function (a) { pm.collectionVariables.set('tokenA', a); entrar(null, function (b) { pm.collectionVariables.set('tokenB', b); }); });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesiones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesiones"
+              ]
+            },
+            "description": "Abre dos sesiones de la misma cuenta y cierra todas usando la primera."
+          }
+        },
+        {
+          "name": "3.2 La otra sesion tambien cayo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401 NO_AUTENTICADO con Bearer en WWW-Authenticate', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(pm.response.headers.get('WWW-Authenticate')).to.eql('Bearer');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "telefono",
+      "value": ""
+    },
+    {
+      "key": "nombre",
+      "value": ""
+    },
+    {
+      "key": "codigo",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Solo pruebas. Las pruebas que levantan la aplicacion completa necesitan el canal simulado de Identidad.
+# Se pone aqui, en classpath:/config/, porque se suma a src/main/resources/application.yml en vez de reemplazarlo.
+identidad:
+  canal-simulado:
+    habilitado: true
