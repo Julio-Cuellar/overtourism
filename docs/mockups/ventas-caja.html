@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Copia local de https://claude.ai/artifact/FVtCcUoJHC8A48rUcJ17xE (versión 2, 2026-10-14). Abrir en el navegador; Mermaid se carga del CDN. -->
+</head>
+<body>
+<title>Ventas y Caja · Negocio 360</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: documento de diseño de una columna con índice fijo a la izquierda en escritorio. Identidad del proyecto (skill disenar-interfaz): azul talavera y dorado cempasúchil. Convención: azul punteado = síncrono, dorado continuo = asíncrono. */
+:root{
+  --bg:#f5f7fb; --surface:#ffffff; --fg:#14203d; --muted:#55607c; --line:#d8deeb;
+  --talavera:#1f4aa8; --talavera-soft:#e2eafb; --cempa:#a86a00; --cempa-soft:#fdf0d4;
+  --rojo:#b42318; --rojo-soft:#fde6e3; --verde:#1b7548; --verde-soft:#dff3e8; --code:#eef2f9;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1424; --surface:#151d33; --fg:#e5eaf6; --muted:#9ba6c0; --line:#28344f;
+  --talavera:#8db0ff; --talavera-soft:#1d2a4d; --cempa:#f3bd55; --cempa-soft:#3a2d10;
+  --rojo:#ff9b8d; --rojo-soft:#3d1b18; --verde:#72d6a3; --verde-soft:#123325; --code:#1a2440; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1424; --surface:#151d33; --fg:#e5eaf6; --muted:#9ba6c0; --line:#28344f;
+  --talavera:#8db0ff; --talavera-soft:#1d2a4d; --cempa:#f3bd55; --cempa-soft:#3a2d10;
+  --rojo:#ff9b8d; --rojo-soft:#3d1b18; --verde:#72d6a3; --verde-soft:#123325; --code:#1a2440; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1200px;margin:0 auto;padding-block:28px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:190px minmax(0,1fr);gap:40px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;font-size:13px;display:flex;flex-direction:column;gap:5px}
+nav.toc a{color:var(--muted);text-decoration:none}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--talavera)}
+nav.toc .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+main{min-width:0;display:flex;flex-direction:column;gap:52px}
+@media (max-width:880px){.wrap{grid-template-columns:minmax(0,1fr)}nav.toc{position:static;flex-direction:row;flex-wrap:wrap;gap:4px 14px}}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.12;margin:0}
+h1{font-size:clamp(32px,5vw,50px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:27px;font-weight:600;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+h2 .n{font-family:var(--f-mono);font-size:13px;color:var(--cempa);font-weight:500}
+h3{font-size:18px;font-weight:600}
+p{margin:0;max-width:74ch}
+section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:20px}
+section>h2{padding-bottom:10px;border-bottom:2px solid var(--talavera)}
+header.top{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--talavera-soft);color:var(--talavera);white-space:nowrap}
+.chip.warn{background:var(--cempa-soft);color:var(--cempa)}
+.chip.red{background:var(--rojo-soft);color:var(--rojo)}
+.lead{font-size:17px;color:var(--muted)}
+.q{display:inline-block;font-family:var(--f-mono);font-size:11.5px;font-weight:500;background:var(--cempa-soft);color:var(--cempa);padding:0 5px;border-radius:3px;white-space:nowrap}
+.note{border-left:3px solid var(--cempa);background:var(--cempa-soft);padding:12px 16px;border-radius:0 6px 6px 0;font-size:14px}
+.note.info{border-color:var(--talavera);background:var(--talavera-soft)}
+.note.bad{border-color:var(--rojo);background:var(--rojo-soft)}
+.mirar{font-size:13px;color:var(--muted)}
+.mirar b{color:var(--fg);font-weight:600}
+code{font-family:var(--f-mono);font-size:.87em;background:var(--code);padding:1px 5px;border-radius:3px}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--line)}
+th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--code);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.id{font-family:var(--f-mono);font-weight:500;color:var(--talavera);white-space:nowrap}
+td.mono{font-family:var(--f-mono);font-size:12.5px}
+.k{font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:3px;border:1px solid currentColor;white-space:nowrap}
+.k.gql{color:var(--talavera)} .k.mut{color:var(--rojo)} .k.ws{color:var(--verde)} .k.java{color:var(--muted)} .k.bus{color:var(--cempa)} .k.rest{color:var(--muted);border-style:dashed}
+.st{font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;white-space:nowrap}
+.st.A{background:var(--verde-soft);color:var(--verde)} .st.P{background:var(--talavera-soft);color:var(--talavera)} .st.Q{background:var(--cempa-soft);color:var(--cempa)}
+.st.p1{background:var(--talavera-soft);color:var(--talavera)} .st.p2{background:var(--code);color:var(--muted)} .st.p3{background:var(--code);color:var(--muted);text-decoration:line-through}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tools input{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);min-width:0;flex:1 1 220px;max-width:340px}
+.tools button{font:inherit;font-size:13px;padding:6px 11px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);cursor:pointer}
+.tools button[aria-pressed="true"]{background:var(--talavera);color:var(--surface);border-color:var(--talavera)}
+.count{font-size:12px;color:var(--muted)}
+pre.mermaid{margin:0;padding:16px;background:var(--surface);min-width:680px;font-size:13px}
+pre.code{margin:0;padding:14px 16px;background:var(--code);font-family:var(--f-mono);font-size:12.5px;line-height:1.5;overflow-x:auto;border-radius:6px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:16px}
+.grid2>*{min-width:0}
+.card{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card h3{font-family:var(--f-mono);font-size:15px;font-weight:500}
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13px;color:var(--muted);align-items:center}
+.ln{display:inline-block;width:34px;height:0;vertical-align:middle;margin-right:6px}
+.ln.s{border-top:2px dashed var(--talavera)} .ln.a{border-top:3px solid var(--cempa)}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px}
+.verdict>div{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.verdict .big{font-family:var(--f-display);font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
+.verdict .lab{font-size:12px;color:var(--muted)}
+.verdict .bad .big{color:var(--rojo)}
+ol.clean,ul.clean{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:80ch}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:6px}
+#tema{font:inherit;font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+a{color:var(--talavera)}
+:focus-visible{outline:2px solid var(--talavera);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Índice">
+  <div class="lbl">Contenido</div>
+  <a href="#cambios">Qué se corrigió</a>
+  <a href="#decisiones">Decisiones</a>
+  <a href="#mapa">Mapa y eventos</a>
+  <a href="#er">Entidad-relación</a>
+  <a href="#entidades">Entidades</a>
+  <a href="#reglas">Reglas de dominio</a>
+  <a href="#funciones">Funciones</a>
+  <a href="#errores">Códigos de error</a>
+  <a href="#eventos">Eventos y JSON</a>
+  <a href="#secuencias">Secuencias</a>
+  <a href="#estados">Estados</a>
+  <a href="#api">Comunicación API</a>
+  <a href="#contratos">Contratos con otros</a>
+  <a href="#pruebas">Criterios de aceptación</a>
+  <a href="#javadoc">JavaDoc</a>
+  <a href="#plan">Plan y calendario</a>
+  <a href="#preguntas">Preguntas</a>
+</nav>
+
+<main>
+<header class="top">
+  <div class="row">
+    <span class="chip red">Borrador, solo diseño</span>
+    <span class="chip warn">Datos de ejemplo inventados</span>
+    <span class="chip">Sin autorización para programar</span>
+    <span class="chip">Versión 2 · 2026-10-14</span>
+    <button id="tema" type="button" aria-pressed="false">Cambiar tema</button>
+  </div>
+  <h1>Módulos Ventas y Caja</h1>
+  <p class="lead">Diseño de los dos módulos horizontales que usa el comerciante (tienda de museo, misceláneo o cualquier giro) para cobrar y cuadrar su caja. Esta página es la vista visual de <code>docs/diseno/ventas.md</code>, <code>docs/diseno/caja.md</code> y <code>docs/planes/ventas-caja-v1.md</code>. Si algo difiere, mandan esos documentos.</p>
+  <div class="legend">
+    <span><span class="q">[?]</span> abierto, sin decidir</span>
+    <span><span class="st A">ACEPTADA</span> <span class="st P">PROPUESTA</span> <span class="st Q">ABIERTA</span></span>
+    <span><span class="st p1">P1</span> MVP · <span class="st p2">P2</span> si alcanza · <span class="st p3">P3</span> fuera</span>
+  </div>
+</header>
+
+<section id="cambios">
+  <h2><span class="n">01</span>Qué se corrigió respecto a la versión 1</h2>
+  <p>La versión 1 de esta página se hizo sin haber leído el repositorio. Al leer la Bitácora, <code>inventario.md</code>, <code>clientes.md</code> y el código de Clientes aparecieron estos choques. Todos están corregidos abajo.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Tema</th><th>Versión 1 decía</th><th>Ahora</th><th>Por qué</th></tr></thead>
+    <tbody id="t-cambios"></tbody>
+  </table></div>
+</section>
+
+<section id="decisiones">
+  <h2><span class="n">02</span>Decisiones que aplican</h2>
+  <p>Las <code>D-xx</code> remiten a <code>docs/BITACORA.md</code>. Las nuevas de esta sesión son D-76 a D-83. Ninguna nueva está aceptada salvo D-83, que pidió el usuario.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>ID</th><th>Decisión</th><th>Estado</th><th>Efecto en Ventas y Caja</th></tr></thead>
+    <tbody id="t-decisiones"></tbody>
+  </table></div>
+</section>
+
+<section id="mapa">
+  <h2><span class="n">03</span>Mapa de módulos y eventos</h2>
+  <p>Quién llama a quién y quién escucha qué. Ventas no conoce a Caja (D-76): el canal GraphQL obtiene el turno y se lo pasa. Pasaporte no escucha a Ventas (D-34): Ventas lo llama al cobrar.</p>
+  <div class="legend"><span><span class="ln s"></span>Síncrono: llamada a la API Java del otro módulo</span><span><span class="ln a"></span>Asíncrono: evento por el bus con outbox, en la misma transacción</span></div>
+  <div class="scroll"><pre class="mermaid">
+flowchart TB
+  CAN["Canal GraphQL del panel"]
+  VEN["Ventas (horizontal)"]
+  CAJ["Caja (horizontal)"]
+  CAT["Catálogo"]
+  PAS["Pasaporte"]
+  BUS[("Bus de eventos con outbox")]
+  INV["Inventario"]
+  CLI["Clientes"]
+  CON["Contabilidad"]
+  VER["Restaurantes y Museos (verticales)"]
+  CAN -.->|"turnoActivo y comandos de caja"| CAJ
+  CAN -.->|"prepararComando / confirmarComando"| VEN
+  VEN -.->|"preciosParaVenta"| CAT
+  VEN -.->|"cotizarCupon / canjearCupon"| PAS
+  CAJ -.->|"resumenTurno"| VEN
+  VEN ==>|"venta.registrada / venta.anulada"| BUS
+  CAJ ==>|"caja.corte_confirmado"| BUS
+  BUS ==>|"venta.*"| CAJ
+  BUS ==>|"venta.*"| INV
+  BUS ==>|"venta.*"| CLI
+  BUS ==>|"venta.* y caja.*"| CON
+  BUS ==>|"venta.registrada"| VER
+  linkStyle 0,1,2,3,4 stroke:#2f5fbf,stroke-width:2px,stroke-dasharray:6 4
+  linkStyle 5,6,7,8,9,10,11 stroke:#c98a12,stroke-width:3px
+</pre></div>
+  <p class="mirar"><b>Qué mirar:</b> no hay ciclos. Caja depende de Ventas (escucha y llama a <code>resumenTurno</code>); Ventas solo depende de Catálogo y Pasaporte. Spring Modulith lo verifica con <code>ApplicationModules.verify()</code>. Los verticales consumen eventos, nunca al revés (R4).</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Módulo</th><th>Llama a la API de</th><th>Escucha eventos de</th><th>Publica</th></tr></thead>
+    <tbody>
+      <tr><td>Ventas</td><td>Catálogo, Pasaporte</td><td>Ninguno en P1</td><td class="mono">venta.registrada, venta.anulada</td></tr>
+      <tr><td>Caja</td><td>Ventas</td><td class="mono">venta.registrada, venta.anulada</td><td class="mono">caja.turno_abierto, caja.corte_confirmado, caja.diferencia_detectada</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="er">
+  <h2><span class="n">04</span>Diagrama entidad-relación</h2>
+  <p>Líneas = llaves foráneas dentro del mismo esquema. Las referencias a otros módulos (<code>turno_id</code>, <code>producto_id</code>, <code>cliente_id</code>, <code>cupon_id</code>, <code>venta_id</code>) son opacas, sin llave foránea (R1). Toda tabla lleva <code>negocio_id</code> con seguridad por fila. Dinero <code>NUMERIC(14,2)</code>, cantidades y precio unitario <code>NUMERIC(14,4)</code>, redondeo HALF_UP (D-20).</p>
+  <h3>Esquema <code>ventas</code></h3>
+  <div class="scroll"><pre class="mermaid">
+erDiagram
+  VENTA ||--|{ LINEA_VENTA : contiene
+  VENTA ||--|{ PAGO_VENTA : "se paga con"
+  SERIE_FOLIO ||--o{ VENTA : numera
+  VENTA {
+    uuid id PK "UUIDv7"
+    uuid negocio_id "RLS"
+    text serie
+    bigint folio "unico por negocio y serie"
+    text estado "REGISTRADA ANULADA"
+    uuid turno_id "ref opaca a Caja"
+    uuid cliente_id "ref opaca a Clientes, nulo"
+    uuid cupon_id "ref opaca a Pasaporte, nulo"
+    numeric subtotal
+    numeric descuento
+    numeric total "neto de cupon D-65"
+    text moneda "MXN"
+    timestamptz ocurrido_en "UTC"
+    uuid registrada_por "actor"
+    timestamptz anulada_en
+    uuid anulada_por
+    text motivo_anulacion
+    int version
+  }
+  LINEA_VENTA {
+    uuid venta_id PK
+    int linea PK
+    uuid negocio_id
+    uuid producto_id "ref opaca a Catalogo"
+    text descripcion "copia al vender"
+    numeric cantidad
+    text unidad
+    numeric precio_unitario "copia al vender"
+    numeric importe
+    text serie "nulo"
+  }
+  PAGO_VENTA {
+    uuid id PK
+    uuid negocio_id
+    uuid venta_id FK
+    text metodo "EFECTIVO TARJETA TRANSFERENCIA"
+    numeric monto
+    numeric recibido "solo efectivo"
+    numeric cambio "solo efectivo"
+    text referencia "nulo"
+  }
+  SERIE_FOLIO {
+    uuid negocio_id PK
+    text serie PK
+    bigint ultimo_folio
+  }
+  PREPARACION {
+    text token_hash PK
+    uuid negocio_id
+    uuid actor
+    text comando_tipo
+    text comando_hash
+    jsonb comando "D-29"
+    jsonb resumen
+    timestamptz expira_en "5 min D-23"
+    timestamptz usado_en
+  }
+</pre></div>
+  <h3>Esquema <code>caja</code></h3>
+  <div class="scroll"><pre class="mermaid">
+erDiagram
+  CAJA ||--o{ TURNO : abre
+  TURNO ||--o{ MOVIMIENTO_CAJA : registra
+  TURNO ||--o| CORTE : "se cierra con"
+  CORTE ||--o{ CONTEO_DENOMINACION : desglosa
+  CAJA {
+    uuid id PK "UUIDv7"
+    uuid negocio_id "RLS"
+    text nombre "Mostrador o Taquilla"
+    boolean activa
+  }
+  TURNO {
+    uuid id PK
+    uuid negocio_id
+    uuid caja_id FK
+    uuid cajero_id "ref opaca a Identidad"
+    text estado "ABIERTO EN_CORTE CERRADO"
+    numeric fondo_inicial
+    timestamptz abierto_en
+    timestamptz cerrado_en
+    int version
+  }
+  MOVIMIENTO_CAJA {
+    uuid id PK
+    uuid negocio_id
+    uuid turno_id FK
+    text tipo "FONDO VENTA ANULACION ENTRADA RETIRO AJUSTE"
+    text metodo "EFECTIVO TARJETA TRANSFERENCIA"
+    numeric monto "con signo"
+    uuid venta_id "ref opaca, nulo"
+    uuid evento_id "unico, nulo"
+    text nota
+    timestamptz registrado_en
+    uuid registrado_por "nulo si viene de evento"
+  }
+  CORTE {
+    uuid id PK
+    uuid negocio_id
+    uuid turno_id FK "unico"
+    jsonb esperado_por_metodo
+    jsonb contado_por_metodo
+    numeric diferencia_efectivo
+    uuid autorizado_por "nulo"
+    timestamptz confirmado_en
+  }
+  CONTEO_DENOMINACION {
+    uuid corte_id PK
+    text denominacion PK "500 200 100 50 20 10 5 2 1 0.50"
+    int cantidad
+  }
+  VENTA_APLICADA {
+    uuid negocio_id PK
+    uuid venta_id PK
+    uuid turno_id
+    text estado "APLICADA REVERTIDA ANULADO_PREVIO"
+  }
+</pre></div>
+  <p class="mirar"><b>Qué mirar:</b> no hay ventas «preparadas». <code>preparar</code> solo guarda una fila en <code>preparacion</code> con el hash del token, igual que Inventario §6.2; la venta nace al confirmar. Caja también tiene <code>preparacion</code> y <code>evento_procesado</code> (no se dibujan; son iguales a los de Inventario).</p>
+</section>
+
+<section id="entidades">
+  <h2><span class="n">05</span>Entidades</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Entidad</th><th>Módulo</th><th>Para qué</th><th>Relaciones</th><th>Ciclo de vida</th></tr></thead>
+    <tbody id="t-entidades"></tbody>
+  </table></div>
+</section>
+
+<section id="reglas">
+  <h2><span class="n">06</span>Reglas de dominio</h2>
+  <p>Prefijos nuevos para no chocar con los existentes: <code>C-</code> ya es de Inventario (costeo) y <code>V-</code> de Clientes (turista como cliente). Cada regla tiene al menos una prueba que la nombra.</p>
+  <div class="tools" role="group" aria-label="Filtrar reglas">
+    <input id="f-reglas" type="search" placeholder="Buscar en las reglas" aria-label="Buscar en las reglas">
+    <button type="button" data-g="reglas" data-v="" aria-pressed="true">Todas</button>
+    <button type="button" data-g="reglas" data-v="VT" aria-pressed="false">Ventas (VT)</button>
+    <button type="button" data-g="reglas" data-v="CJ" aria-pressed="false">Caja (CJ)</button>
+    <span class="count" id="c-reglas"></span>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>ID</th><th>Regla</th><th>Prioridad</th></tr></thead>
+    <tbody id="t-reglas"></tbody>
+  </table></div>
+</section>
+
+<section id="funciones">
+  <h2><span class="n">07</span>Funciones (comandos y consultas)</h2>
+  <p>Viven en <code>VentasApi</code> y <code>CajaApi</code> (interfaces Java en el mismo proceso). <code>negocio_id</code> nunca es parámetro: sale de <code>ContextoNegocio</code>. Toda respuesta es <code>{ ok, codigo, datos, mensaje_plantilla }</code>. Los comandos viajan como variantes de <code>ComandoInput</code> en el par de plataforma <code>prepararComando</code> / <code>confirmarComando</code> (D-55).</p>
+  <div class="tools" role="group" aria-label="Filtrar funciones">
+    <input id="f-funciones" type="search" placeholder="Buscar en las funciones" aria-label="Buscar en las funciones">
+    <button type="button" data-g="funciones" data-v="" aria-pressed="true">Todas</button>
+    <button type="button" data-g="funciones" data-v="consulta" aria-pressed="false">Consultas</button>
+    <button type="button" data-g="funciones" data-v="comando" aria-pressed="false">Comandos</button>
+    <button type="button" data-g="funciones" data-v="sistema" aria-pressed="false">Del sistema</button>
+    <span class="count" id="c-funciones"></span>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>ID</th><th>Función</th><th>Tipo</th><th>Entrada</th><th>Salida</th><th>Reglas</th><th>Eventos</th><th>Prioridad</th></tr></thead>
+    <tbody id="t-funciones"></tbody>
+  </table></div>
+  <p class="mirar"><b>Qué mirar:</b> <code>CerrarTurno</code> es la única preparación que cambia un estado (pone el turno <code>EN_CORTE</code>, D-81). Los listeners de Caja no piden confirmación humana porque son consecuencia de una venta ya confirmada (mismo criterio que D-22).</p>
+</section>
+
+<section id="errores">
+  <h2><span class="n">08</span>Códigos de error</h2>
+  <p>Cada código tiene un texto fijo en español de México en la tabla de plantillas; la capa que responde no improvisa mensajes.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Módulo</th><th>Grupo</th><th>Códigos</th></tr></thead>
+    <tbody id="t-errores"></tbody>
+  </table></div>
+</section>
+
+<section id="eventos">
+  <h2><span class="n">09</span>Eventos y sus datos</h2>
+  <p>Sobre común ya programado en <code>compartido/eventos/SobreEvento</code>: <code>id</code> UUIDv7, <code>tipo</code>, <code>version</code>, <code>negocio_id</code>, <code>origen</code>, <code>ocurrido_en</code> en UTC, <code>correlacion_id</code>, <code>causa_id</code>, <code>datos</code>. Dinero como cadena decimal, sin datos personales, y un opcional que no aplica se omite (no va en <code>null</code>).</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Evento</th><th>Publica</th><th>Escuchan</th><th>Campos de <code>datos</code></th><th>Cuándo</th></tr></thead>
+    <tbody id="t-eventos"></tbody>
+  </table></div>
+  <div class="note info"><b>Compatibilidad.</b> Clientes ya lee <code>venta.registrada</code> v1 (<code>venta_id</code>, <code>cliente_id</code>, <code>total</code>) y <code>venta.anulada</code> v1 (<code>venta_id</code>) con lector tolerante en <code>clientes/contratos/</code>. El contrato de D-77 solo agrega campos, así que no rompe esas clases ni <code>ContratoVentasConsumidoTest</code>.</div>
+  <h3>JSON de ejemplo</h3>
+  <p class="mirar">Negocio ficticio «Museo Talavera Viva»: 2 boletos de 45.00 y medio kilo de camote a 120.00 = 150.00; cupón de 10 % = 15.00; total 135.00, pagado con 200.00 en efectivo (cambio 65.00, que no viaja en el evento).</p>
+  <div class="grid2">
+    <div class="card"><h3>venta.registrada v1</h3><pre class="code" id="j-registrada"></pre></div>
+    <div class="card"><h3>venta.anulada v1</h3><pre class="code" id="j-anulada"></pre></div>
+    <div class="card"><h3>caja.turno_abierto v1</h3><pre class="code" id="j-turno"></pre></div>
+    <div class="card"><h3>caja.corte_confirmado v1</h3><pre class="code" id="j-corte"></pre><p class="mirar">Esperado en efectivo 3185.50, contado 3175.50: diferencia −10.00, bajo el umbral propuesto de 50.00, así que no pide autorización.</p></div>
+  </div>
+</section>
+
+<section id="secuencias">
+  <h2><span class="n">10</span>Diagramas de secuencia</h2>
+  <h3>Cobrar una venta con cupón del Pasaporte</h3>
+  <div class="scroll"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Cajero as Cajero (panel)
+  participant G as Canal GraphQL
+  participant C as CajaApi
+  participant V as VentasApi
+  participant K as CatalogoApi
+  participant P as PasaporteApi
+  participant B as Bus (outbox)
+  Cajero->>G: prepararComando(registrarVenta)
+  G->>C: turnoActivo()
+  C-->>G: turno ABIERTO
+  G->>V: preparar(RegistrarVenta)
+  V->>K: preciosParaVenta(ids)
+  K-->>V: precios, unidades y fraccion
+  V->>P: cotizarCupon(codigo, subtotal)
+  P-->>V: descuento 15.00
+  V-->>G: token, total 135.00, cambio 65.00
+  G-->>Cajero: resumen para confirmar
+  Cajero->>G: confirmarComando(token)
+  G->>C: turnoActivo()
+  C-->>G: turno ABIERTO
+  G->>V: confirmar(token)
+  Note over V,P: Una transaccion: revalida, canjea, asigna folio, guarda y escribe outbox
+  V->>P: canjearCupon(codigo, ventaId, subtotal)
+  P-->>V: canje registrado
+  V-->>G: ok, folio 1042
+  G-->>Cajero: venta registrada
+  V-)B: venta.registrada
+  B-)C: movimiento VENTA en EFECTIVO
+</pre></div>
+  <p class="mirar"><b>Qué mirar:</b> el turno se revisa dos veces porque un corte pudo empezar entre preparar y confirmar (CJ-06). Si Pasaporte falla al canjear, no hay venta (VT-07). La app del turista ve el canje por la suscripción <code>cuponActualizado</code> de Pasaporte, no por Ventas.</p>
+
+  <h3>Corte de caja</h3>
+  <div class="scroll"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Cajero as Cajero o encargado
+  participant G as Canal GraphQL
+  participant C as CajaApi
+  participant V as VentasApi
+  participant B as Bus (outbox)
+  Cajero->>G: prepararComando(cerrarTurno)
+  G->>C: preparar(CerrarTurno)
+  Note over C: Turno pasa a EN_CORTE (D-81)
+  C->>V: resumenTurno(turnoId)
+  V-->>C: ventas, totales por metodo, preparaciones vigentes
+  C-->>G: token y esperado por metodo
+  G-->>Cajero: corte preparado
+  Cajero->>G: confirmarComando(token)
+  G->>C: confirmar(token)
+  C->>V: resumenTurno(turnoId)
+  V-->>C: 0 preparaciones vigentes, 37 ventas
+  alt Caja aplico menos de 37 ventas
+    C-->>G: CORTE_EVENTOS_PENDIENTES
+  else diferencia sobre el umbral sin autorizacion
+    C-->>G: CORTE_REQUIERE_AUTORIZACION
+  else todo cuadra
+    Note over C: Corte guardado, turno CERRADO, outbox en la misma transaccion
+    C-->>G: ok, diferencia -10.00
+    C-)B: caja.corte_confirmado
+  end
+</pre></div>
+  <p class="mirar"><b>Qué mirar:</b> el corte no cierra si faltan eventos por llegar (CJ-07), porque la entrega es al menos una vez y sin orden global. Lo que llegue después del cierre va como ajuste (CJ-11, P2).</p>
+
+  <h3>Anular una venta</h3>
+  <div class="scroll"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Enc as Encargado
+  participant G as Canal GraphQL
+  participant V as VentasApi
+  participant B as Bus (outbox)
+  participant C as Caja
+  participant I as Inventario
+  participant L as Clientes
+  Enc->>G: prepararComando(anularVenta)
+  G->>V: preparar(AnularVenta)
+  V-->>G: token y montos a revertir por metodo
+  Enc->>G: confirmarComando(token)
+  G->>V: confirmar(token)
+  Note over V: Venta ANULADA y outbox en la misma transaccion
+  V-->>G: ok
+  V-)B: venta.anulada
+  B-)C: movimiento ANULACION negativo
+  B-)I: revertirConsumo
+  B-)L: revertirCompra
+</pre></div>
+  <p class="mirar"><b>Qué mirar:</b> si <code>venta.anulada</code> llega antes que <code>venta.registrada</code>, cada consumidor guarda <code>ANULADO_PREVIO</code> (D-19) y la venta tardía no suma. Revertir el canje del cupón está abierto <span class="q">[?] VT-10</span>.</p>
+</section>
+
+<section id="estados">
+  <h2><span class="n">11</span>Estados</h2>
+  <div class="grid2">
+    <div class="scroll"><pre class="mermaid" style="min-width:320px">
+stateDiagram-v2
+  [*] --> REGISTRADA: confirmar RegistrarVenta
+  REGISTRADA --> ANULADA: confirmar AnularVenta
+  ANULADA --> [*]
+</pre></div>
+    <div class="scroll"><pre class="mermaid" style="min-width:320px">
+stateDiagram-v2
+  [*] --> ABIERTO: confirmar AbrirTurno
+  ABIERTO --> EN_CORTE: preparar CerrarTurno
+  EN_CORTE --> ABIERTO: descartar o token expirado
+  EN_CORTE --> CERRADO: confirmar CerrarTurno
+  CERRADO --> [*]
+</pre></div>
+  </div>
+  <p class="mirar"><b>Qué mirar:</b> a la izquierda la venta, a la derecha el turno. Una venta registrada no se edita (VT-11); un corte confirmado tampoco (CJ-09).</p>
+</section>
+
+<section id="api">
+  <h2><span class="n">12</span>Comunicación con la API</h2>
+  <p>GraphQL es la única entrada del panel. Las suscripciones viajan por WebSocket en el mismo endpoint, no hay WebSocket aparte. <b>No hay REST en P1</b>: el bot se descartó (D-63) y Ventas y Caja no exponen herramientas a la IA. Las filas REST de abajo son P3.</p>
+  <div class="tools" role="group" aria-label="Filtrar operaciones">
+    <input id="f-api" type="search" placeholder="Buscar operación" aria-label="Buscar operación">
+    <button type="button" data-g="api" data-v="" aria-pressed="true">Todas</button>
+    <button type="button" data-g="api" data-v="GraphQL" aria-pressed="false">GraphQL</button>
+    <button type="button" data-g="api" data-v="WebSocket" aria-pressed="false">WebSocket</button>
+    <button type="button" data-g="api" data-v="Java" aria-pressed="false">Java</button>
+    <button type="button" data-g="api" data-v="Bus" aria-pressed="false">Bus</button>
+    <button type="button" data-g="api" data-v="REST" aria-pressed="false">REST</button>
+    <span class="count" id="c-api"></span>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>ID</th><th>Operación</th><th>Tipo</th><th>Quién llama</th><th>Entrada</th><th>Salida</th><th>Caso que resuelve</th><th>Prioridad</th></tr></thead>
+    <tbody id="t-api"></tbody>
+  </table></div>
+</section>
+
+<section id="contratos">
+  <h2><span class="n">13</span>Contratos que Ventas y Caja necesitan de otros módulos</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>De</th><th>Qué</th><th>Lo usa</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td>Catálogo</td><td><code>preciosParaVenta(ids)</code>: precio, unidad, si admite fracción y si está activo</td><td>VT-02, VT-03</td><td><span class="q">[?] sin dueño</span></td></tr>
+      <tr><td>Pasaporte</td><td><code>cotizarCupon</code> (nuevo, solo lectura), <code>canjearCupon</code> (D-34) y una forma de revertir el canje</td><td>VT-07, VT-10</td><td><span class="q">[?] sin dueño</span></td></tr>
+      <tr><td>Identidad</td><td>Permisos de anular venta, retirar efectivo y autorizar diferencias</td><td>VT-09, CJ-05, CJ-08</td><td><span class="q">[?]</span></td></tr>
+      <tr><td>Clientes</td><td>Nada nuevo: <code>sugerirClientes</code> lo usa el canal; Clientes consume <code>venta.*</code></td><td>VT-13</td><td>Existe (I0 e I2)</td></tr>
+      <tr><td>Inventario</td><td>Nada nuevo: consume <code>venta.*</code> con <code>lineas[]</code> (D-25)</td><td>D-77</td><td>Diseñado, sin autorización de código</td></tr>
+      <tr><td>Plataforma</td><td><code>ContextoNegocio</code>, <code>SobreEvento</code>, <code>UuidV7</code>, <code>DecimalPlano</code> y el par <code>prepararComando</code> / <code>confirmarComando</code></td><td>Todo</td><td>Existen en <code>compartido</code> salvo el par de comandos</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="pruebas">
+  <h2><span class="n">14</span>Criterios de aceptación</h2>
+  <p>Cada fila es una prueba que se escribe antes que la implementación (TDD), con Testcontainers contra PostgreSQL real. Cobertura mínima 80 %.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Módulo</th><th>Prueba</th><th>Reglas</th></tr></thead>
+    <tbody id="t-pruebas"></tbody>
+  </table></div>
+</section>
+
+<section id="javadoc">
+  <h2><span class="n">15</span>Documentación del código con JavaDoc <span class="st A">D-83 ACEPTADA</span></h2>
+  <p>Pedido del usuario: documentar el código con JavaDoc «para no batallar a la hora de encontrar errores». La idea es que un código de error en el registro lleve directo a su regla en este diseño.</p>
+  <ol class="clean">
+    <li>Cada clase, record e interfaz pública dice qué representa y, si es agregado, su ciclo de estados.</li>
+    <li>Cada método público de <code>VentasApi</code> y <code>CajaApi</code> lleva descripción, <code>@param</code>, <code>@return</code> y un <code>@throws</code> o código de error por cada fallo de dominio.</li>
+    <li>Cada método cita su ID de función (<code>VF-10</code>, <code>CF-12</code>) y las reglas que aplica (<code>VT-04</code>, <code>CJ-07</code>). Cada código de error cita la regla que lo produce.</li>
+    <li>Los records de eventos documentan cada campo de <code>datos</code> y cuándo se publican.</li>
+    <li>Todo campo o parámetro de dinero indica escala y redondeo.</li>
+    <li><code>mvn javadoc:javadoc</code> sin advertencias entra en la verificación de cada fase.</li>
+  </ol>
+  <p class="mirar">Ejemplo del formato (solo la forma, sin implementación; el estilo sigue a <code>SobreEvento</code>, que ya documenta así):</p>
+  <pre class="code">/**
+ * Confirma una venta preparada: revalida, canjea el cupón, asigna folio y publica
+ * {@code venta.registrada} v1 en la misma transacción (VF-10).
+ *
+ * &lt;p&gt;Reglas: VT-04 (pagos igual al total), VT-05 (revalidación), VT-06 (folio sin huecos),
+ * VT-07 (cupón dentro de la transacción), VT-08 (total neto de cupón).
+ *
+ * @param token token de un solo uso devuelto por {@code preparar}, válido 5 minutos (D-23)
+ * @return resultado con {@code folio} y {@code cambio}; montos en escala 2, HALF_UP (D-20)
+ *         o el código {@code PAGOS_NO_CUADRAN} (VT-04), {@code COMANDO_CAMBIO} (VT-05),
+ *         {@code CUPON_YA_CANJEADO} (VT-07), {@code TOKEN_EXPIRADO}
+ */</pre>
+</section>
+
+<section id="plan">
+  <h2><span class="n">16</span>Plan y calendario</h2>
+  <div class="verdict">
+    <div><span class="big">≈ 9.9</span><span class="lab">días-persona del P1 completo, con 25 % de colchón</span></div>
+    <div><span class="big">1</span><span class="lab">día que falta para el 15 de octubre</span></div>
+    <div><span class="big">≈ 3</span><span class="lab">días-persona disponibles, compartidos con otros módulos</span></div>
+    <div class="bad"><span class="big">No cabe</span><span class="lab">veredicto del plan</span></div>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>Fase</th><th>Entregable</th><th>Criterio de salida</th><th>Estimado (días-persona)</th><th>Responsable</th><th>Depende de</th></tr></thead>
+    <tbody id="t-fases"></tbody>
+  </table></div>
+  <div class="scroll"><table>
+    <thead><tr><th>Opción</th><th>Qué es</th><th>Costo</th></tr></thead>
+    <tbody>
+      <tr><td><b>A</b> recorte duro</td><td>Solo el camino dorado, sin cupón ni anulación, en memoria</td><td>≈ 3.5 días-persona; cabe justo si dos personas se dedican hoy completo</td></tr>
+      <tr><td><b>B</b> mockup <span class="chip">Recomendada</span></td><td>Ventas y Caja se muestran como mockup en la demo; el código va después del evento con este plan</td><td>Cero código hoy; el tiempo va a Clientes e Inventario, que ya tienen diseño aprobado y código</td></tr>
+      <tr><td><b>C</b> mover el hito</td><td>Programar durante el evento (15 al 17)</td><td>Riesgo de llegar al pitch sin probar</td></tr>
+    </tbody>
+  </table></div>
+  <p class="mirar"><b>Camino dorado de la demo:</b> el cajero abre turno, cobra una venta con cupón del Pasaporte, el turista ve su cupón canjeado y el cajero hace el corte. <b>Orden de recorte:</b> 1. todo P2, 2. anulación, 3. cupón, 4. base de datos (en memoria, como Clientes I2).</p>
+</section>
+
+<section id="preguntas">
+  <h2><span class="n">17</span>Preguntas para el equipo</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>#</th><th>Pregunta</th><th>Recomendación</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>¿Programar para la demo o mostrarlo como mockup?</td><td>Mockup ahora, código después (opción B)</td></tr>
+      <tr><td>2</td><td>¿Aprueban D-76 a D-82?</td><td>Sí; si una cambia, hay que avisar a Clientes e Inventario porque cambia el contrato de eventos</td></tr>
+      <tr><td>3</td><td>¿Quién es dueño de Catálogo y de Pasaporte?</td><td>Quien tome Ventas, para congelar los contratos en una sola conversación</td></tr>
+      <tr><td>4</td><td>¿Quién puede anular, hasta cuándo, y cuál es el umbral del corte?</td><td>Encargado o dueño, solo con el turno abierto; umbral de 50.00 como regla versionada <span class="q">[?]</span></td></tr>
+      <tr><td>5</td><td>¿Precios finales sin desglose de IVA en el MVP?</td><td>Sí; lo fiscal solo desde una base curada con fuente y fecha (VT-12)</td></tr>
+      <tr><td>6</td><td>¿Un cajero puede tener dos turnos abiertos en cajas distintas?</td><td>No <span class="q">[?]</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer>
+  <span><b>Fuentes:</b> <code>docs/diseno/ventas.md</code>, <code>docs/diseno/caja.md</code>, <code>docs/planes/ventas-caja-v1.md</code>, <code>docs/BITACORA.md</code> (D-04 a D-83), <code>docs/diseno/inventario.md</code>, <code>docs/diseno/clientes.md</code>, <code>backend/.../clientes/contratos/</code> y <code>compartido/eventos/SobreEvento.java</code>.</span>
+  <span>Diseño en revisión. Nada de esto está aprobado para programarse. Negocio, montos e identificadores son de ejemplo.</span>
+</footer>
+</main>
+</div>
+
+<script>
+(function(){
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function md(s){return esc(s).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\[\?\]/g,'<span class="q">[?]</span>');}
+  var ESTADO={A:'<span class="st A">ACEPTADA</span>',P:'<span class="st P">PROPUESTA</span>',Q:'<span class="st Q">ABIERTA</span>'};
+  function pr(p){return '<span class="st '+p.toLowerCase()+'">'+p+'</span>';}
+
+  var cambios=[
+    ["Nombres de eventos","`venta.confirmada` y `venta.cancelada`","`venta.registrada` y `venta.anulada`","Ya los consume Clientes en código (`VentaRegistradaV1`, `VentaAnuladaV1`) e Inventario los diseñó así"],
+    ["Cupón del Pasaporte","Ventas reservaba el cupón y Pasaporte escuchaba `venta.confirmada`","Ventas cotiza al preparar y canjea con `canjearCupon` al confirmar, en la misma transacción","D-34: Pasaporte no consume eventos de Ventas, para evitar un ciclo"],
+    ["Ventas preparadas","Estado `PREPARADA` en la tabla `venta` y tarea de expiración","`preparar` no escribe en tablas de negocio; la venta nace al confirmar","Mismo patrón que Inventario §6.2 y Clientes"],
+    ["Prefijos de reglas","`V-xx` y `C-xx`","`VT-xx` (Ventas) y `CJ-xx` (Caja)","`C-` ya es de Inventario y `V-` de Clientes"],
+    ["Mutaciones GraphQL","`prepararVenta`, `confirmarVenta`, `prepararCorte`...","Variantes de `ComandoInput` en `prepararComando` / `confirmarComando`","D-55: dos módulos no pueden definir la misma mutación"],
+    ["Redondeo","HALF_EVEN","HALF_UP con la utilidad de `compartido`","D-20"],
+    ["Token","10 minutos","5 minutos","D-23"],
+    ["Hora del evento","Con zona `-06:00`","`ocurrido_en` en UTC","Sobre común e Inventario §7.1"],
+    ["REST","Webhook de pagos y PDF como parte del diseño","Sin REST en P1; los dos quedan P3","D-63: el bot no continúa; contratos de pago sin proveedor"],
+    ["Tipo BOLETO en Ventas","Ventas conocía `BOLETO` y unidades de museo","Ventas solo conoce `producto_id`; unidad y fracción vienen de Catálogo","R4: un horizontal no conoce verticales (D-80)"],
+    ["Contrato de respuesta","No se mencionaba","`{ ok, codigo, datos, mensaje_plantilla }` y códigos de error fijos","`CLAUDE.md` e Inventario §6"],
+    ["Lo que faltaba","—","Decisiones, códigos de error, contratos con otros módulos, criterios de aceptación, estados, JavaDoc y plan con calendario","Pedido del usuario: agregar lo que faltó según el repositorio"]
+  ];
+  document.getElementById("t-cambios").innerHTML=cambios.map(function(r){return "<tr><td><b>"+esc(r[0])+"</b></td><td>"+md(r[1])+"</td><td>"+md(r[2])+"</td><td>"+md(r[3])+"</td></tr>";}).join("");
+
+  var decisiones=[
+    ["D-04 a D-07","Reglas R1 a R6","A","Ventas no puede llamar a quien la escucha"],
+    ["D-20","Redondeo HALF_UP; dinero con 2 decimales","P","Todo cálculo de importes, totales y diferencias"],
+    ["D-22 / D-23","Escrituras del sistema sin confirmación; token de 5 minutos","P","Listeners de Caja; tokens de venta y corte"],
+    ["D-25","`venta.anulada` lleva `lineas[]`","P","Incluido en el contrato"],
+    ["D-34","Ventas llama a `Pasaporte.canjearCupon` de forma síncrona","P","Base de VT-07"],
+    ["D-48 / D-65","`cliente_id` opcional; total neto de cupón","A","Campos de `venta.registrada`"],
+    ["D-55","Par de plataforma `prepararComando` / `confirmarComando`","P","Sin mutaciones propias"],
+    ["D-63","El bot no continúa","A","Sin REST en P1"],
+    ["D-76","Ventas no conoce a Caja; el canal pasa el `turno_id`; Caja escucha a Ventas","P","Evita el ciclo"],
+    ["D-77","Contrato de `venta.registrada` v1 y `venta.anulada` v1","P","Une lo que piden Inventario, Clientes y Caja"],
+    ["D-78","Cupón cotizado al preparar y canjeado al confirmar, en una transacción","P","Requiere `cotizarCupon` en Pasaporte"],
+    ["D-79","Folio consecutivo asignado al confirmar","P","Sin huecos"],
+    ["D-80","Boletos y venta a granel viven en Catálogo y Museos, no en Ventas","P","Cumple R4"],
+    ["D-81","Preparar el corte pone el turno `EN_CORTE`","P","Única preparación que cambia un estado"],
+    ["D-82","Anular usa preparar → confirmar, con motivo y permiso","P","Quién y hasta cuándo sigue abierto"],
+    ["D-83","Todo el código con JavaDoc que cita funciones, reglas y códigos de error","A","Pedido del usuario el 2026-10-14"],
+    ["—","Si Museos y Misceláneos son reales en la demo","Q","Cambia lo que se muestra en el camino dorado"]
+  ];
+  document.getElementById("t-decisiones").innerHTML=decisiones.map(function(r){return '<tr><td class="id">'+esc(r[0])+"</td><td>"+md(r[1])+"</td><td>"+ESTADO[r[2]]+"</td><td>"+md(r[3])+"</td></tr>";}).join("");
+
+  var entidades=[
+    ["Venta","Ventas","Agregado raíz: una venta cobrada","1..n LineaVenta, 1..n PagoVenta; ref opaca a turno, cliente y cupón","REGISTRADA → ANULADA"],
+    ["LineaVenta","Ventas","Renglón con precio, descripción y unidad copiados de Catálogo","n:1 Venta; ref opaca a producto","Solo inserción"],
+    ["PagoVenta","Ventas","Forma de pago; permite pago mixto","n:1 Venta","Solo inserción"],
+    ["SerieFolio","Ventas","Contador de folios sin huecos por negocio y serie","1:n Venta","Se incrementa con bloqueo de fila"],
+    ["Preparacion","Ventas y Caja","Token de un solo uso; solo se guarda el hash","Ninguna","Vence a los 5 minutos"],
+    ["Caja","Caja","Punto de cobro: mostrador o taquilla","1:n Turno","Activa / inactiva"],
+    ["Turno","Caja","Periodo de un cajero en una caja con fondo inicial","n:1 Caja, 1:n MovimientoCaja, 1:0..1 Corte","ABIERTO → EN_CORTE → CERRADO"],
+    ["MovimientoCaja","Caja","Cada entrada o salida de dinero por método","n:1 Turno; ref opaca a venta","Solo inserción"],
+    ["Corte","Caja","Arqueo: esperado contra contado","1:1 Turno, 1:n ConteoDenominacion","Se escribe al confirmar; inmutable"],
+    ["ConteoDenominacion","Caja","Desglose de billetes y monedas (P2)","n:1 Corte","Se guarda con el corte"],
+    ["VentaAplicada","Caja","Idempotencia por venta y marca de anulación previa","Ref opaca a venta","APLICADA, REVERTIDA, ANULADO_PREVIO"],
+    ["EventoProcesado","Caja","Deduplicación por `evento_id`","Ninguna","Purga a 90 días [?] pendiente A1"]
+  ];
+  document.getElementById("t-entidades").innerHTML=entidades.map(function(r){return '<tr><td class="mono"><b>'+esc(r[0])+"</b></td><td>"+esc(r[1])+"</td><td>"+md(r[2])+"</td><td>"+md(r[3])+"</td><td>"+md(r[4])+"</td></tr>";}).join("");
+
+  var reglas=[
+    ["VT-01","Toda venta lleva `turno_id`. El canal verifica con `CajaApi.turnoActivo` que esté ABIERTO antes de preparar y de confirmar. Ventas lo guarda sin validarlo (D-76).","P1"],
+    ["VT-02","Precio, descripción y unidad se toman de Catálogo al preparar y se copian a la línea.","P1"],
+    ["VT-03","Cantidad mayor que 0. Solo admite decimales si Catálogo dice que el producto admite fracción (granel, D-80).","P1"],
+    ["VT-04","La suma de pagos es igual al total. En efectivo, recibido ≥ monto y cambio = recibido − monto. Pago mixto permitido.","P1"],
+    ["VT-05","`confirmar` revalida todo; si cambió el precio o el cupón responde `COMANDO_CAMBIO` y no escribe.","P1"],
+    ["VT-06","Folio consecutivo y sin huecos por negocio y serie, asignado al confirmar (D-79).","P1"],
+    ["VT-07","Máximo un cupón por venta [?]. Se cotiza al preparar y se canjea al confirmar en la misma transacción; si el canje falla, no hay venta (D-34, D-78).","P1"],
+    ["VT-08","Descuento ≤ subtotal y total = subtotal − descuento. El total del evento es neto de cupón (D-65).","P1"],
+    ["VT-09","Solo se anula una venta REGISTRADA, con motivo y permiso de Identidad [?]. Límite de tiempo [?].","P1"],
+    ["VT-10","Anular una venta con cupón revierte el canje en Pasaporte [?] (operación por acordar).","P2"],
+    ["VT-11","Una venta registrada no cambia salvo su anulación.","P1"],
+    ["VT-12","Precios finales al público; sin desglose de impuestos en el MVP. Lo fiscal solo de una base curada [?].","P1"],
+    ["VT-13","`cliente_id` opcional y opaco; el canal lo elige con `sugerirClientes`. Ventas no llama a Clientes (D-48).","P1"],
+    ["CJ-01","Una caja tiene a lo más un turno ABIERTO o EN_CORTE. Un cajero, a lo más uno abierto [?].","P1"],
+    ["CJ-02","Abrir turno pide fondo ≥ 0 y crea un movimiento FONDO en efectivo.","P1"],
+    ["CJ-03","`venta.registrada` crea un movimiento VENTA por pago; `venta.anulada` los compensa con ANULACION.","P1"],
+    ["CJ-04","Listeners idempotentes por evento y por venta. Si la anulación llega primero, se guarda ANULADO_PREVIO.","P1"],
+    ["CJ-05","Un retiro no deja el efectivo esperado por debajo de cero.","P1"],
+    ["CJ-06","Preparar el corte pone el turno EN_CORTE y el canal ya no deja preparar ventas en él. Descartar lo regresa a ABIERTO (D-81).","P1"],
+    ["CJ-07","Confirmar el corte exige cero preparaciones de venta vigentes y que Caja haya aplicado tantas ventas como reporta `resumenTurno`.","P1"],
+    ["CJ-08","Diferencia en efectivo sobre el umbral pide `autorizadoPor` con permiso de encargado. Umbral como regla versionada, valor inicial 50.00 [?].","P1"],
+    ["CJ-09","Un corte confirmado es inmutable y cierra el turno; correcciones como AJUSTE en un turno abierto.","P1"],
+    ["CJ-10","Sin movimientos manuales en un turno EN_CORTE o CERRADO.","P1"],
+    ["CJ-11","Un evento de venta para un turno CERRADO va como AJUSTE al siguiente turno y publica `caja.diferencia_detectada` [?].","P2"],
+    ["CJ-12","Esperado por método = suma de sus movimientos; diferencia = contado − esperado. Toda cifra la calcula el código.","P1"]
+  ];
+  var funciones=[
+    ["VF-01","venta","consulta","ventaId","VentaVista con líneas y pagos","—","—","P1"],
+    ["VF-02","ventas","consulta","fechas, estado, turnoId?, folio?, cursor","Página de ventas","—","—","P1"],
+    ["VF-03","resumenTurno","consulta","turnoId","Ventas registradas y anuladas, totales por método, preparaciones vigentes","CJ-06, CJ-07","—","P1"],
+    ["VF-04","resumenDia","consulta","fecha local de México","Totales del día por método","—","—","P2"],
+    ["VF-10","RegistrarVenta","comando","turnoId, lineas[productoId, cantidad, serie?], pagos[metodo, monto, recibido?], codigoCupon?, clienteId?","Folio, total y cambio","VT-01 a VT-08, VT-12, VT-13","venta.registrada","P1"],
+    ["VF-11","AnularVenta","comando","ventaId, motivo","Venta ANULADA","VT-09 a VT-11","venta.anulada","P1"],
+    ["CF-01","turnoActivo","consulta","cajaId?","Turno o vacío","VT-01","—","P1"],
+    ["CF-02","estadoTurno","consulta","turnoId","Esperado por método, movimientos, ventas aplicadas","CJ-12","—","P1"],
+    ["CF-03","cortes","consulta","fechas, cajaId?, cursor","Página de cortes con diferencias","—","—","P1"],
+    ["CF-04","cajas","consulta","—","Cajas del negocio","—","—","P1"],
+    ["CF-10","AbrirTurno","comando","cajaId, fondoInicial","Turno ABIERTO","CJ-01, CJ-02","caja.turno_abierto","P1"],
+    ["CF-11","RegistrarMovimientoCaja","comando","turnoId, ENTRADA o RETIRO, monto, nota","Movimiento","CJ-05, CJ-10","—","P1"],
+    ["CF-12","CerrarTurno","comando","turnoId, contadoPorMetodo, denominaciones?, autorizadoPor?","Corte con diferencia","CJ-06 a CJ-08, CJ-12","caja.corte_confirmado, caja.diferencia_detectada","P1"],
+    ["CF-13","DescartarCorte","comando","turnoId","Turno ABIERTO","CJ-06","—","P1"],
+    ["CF-14","CrearCaja","comando","nombre","Caja","—","—","P1"],
+    ["CF-20","aplicarVenta","sistema","venta.registrada","APLICADA, YA_APLICADA u OMITIDA_ANULADO_PREVIO","CJ-03, CJ-04","—","P1"],
+    ["CF-21","revertirVenta","sistema","venta.anulada","REVERTIDA, YA_REVERTIDA o MARCADA_ANULADO_PREVIO","CJ-03, CJ-04","—","P1"]
+  ];
+  var errores=[
+    ["Ventas","Datos de la venta","VENTA_SIN_LINEAS, CANTIDAD_INVALIDA, CANTIDAD_NO_FRACCIONABLE, PRODUCTO_NO_ENCONTRADO, PRODUCTO_INACTIVO"],
+    ["Ventas","Pagos","PAGOS_NO_CUADRAN, EFECTIVO_INSUFICIENTE, METODO_PAGO_INVALIDO"],
+    ["Ventas","Cupón","CUPON_INVALIDO, CUPON_YA_CANJEADO, CUPON_NO_APLICA, DESCUENTO_MAYOR_AL_SUBTOTAL"],
+    ["Ventas","Anulación","VENTA_NO_ENCONTRADA, VENTA_YA_ANULADA, MOTIVO_REQUERIDO, SIN_PERMISO_ANULAR"],
+    ["Caja","Turno","CAJA_NO_ENCONTRADA, CAJA_INACTIVA, TURNO_YA_ABIERTO, TURNO_NO_ABIERTO, TURNO_EN_CORTE, FONDO_INVALIDO"],
+    ["Caja","Movimientos","MONTO_INVALIDO, RETIRO_MAYOR_AL_EFECTIVO, NOTA_REQUERIDA"],
+    ["Caja","Corte","CORTE_VENTAS_PENDIENTES, CORTE_EVENTOS_PENDIENTES, CORTE_REQUIERE_AUTORIZACION, CONTEO_INVALIDO"],
+    ["Ambos","Preparar y confirmar","TOKEN_INVALIDO, TOKEN_EXPIRADO, TOKEN_USADO, COMANDO_CAMBIO"],
+    ["Ambos","Reintentables","CONCURRENCIA, ERROR_TEMPORAL"]
+  ];
+  document.getElementById("t-errores").innerHTML=errores.map(function(r){return "<tr><td>"+esc(r[0])+"</td><td>"+esc(r[1])+'</td><td class="mono">'+esc(r[2])+"</td></tr>";}).join("");
+
+  var eventos=[
+    ["venta.registrada v1","Ventas","Caja, Inventario, Restaurantes, Museos [?], Clientes, Contabilidad [?]","`venta_id`, `folio`, `serie`, `turno_id`, `cliente_id?`, `cupon_id?`, `subtotal`, `descuento`, `total`, `lineas[linea, producto_id, cantidad, unidad, precio_unitario, importe, serie?]`, `pagos[metodo, monto]`","Al confirmar `RegistrarVenta`"],
+    ["venta.anulada v1","Ventas","Los mismos","`venta_id`, `turno_id`, `motivo?`, `lineas[linea, producto_id]`, `pagos[metodo, monto]`","Al confirmar `AnularVenta`"],
+    ["caja.turno_abierto v1","Caja","Panel (suscripción)","`turno_id`, `caja_id`, `fondo_inicial`","Al confirmar `AbrirTurno`"],
+    ["caja.corte_confirmado v1","Caja","Contabilidad [?], panel","`corte_id`, `turno_id`, `caja_id`, `esperado_por_metodo`, `contado_por_metodo`, `diferencia_efectivo`, `abierto_en`, `cerrado_en`","Al confirmar `CerrarTurno`"],
+    ["caja.diferencia_detectada v1","Caja","Panel del dueño","`turno_id`, `caja_id`, `diferencia`, `umbral`, `motivo`","Diferencia sobre el umbral o venta tardía"]
+  ];
+  document.getElementById("t-eventos").innerHTML=eventos.map(function(r){return '<tr><td class="mono"><b>'+esc(r[0])+"</b></td><td>"+esc(r[1])+"</td><td>"+md(r[2])+"</td><td>"+md(r[3])+"</td><td>"+md(r[4])+"</td></tr>";}).join("");
+
+  var NEG="0191f0aa-11b2-7c3d-9e4f-a1b2c3d4e5f6", VTA="0192a4c0-e8b0-7a55-9c10-7788990011aa", TUR="0192a39f-0c11-7d20-8e31-abcdefabcdef", CJA="0191f0ac-3333-7444-8555-666677778888";
+  var P1="0191f1b0-0001-7000-8000-000000000001", P2="0191f1b0-0002-7000-8000-000000000002";
+  function sobre(id,tipo,origen,cuando,corr,causa,datos){var o={id:id,tipo:tipo,version:1,negocio_id:NEG,origen:origen,ocurrido_en:cuando,correlacion_id:corr};if(causa)o.causa_id=causa;o.datos=datos;return JSON.stringify(o,null,2);}
+  document.getElementById("j-registrada").textContent=sobre("0192a4c1-3f20-7b11-8a4e-5d2f61c0a901","venta.registrada","ventas","2026-10-15T23:42:08Z",VTA,null,{
+    venta_id:VTA,folio:1042,serie:"A",turno_id:TUR,cupon_id:"0192a4c0-d001-7e00-8f00-000000000abc",
+    subtotal:"150.00",descuento:"15.00",total:"135.00",
+    lineas:[{linea:1,producto_id:P1,cantidad:"2",unidad:"pieza",precio_unitario:"45.0000",importe:"90.00"},{linea:2,producto_id:P2,cantidad:"0.5000",unidad:"kg",precio_unitario:"120.0000",importe:"60.00"}],
+    pagos:[{metodo:"EFECTIVO",monto:"135.00"}]});
+  document.getElementById("j-anulada").textContent=sobre("0192a50d-4410-7aa1-8bb2-0c0d0e0f1011","venta.anulada","ventas","2026-10-16T00:10:02Z",VTA,"0192a4c1-3f20-7b11-8a4e-5d2f61c0a901",{
+    venta_id:VTA,turno_id:TUR,motivo:"Cobro duplicado",
+    lineas:[{linea:1,producto_id:P1},{linea:2,producto_id:P2}],
+    pagos:[{metodo:"EFECTIVO",monto:"135.00"}]});
+  document.getElementById("j-turno").textContent=sobre("0192a39f-0c20-7111-8222-333344445555","caja.turno_abierto","caja","2026-10-15T15:00:12Z",TUR,null,{
+    turno_id:TUR,caja_id:CJA,fondo_inicial:"500.00"});
+  document.getElementById("j-corte").textContent=sobre("0192a6f2-9910-7c01-8d02-0a0b0c0d0e0f","caja.corte_confirmado","caja","2026-10-16T02:05:44Z",TUR,null,{
+    corte_id:"0192a6f1-1201-7aa0-8bb0-ccddeeff0012",turno_id:TUR,caja_id:CJA,
+    esperado_por_metodo:{EFECTIVO:"3185.50",TARJETA:"2240.00",TRANSFERENCIA:"390.00"},
+    contado_por_metodo:{EFECTIVO:"3175.50",TARJETA:"2240.00",TRANSFERENCIA:"390.00"},
+    diferencia_efectivo:"-10.00",abierto_en:"2026-10-15T15:00:12Z",cerrado_en:"2026-10-16T02:05:43Z"});
+
+  var api=[
+    ["V-G1","productosParaVenta(texto)","GraphQL","consulta","Panel (cajero)","texto","Productos con precio, unidad y fracción","Buscar qué vender; el resolvedor llama a `CatalogoApi`","P1"],
+    ["V-G2","prepararComando(input: {registrarVenta})","GraphQL","mutación","Panel (cajero)","líneas, pagos, código de cupón, cliente","Token, resumen y `expiraEn`","Ver total, descuento y cambio antes de cobrar","P1"],
+    ["V-G3","confirmarComando(token)","GraphQL","mutación","Panel (cajero)","token","`{ok, codigo, datos, mensajePlantilla}` con folio y cambio","Cobrar","P1"],
+    ["V-G4","prepararComando(input: {anularVenta}) / confirmarComando","GraphQL","mutación","Panel (encargado)","venta y motivo / token","Venta ANULADA","Anular un cobro equivocado","P1"],
+    ["V-G5","venta(id)","GraphQL","consulta","Panel","id","Venta con líneas y pagos","Ver un ticket","P1"],
+    ["V-G6","ventas(desde, hasta, estado, folio, primeros, despues)","GraphQL","consulta","Panel (dueño)","filtro y cursor","Página de ventas","Buscar ventas","P1"],
+    ["V-G7","ventaRegistrada","WebSocket","suscripción","Panel (dueño)","—","Resumen de cada venta del negocio","Tablero en vivo","P2"],
+    ["C-G1","turnoActivo(cajaId)","GraphQL","consulta","Panel (cajero)","cajaId opcional","Turno o nulo","Saber si hay que abrir turno","P1"],
+    ["C-G2","prepararComando(input: {abrirTurno}) / confirmarComando","GraphQL","mutación","Panel (cajero)","caja y fondo","Turno","Empezar el día","P1"],
+    ["C-G3","prepararComando(input: {registrarMovimientoCaja}) / confirmarComando","GraphQL","mutación","Panel (cajero, encargado)","tipo, monto, nota","Movimiento","Retirar efectivo o meter cambio","P1"],
+    ["C-G4","prepararComando(input: {cerrarTurno}) / confirmarComando","GraphQL","mutación","Panel (cajero, encargado)","conteo por método","Corte con diferencia","Cerrar el día","P1"],
+    ["C-G5","estadoTurno(turnoId)","GraphQL","consulta","Panel","turnoId","Esperado por método y movimientos","Ver cómo va la caja","P1"],
+    ["C-G6","cortes(desde, hasta, cajaId, primeros, despues)","GraphQL","consulta","Panel (dueño)","filtro y cursor","Página de cortes","Auditar faltantes y sobrantes","P1"],
+    ["C-W1","turnoEnVivo(turnoId)","WebSocket","suscripción","Panel (dueño)","turnoId","Esperado por método cada vez que cambia","Ver la caja sin recargar","P2"],
+    ["V-J1","CatalogoApi.preciosParaVenta(ids)","Java","síncrono","Ventas","ids","Precio, unidad, fracción, activo","VT-02, VT-03","P1"],
+    ["V-J2","PasaporteApi.cotizarCupon(codigo, subtotal)","Java","síncrono","Ventas","código y subtotal","Cupón y descuento, sin canjear [?]","VT-07 al preparar","P1"],
+    ["V-J3","PasaporteApi.canjearCupon(codigo, ventaId, subtotal)","Java","síncrono","Ventas","código, venta, subtotal","Canje o error","VT-07 al confirmar (D-34)","P1"],
+    ["V-J4","VentasApi.resumenTurno(turnoId)","Java","síncrono","Caja","turnoId","Totales y preparaciones vigentes","CJ-06, CJ-07","P1"],
+    ["C-J1","CajaApi.turnoActivo()","Java","síncrono","Canal GraphQL","—","Turno o vacío","VT-01","P1"],
+    ["V-B1","venta.registrada","Bus","asíncrono","Ventas → Caja, Inventario, Restaurantes, Clientes, Contabilidad","sobre + datos","—","Descontar, sumar compra, mover caja","P1"],
+    ["V-B2","venta.anulada","Bus","asíncrono","Ventas → los mismos","sobre + datos","—","Revertir todo lo anterior","P1"],
+    ["C-B1","caja.corte_confirmado","Bus","asíncrono","Caja → Contabilidad","sobre + datos","—","Póliza del corte [?]","P1"],
+    ["R-1","GET /ventas/:id/comprobante.pdf","REST","—","Panel","id","PDF","Ticket descargable; REST porque es un archivo","P3"],
+    ["R-2","POST /webhooks/pagos/:proveedor","REST","—","Proveedor de pagos [?]","carga firmada","202","Confirmar cobros con tarjeta; sin proveedor elegido","P3"]
+  ];
+  var pruebas=[
+    ["Ventas","`ApplicationModules.verify()`: Ventas no depende de Caja, Clientes ni verticales","R1, R4, D-76"],
+    ["Ventas","Precio copiado al preparar; cambio entre preparar y confirmar da `COMANDO_CAMBIO`","VT-02, VT-05"],
+    ["Ventas","Fracción rechazada en producto por pieza; aceptada a granel","VT-03"],
+    ["Ventas","Pagos que no cuadran, efectivo insuficiente, pago mixto correcto","VT-04"],
+    ["Ventas","Dos confirmaciones simultáneas no repiten ni saltan folio","VT-06"],
+    ["Ventas","Cupón canjeado en la transacción; si Pasaporte falla, no hay venta","VT-07"],
+    ["Ventas","Total neto de cupón en el evento; contrato leído por `VentaRegistradaV1` de Clientes","VT-08, D-77"],
+    ["Ventas","Anulación con y sin permiso; segunda anulación da `VENTA_YA_ANULADA`","VT-09"],
+    ["Ventas","Token expirado, reutilizado, de otro negocio o con comando alterado","D-23"],
+    ["Caja","`ApplicationModules.verify()`: Caja solo depende de `compartido` y `ventas`","R1, D-76"],
+    ["Caja","Segundo turno en la misma caja rechazado; fondo negativo rechazado","CJ-01, CJ-02"],
+    ["Caja","Pago mixto crea dos movimientos; anulación los compensa","CJ-03"],
+    ["Caja","Mismo evento dos veces, un efecto; anulación antes de la venta","CJ-04"],
+    ["Caja","Retiro mayor al efectivo rechazado","CJ-05"],
+    ["Caja","Venta preparada en turno EN_CORTE rechazada; corte con eventos pendientes no cierra","CJ-06, CJ-07"],
+    ["Caja","Diferencia sobre el umbral sin autorización rechazada","CJ-08"],
+    ["Caja","Esperado y diferencia calculados a mano coinciden","CJ-12"],
+    ["Ambos","Un negocio no ve ni toca datos de otro (seguridad por fila)","R1"],
+    ["Ambos","`mvn javadoc:javadoc` sin advertencias","D-83"]
+  ];
+  document.getElementById("t-pruebas").innerHTML=pruebas.map(function(r){return "<tr><td>"+esc(r[0])+"</td><td>"+md(r[1])+'</td><td class="mono">'+esc(r[2])+"</td></tr>";}).join("");
+
+  var fases=[
+    ["F0","Revisión y aprobación del diseño","El equipo responde las preguntas","0.3","Equipo","—"],
+    ["F1","Contratos congelados","`venta.*` con Clientes e Inventario; cupón con Pasaporte; precios con Catálogo","0.5","A","F0"],
+    ["F2","Ventas en memoria","Pruebas VT en verde, `verify()` y JavaDoc sin advertencias","1.6","A","F1"],
+    ["F3","Caja en memoria","Pruebas CJ en verde","1.6","B","F1, en paralelo con F2"],
+    ["F4","GraphQL del panel","Camino dorado con `GraphQlTester`","1.0","A","F2, F3"],
+    ["F5","Persistencia","Migraciones `V030` y `V040` con RLS; repositorios JDBC","1.6","C","F2, F3 y autorización JDBC"],
+    ["F6","Demo","Camino dorado ensayado con datos simulados","0.5","C","F4"]
+  ];
+  document.getElementById("t-fases").innerHTML=fases.map(function(r){return '<tr><td class="id">'+r[0]+"</td><td>"+esc(r[1])+"</td><td>"+md(r[2])+'</td><td class="mono">'+r[3]+"</td><td>"+esc(r[4])+"</td><td>"+esc(r[5])+"</td></tr>";}).join("");
+
+  var KC={"GraphQL":"gql","WebSocket":"ws","Java":"java","Bus":"bus","REST":"rest"};
+  var tablas={
+    reglas:{data:reglas,f:"",row:function(r){return '<tr><td class="id">'+r[0]+"</td><td>"+md(r[1])+"</td><td>"+pr(r[2])+"</td></tr>";},match:function(r,v){return !v||r[0].indexOf(v)===0;}},
+    funciones:{data:funciones,f:"",row:function(r){var k=r[2]==="consulta"?"gql":r[2]==="comando"?"mut":"bus";return '<tr><td class="id">'+r[0]+'</td><td class="mono"><b>'+esc(r[1])+'</b></td><td><span class="k '+k+'">'+r[2]+"</span></td><td>"+md(r[3])+"</td><td>"+md(r[4])+'</td><td class="mono">'+esc(r[5])+'</td><td class="mono">'+esc(r[6])+"</td><td>"+pr(r[7])+"</td></tr>";},match:function(r,v){return !v||r[2]===v;}},
+    api:{data:api,f:"",row:function(r){return '<tr><td class="id">'+r[0]+'</td><td class="mono"><b>'+esc(r[1])+'</b></td><td><span class="k '+KC[r[2]]+'">'+r[2]+(r[3]!=="—"?" · "+r[3]:"")+"</span></td><td>"+md(r[4])+"</td><td>"+md(r[5])+"</td><td>"+md(r[6])+"</td><td>"+md(r[7])+"</td><td>"+pr(r[8])+"</td></tr>";},match:function(r,v){return !v||r[2]===v;}}
+  };
+  function pintar(n){
+    var t=tablas[n],q=(document.getElementById("f-"+n).value||"").toLowerCase();
+    var rows=t.data.filter(function(r){return t.match(r,t.f)&&(!q||r.join(" ").toLowerCase().indexOf(q)>=0);});
+    document.getElementById("t-"+n).innerHTML=rows.length?rows.map(t.row).join(""):'<tr><td colspan="8">Ninguna fila coincide con el filtro.</td></tr>';
+    document.getElementById("c-"+n).textContent=rows.length+" de "+t.data.length;
+  }
+  Object.keys(tablas).forEach(function(n){
+    pintar(n);
+    document.getElementById("f-"+n).addEventListener("input",function(){pintar(n);});
+  });
+  document.querySelectorAll("button[data-g]").forEach(function(b){
+    b.addEventListener("click",function(){
+      var g=b.getAttribute("data-g");
+      document.querySelectorAll('button[data-g="'+g+'"]').forEach(function(o){o.setAttribute("aria-pressed",o===b?"true":"false");});
+      tablas[g].f=b.getAttribute("data-v");pintar(g);
+    });
+  });
+  var tema=document.getElementById("tema");
+  tema.addEventListener("click",function(){
+    var r=document.documentElement,oscuro=r.getAttribute("data-theme")==="dark"||(!r.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme: dark)").matches);
+    r.setAttribute("data-theme",oscuro?"light":"dark");tema.setAttribute("aria-pressed",oscuro?"false":"true");
+  });
+})();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+(function(){var r=document.documentElement,o=r.getAttribute("data-theme")==="dark"||(!r.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme: dark)").matches);mermaid.initialize({startOnLoad:true,theme:o?"dark":"default",securityLevel:"strict"});})();
+</script>
+</body>
+</html>

@@ -34,6 +34,10 @@ Este archivo existe para que **cualquier agente o persona que entre al proyecto 
 | App del turista (página publicada, privada) | https://claude.ai/artifact/2cTvdAS5Y5pTaSbiS29f67 — copia de `docs/mockups/app-turista.html` al 2026-10-08. Privada: solo la ve quien tenga acceso. Si el archivo del repositorio cambia, hay que volver a publicarla. |
 | Rutas del turista (página publicada, privada) | https://claude.ai/artifact/9iQfz3q8Zu77AkKcrRDTgE — copia de `docs/mockups/rutas.html` al 2026-10-08. Privada: solo la ve quien tenga acceso. |
 | Mockup original (página publicada) | https://claude.ai/artifact/SgG3tYJ4SVua6qagM6QVM1 — bot, panel de gestión y tablero de gobierno del alcance anterior. |
+| `docs/diseno/ventas.md` | Diseño del módulo de Ventas (borrador v0.1, 2026-10-14): reglas VT-01 a VT-13, modelo de datos, `VentasApi`, contrato de `venta.registrada` y `venta.anulada` (D-77), comunicación con la API, flujos y criterios de aceptación. |
+| `docs/diseno/caja.md` | Diseño del módulo de Caja (borrador v0.1, 2026-10-14): reglas CJ-01 a CJ-12, turnos, movimientos, corte, `CajaApi`, eventos `caja.*`, flujos y criterios de aceptación. |
+| `docs/planes/ventas-caja-v1.md` | Plan mayor de Ventas y Caja (2026-10-14): requisitos, fases F0 a F6, estimación (≈ 9.9 días-persona), calendario (no cabe antes del evento) y preguntas. Esperando confirmación. |
+| Ventas y Caja (página publicada, compartida con cualquiera que tenga el enlace) | https://claude.ai/artifact/FVtCcUoJHC8A48rUcJ17xE — **versión 2** (2026-10-14), alineada con `ventas.md`, `caja.md` y el plan: qué se corrigió de la versión 1, decisiones, mapa de módulos y eventos, entidad-relación, entidades, reglas VT y CJ, funciones, códigos de error, eventos con JSON, tres secuencias, estados, tabla de comunicación con la API con filtros, contratos con otros módulos, criterios de aceptación, JavaDoc (D-83), plan y preguntas. La versión 1 (hecha sin leer el repositorio) quedó reemplazada. Copia local: `docs/mockups/ventas-caja.html`. Si cambian los documentos, hay que volver a publicarla. |
 
 ---
 
@@ -167,6 +171,14 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-63 | El bot de chat no continúa por ahora. Se eliminan las vías REST del bot y el origen `BOT` | ACEPTADA | 2026-10-13 | Dicho por el usuario. Cierra la decisión abierta sobre el bot. Afecta también el REST del bot de Inventario (D-46) |
 | D-64 | Umbrales iniciales de Clientes: inactivo a los 60 días sin comprar; frecuente con 3 compras en 90 días. Son reglas versionadas | ACEPTADA (delegada) | 2026-10-13 | El usuario respondió «cómo veas conveniente» |
 | D-65 | El `total` de `venta.registrada` es neto del cupón cuando aplica, y el total completo cuando no hay cupón | ACEPTADA | 2026-10-13 | Dicho por el usuario («sí, solo cuando aplica»). Falta congelarlo con el dueño de Ventas |
+| D-76 | Ventas y Caja son dos módulos horizontales separados (`ventas`, `caja`). Ventas no conoce a Caja: el canal obtiene el turno con `CajaApi.turnoActivo` y pasa el `turno_id`. Caja escucha `venta.*` y llama a `VentasApi.resumenTurno` en el corte | PROPUESTA | 2026-10-14 | Evita un ciclo. `docs/diseno/ventas.md` y `caja.md`. La separación la pidió el usuario; el reparto de dependencias es mío |
+| D-77 | Contrato de `venta.registrada` v1 (`venta_id`, `folio`, `serie`, `turno_id`, `cliente_id?`, `cupon_id?`, `subtotal`, `descuento`, `total`, `lineas[]`, `pagos[]`) y `venta.anulada` v1 (`venta_id`, `turno_id`, `motivo?`, `lineas[]`, `pagos[]`) | PROPUESTA | 2026-10-14 | Une lo que piden Inventario (§7.2, D-25), Clientes (D-48, D-65) y Caja. Compatible con `VentaRegistradaV1` y `VentaAnuladaV1` de Clientes (lector tolerante). Falta acordarlo con quien programa Inventario y Clientes |
+| D-78 | Cupón: Ventas lo cotiza con `PasaporteApi.cotizarCupon` (nuevo, solo lectura) al preparar y lo canjea con `canjearCupon` al confirmar, en la misma transacción | PROPUESTA | 2026-10-14 | Precisa D-34. Revertir el canje al anular está abierto (VT-10) |
+| D-79 | El folio de venta es consecutivo por negocio y serie y se asigna al confirmar | PROPUESTA | 2026-10-14 | Sin huecos por preparaciones que expiran |
+| D-80 | Ventas no conoce boletos ni venta a granel: la unidad y si un producto admite fracción vienen de Catálogo; lo propio del museo vive en Museos | PROPUESTA | 2026-10-14 | Cumple R4 |
+| D-81 | Preparar el corte de caja pone el turno `EN_CORTE` (única preparación que cambia un estado); descartar o expirar lo regresa a `ABIERTO` | PROPUESTA | 2026-10-14 | Excepción a «preparar no escribe» de Inventario §6.2, para que no entren ventas entre el conteo y la confirmación |
+| D-82 | Anular una venta usa preparar → confirmar, con motivo y permiso de Identidad; una venta registrada no se edita | PROPUESTA | 2026-10-14 | Quién puede anular y hasta cuándo está abierto |
+| D-83 | Todo el código se documenta con **JavaDoc**: cada tipo y método público, con `@param`, `@return`, fallos (`@throws` o código de error), el ID de función y las reglas que aplica (`VT-04`, `CJ-07`), y escala y redondeo en todo monto. `mvn javadoc:javadoc` sin advertencias entra en la verificación | ACEPTADA | 2026-10-14 | Dicho por el usuario: «el codigo debe de ser documentado con JavaDoc para no batallar a la hora de encontrar errores». Falta reflejarlo en la skill `negocio360-reglas` (§7) si el equipo lo pide |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -899,3 +911,51 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 
 **Archivos creados:** `backend/docker-compose.yml`, `backend/docker/postgres/01-roles.sh`, `backend/.env.example`, `backend/.env` (local, ignorado), `.gitattributes`, `backend/src/main/resources/db/migration/V001, V002, V010, V020`, `backend/src/test/java/mx/negocio360/persistencia/*` (11 clases), `backend/src/test/resources/META-INF/spring.factories`, `docs/pruebas/postgres-flyway-outbox.tdd.md`.
 **Archivos modificados:** `backend/pom.xml`, `backend/src/main/resources/application.yml`, `backend/postman/*` (descripción), `docs/BITACORA.md` (esta entrada).
+
+### 2026-10-14 — Diseño y plan de Ventas y Caja (propuesta)
+**Pedido del usuario:** diseñar Ventas y Caja para el comerciante (museo y misceláneo), separados, con entidades, funciones, reglas con ID, eventos y comunicación con la API; los planes en Markdown y el código documentado con JavaDoc. Al clonar el repositorio respondió «si» a rehacer el plan dentro de él.
+
+**Qué se vio:**
+1. Un primer borrador se hizo antes de clonar el repositorio (página publicada, ver «Documentos relacionados»). Al leer la Bitácora y los diseños se encontraron choques y se corrigieron en los documentos nuevos: los eventos se llaman `venta.registrada` y `venta.anulada` (Clientes ya los consume); el cupón va por D-34 (Ventas llama a Pasaporte, no al revés); `C-xx` ya lo usa Inventario y `V-xx` Clientes, así que Ventas usa `VT-xx` y Caja `CJ-xx`; las mutaciones van por `prepararComando` / `confirmarComando` (D-55); redondeo HALF_UP (D-20); sin REST de bot (D-63).
+2. `preparar` no escribe en las tablas de negocio, como en Inventario: no existen ventas «preparadas». La única excepción propuesta es el corte de caja (D-81).
+3. Ventas no conoce a Caja para no crear un ciclo: el canal pasa el `turno_id` (D-76).
+4. El plan da ≈ 9.9 días-persona contra un día disponible: **no cabe** antes del evento. Recomendación: mostrar Ventas y Caja como mockup en la demo y programar después.
+
+**Decisiones:** D-76 a D-82 (PROPUESTA). D-83, JavaDoc obligatorio (ACEPTADA, dicho por el usuario).
+
+**Pendiente:**
+- Que el equipo responda §13 de `ventas.md`, §12 de `caja.md` y §13 del plan (programar o mockup, dueños de Catálogo y Pasaporte, quién anula, umbral del corte).
+- Acordar D-77 con quien programa Clientes e Inventario, y `cotizarCupon` / `canjearCupon` con el dueño de Pasaporte.
+- Si se acepta D-83 para todo el proyecto, agregarlo a la skill `negocio360-reglas` y a `.agent/rules/negocio360.md` (no se tocaron).
+- **No hay autorización para programar Ventas ni Caja.**
+
+**No verificado:** los diagramas Mermaid no se renderizaron. No se hizo commit ni se cambió de rama (los archivos quedan sin confirmar en `main`; el flujo de D-32 pide trabajar en la rama personal).
+
+**Archivos creados:** `docs/diseno/ventas.md`, `docs/diseno/caja.md`, `docs/planes/ventas-caja-v1.md`.
+**Archivos modificados:** `docs/BITACORA.md` (decisiones D-76 a D-83, documentos relacionados y esta entrada).
+
+### 2026-10-14 — Página de Ventas y Caja, versión 2
+**Pedido del usuario:** «Crea el artefacto como te lo pedi anteriormente, con la diferencia que corrigas y agreges lo que falto basandote en el repositorio y su contenido».
+
+**Qué se hizo:**
+1. Se republicó la página https://claude.ai/artifact/FVtCcUoJHC8A48rUcJ17xE (misma URL, versión 2) con el contenido de `docs/diseno/ventas.md`, `docs/diseno/caja.md` y `docs/planes/ventas-caja-v1.md`. Sigue la skill `generar-mockup-html`: chips de borrador y datos inventados, identidad talavera y cempasúchil, azul punteado = síncrono y dorado continuo = asíncrono, «Qué mirar» en cada figura y fuentes al pie.
+2. Lo pedido originalmente (entidad-relación, diagrama de eventos, secuencias, tablas de entidades, funciones, reglas y eventos con JSON, y tabla de comunicación con la API) más lo que faltaba: tabla de qué se corrigió de la versión 1, decisiones con su estado, códigos de error, contratos con otros módulos, estados, criterios de aceptación, convención JavaDoc (D-83), plan con veredicto de calendario y preguntas.
+3. Copia local en `docs/mockups/ventas-caja.html`, con Mermaid 11.4.1 desde jsDelivr (se comprobó que la URL responde 200).
+4. Al publicar se vio que la página ya está **compartida con cualquiera que tenga el enlace** (lo cambió el usuario). La versión 2 se publicó en esa misma URL, así que quien tenga el enlace ve los cambios.
+
+**Decisiones:** ninguna nueva. Se mantienen D-76 a D-82 (PROPUESTA) y D-83 (ACEPTADA).
+
+**No verificado:** no se abrió la página ni la copia local en un navegador, así que no se revisó a 400 y 1280 px, en tema claro y oscuro, ni que los 8 diagramas Mermaid se dibujen sin error. Solo se comprobó que el JavaScript de la página no tiene errores de sintaxis (`node --check`). No se hizo commit.
+
+**Archivos creados:** `docs/mockups/ventas-caja.html`.
+**Archivos modificados:** `docs/BITACORA.md` (fila de «Documentos relacionados» y esta entrada).
+
+### 2026-10-14 — Autorización para programar Ventas y Caja
+**Autorización escrita (cita textual del usuario):** «Autorizo programar Ventas y Caja en la rama uriel».
+
+**Alcance que le doy (interpretación mía):**
+- Código de los módulos `ventas` y `caja` según `docs/diseno/ventas.md`, `docs/diseno/caja.md` y `docs/planes/ventas-caja-v1.md`, empezando por las fases F2 (Ventas) y F3 (Caja) **en memoria**, como Clientes I2: dominio, comandos con preparar → confirmar, eventos y listeners, con pruebas primero (TDD) y JavaDoc (D-83).
+- Catálogo y Pasaporte no existen: Ventas los usa por puertos propios con dobles en las pruebas. No se crean esos módulos.
+- **No incluye** migraciones de Flyway ni repositorios JDBC (F5), ni el esquema GraphQL (F4), salvo que el usuario lo pida. Tampoco cambia los contratos ya programados de Clientes.
+- D-76 a D-82 siguen como PROPUESTA: se programan tal cual están en el diseño y, si el equipo cambia alguna, se ajusta el código.
+- Trabajo en la rama local `uriel`, creada desde `main` (la remota `origin/uriel` estaba 4 commits atrás y sin nada propio). No se hace `git push` sin confirmar.
