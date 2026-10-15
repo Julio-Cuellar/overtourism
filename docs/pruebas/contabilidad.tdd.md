@@ -15,3 +15,4 @@
 | Regla | Qué se garantiza | Prueba | RED (antes del código) | GREEN |
 |---|---|---|---|---|
 | A-01 | Póliza con menos de dos renglones o descuadrada no se arma; el total es la suma de cargos | `contabilidad/dominio/AsientoTest` (5) | No compila: faltan `Asiento`, `Renglon`, `CodigoError`, `ContabilidadException` | 5/5 pasan; `EstructuraModulosTest` 2/2 |
+| A-02 | Renglón con cargo y abono, sin ninguno, negativo o sin cuenta falla con MOVIMIENTO_INVALIDO; más de 2 decimales o fuera de numeric(14,2) con MONTO_INVALIDO. El CHECK en la base queda para la prueba con Postgres | `dominio/RenglonTest` (12) | 11/12 fallan (sin validación; montoMaximo pasaba) | 12/12 y AsientoTest 5/5 |
