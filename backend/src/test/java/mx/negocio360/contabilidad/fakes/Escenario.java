@@ -10,6 +10,7 @@ import mx.negocio360.contabilidad.aplicacion.LibroDiario;
 import mx.negocio360.contabilidad.aplicacion.ManejadorActivarContabilidad;
 import mx.negocio360.contabilidad.aplicacion.ManejadorCrearCuenta;
 import mx.negocio360.contabilidad.aplicacion.ManejadorRegistrarPolizaManual;
+import mx.negocio360.contabilidad.aplicacion.ManejadorReversarPoliza;
 import mx.negocio360.contabilidad.aplicacion.ResultadoComando;
 import mx.negocio360.contabilidad.aplicacion.ServicioPreparacion;
 import mx.negocio360.contabilidad.dominio.Cuenta;
@@ -38,7 +39,8 @@ public final class Escenario {
         var preparacion = new ServicioPreparacion(preparaciones,
                 List.of(new ManejadorActivarContabilidad(configuracion, cuentas, reglas, reloj),
                         new ManejadorCrearCuenta(configuracion, cuentas, reloj),
-                        new ManejadorRegistrarPolizaManual(configuracion, libro)),
+                        new ManejadorRegistrarPolizaManual(configuracion, libro),
+                        new ManejadorReversarPoliza(configuracion, polizas, libro, reloj)),
                 reloj);
         api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro);
     }

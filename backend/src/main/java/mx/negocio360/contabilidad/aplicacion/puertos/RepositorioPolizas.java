@@ -40,6 +40,15 @@ public interface RepositorioPolizas {
     Optional<Poliza> porId(UUID negocioId, UUID polizaId);
 
     /**
+     * La reversa de una poliza, si existe. En Postgres, {@code revierte_poliza_id} es unico (A-06).
+     *
+     * @param negocioId negocio
+     * @param polizaId  poliza original
+     * @return la reversa, o vacio
+     */
+    Optional<Poliza> reversaDe(UUID negocioId, UUID polizaId);
+
+    /**
      * Polizas del negocio en un periodo, en orden de registro.
      *
      * @param negocioId negocio

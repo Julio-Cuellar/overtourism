@@ -35,6 +35,12 @@ public final class RepositorioPolizasEnMemoria implements RepositorioPolizas {
     }
 
     @Override
+    public synchronized Optional<Poliza> reversaDe(UUID negocioId, UUID polizaId) {
+        return filas.stream().filter(p -> p.negocioId().equals(negocioId) && polizaId.equals(p.reviertePolizaId()))
+                .findFirst();
+    }
+
+    @Override
     public synchronized List<Poliza> delPeriodo(UUID negocioId, UUID periodoId) {
         return filas.stream().filter(p -> p.negocioId().equals(negocioId) && p.periodoId().equals(periodoId))
                 .toList();
