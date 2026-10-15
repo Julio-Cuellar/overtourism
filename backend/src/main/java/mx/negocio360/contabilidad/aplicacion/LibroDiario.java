@@ -100,7 +100,9 @@ public final class LibroDiario {
         validarCuentas(negocioId, asiento);
         var ahora = reloj.instant();
         var periodo = periodoDe(negocioId, YearMonth.from(asiento.fecha()));
-        var poliza = new Poliza(UuidV7.generar(ahora), negocioId, periodo.id(), asiento.tipo(), 0, asiento.fecha(),
+        var folio = polizas.siguienteFolio(negocioId, periodo.id(), asiento.tipo());
+        var poliza = new Poliza(UuidV7.generar(ahora), negocioId, periodo.id(), asiento.tipo(), folio,
+                asiento.fecha(),
                 asiento.concepto(), registro.origen(), registro.eventoId(), registro.referenciaTipo(),
                 registro.referenciaId(), false, registro.reviertePolizaId(), asiento.total(), asiento.renglones(),
                 registro.creadoPor(), ahora);
@@ -108,7 +110,7 @@ public final class LibroDiario {
         return poliza;
     }
 
-    private Periodo periodoDe(UUID negocioId, YearMonth mes) {
+    private synchronized Periodo periodoDe(UUID negocioId, YearMonth mes) {
         return periodos.delMes(negocioId, mes).orElseGet(() -> {
             var nuevo = Periodo.abierto(UuidV7.generar(reloj.instant()), negocioId, mes, reloj.instant());
             periodos.guardar(nuevo);

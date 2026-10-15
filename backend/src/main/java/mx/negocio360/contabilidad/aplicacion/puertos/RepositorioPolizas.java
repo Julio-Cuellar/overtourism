@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import mx.negocio360.contabilidad.dominio.Poliza;
+import mx.negocio360.contabilidad.dominio.TipoPoliza;
 
 /**
  * Puerto de las tablas {@code poliza} y {@code movimiento}. Solo inserta: no hay operacion para cambiar ni borrar
@@ -17,6 +18,17 @@ public interface RepositorioPolizas {
      * @param poliza poliza nueva
      */
     void insertar(Poliza poliza);
+
+    /**
+     * Reserva el siguiente folio de la serie (A-05). Debe ser atomico: dos registros simultaneos nunca reciben el
+     * mismo folio. En Postgres se resuelve con un contador por serie bloqueado en la misma transaccion.
+     *
+     * @param negocioId negocio
+     * @param periodoId periodo
+     * @param tipo      tipo de poliza
+     * @return el folio reservado, desde 1
+     */
+    int siguienteFolio(UUID negocioId, UUID periodoId, TipoPoliza tipo);
 
     /**
      * Busca una poliza del negocio.

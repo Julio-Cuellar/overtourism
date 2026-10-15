@@ -1,16 +1,25 @@
 package mx.negocio360.contabilidad.fakes;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPolizas;
 import mx.negocio360.contabilidad.dominio.Poliza;
+import mx.negocio360.contabilidad.dominio.TipoPoliza;
 
 /** Doble en memoria de poliza y movimiento. Solo inserta, como la tabla real (A-03). */
 public final class RepositorioPolizasEnMemoria implements RepositorioPolizas {
 
     private final List<Poliza> filas = new ArrayList<>();
+    private final Map<String, Integer> folios = new HashMap<>();
+
+    @Override
+    public synchronized int siguienteFolio(UUID negocioId, UUID periodoId, TipoPoliza tipo) {
+        return folios.merge(negocioId + "/" + periodoId + "/" + tipo, 1, Integer::sum);
+    }
 
     @Override
     public synchronized void insertar(Poliza poliza) {
