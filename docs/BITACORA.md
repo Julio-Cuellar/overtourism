@@ -36,6 +36,7 @@ Este archivo existe para que **cualquier agente o persona que entre al proyecto 
 | Mockup original (página publicada) | https://claude.ai/artifact/SgG3tYJ4SVua6qagM6QVM1 — bot, panel de gestión y tablero de gobierno del alcance anterior. |
 | `docs/diseno/ventas.md` | Diseño del módulo de Ventas (borrador v0.1, 2026-10-14): reglas VT-01 a VT-13, modelo de datos, `VentasApi`, contrato de `venta.registrada` y `venta.anulada` (D-77), comunicación con la API, flujos y criterios de aceptación. |
 | `docs/diseno/caja.md` | Diseño del módulo de Caja (borrador v0.1, 2026-10-14): reglas CJ-01 a CJ-12, turnos, movimientos, corte, `CajaApi`, eventos `caja.*`, flujos y criterios de aceptación. |
+| `docs/pruebas/ventas-caja-f2-f3.tdd.md` | Evidencia TDD de Ventas y Caja en memoria (F2 y F3, 2026-10-15): RED y GREEN, qué garantiza cada prueba, cobertura, JavaDoc y pendientes. |
 | `docs/planes/ventas-caja-v1.md` | Plan mayor de Ventas y Caja (2026-10-14): requisitos, fases F0 a F6, estimación (≈ 9.9 días-persona), calendario (no cabe antes del evento) y preguntas. Esperando confirmación. |
 | Ventas y Caja (página publicada, compartida con cualquiera que tenga el enlace) | https://claude.ai/artifact/FVtCcUoJHC8A48rUcJ17xE — **versión 2** (2026-10-14), alineada con `ventas.md`, `caja.md` y el plan: qué se corrigió de la versión 1, decisiones, mapa de módulos y eventos, entidad-relación, entidades, reglas VT y CJ, funciones, códigos de error, eventos con JSON, tres secuencias, estados, tabla de comunicación con la API con filtros, contratos con otros módulos, criterios de aceptación, JavaDoc (D-83), plan y preguntas. La versión 1 (hecha sin leer el repositorio) quedó reemplazada. Copia local: `docs/mockups/ventas-caja.html`. Si cambian los documentos, hay que volver a publicarla. |
 
@@ -179,6 +180,8 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-81 | Preparar el corte de caja pone el turno `EN_CORTE` (única preparación que cambia un estado); descartar o expirar lo regresa a `ABIERTO` | PROPUESTA | 2026-10-14 | Excepción a «preparar no escribe» de Inventario §6.2, para que no entren ventas entre el conteo y la confirmación |
 | D-82 | Anular una venta usa preparar → confirmar, con motivo y permiso de Identidad; una venta registrada no se edita | PROPUESTA | 2026-10-14 | Quién puede anular y hasta cuándo está abierto |
 | D-83 | Todo el código se documenta con **JavaDoc**: cada tipo y método público, con `@param`, `@return`, fallos (`@throws` o código de error), el ID de función y las reglas que aplica (`VT-04`, `CJ-07`), y escala y redondeo en todo monto. `mvn javadoc:javadoc` sin advertencias entra en la verificación | ACEPTADA | 2026-10-14 | Dicho por el usuario: «el codigo debe de ser documentado con JavaDoc para no batallar a la hora de encontrar errores». Falta reflejarlo en la skill `negocio360-reglas` (§7) si el equipo lo pide |
+| D-84 | El patrón preparar → confirmar genérico vive en `compartido.comandos` (`ServicioPreparacion`, `ManejadorComando`, `ResultadoComando` con `datos`); lo usan Ventas y Caja. Clientes conserva el suyo hasta que se migre | PROPUESTA | 2026-10-15 | Evita copiar 180 líneas por módulo. Agrega el ámbito de la preparación para contar ventas preparadas por turno (CJ-07) |
+| D-85 | Al confirmar, si el cálculo deja de cuadrar porque el mundo cambió entre los dos pasos (precio, cupón, ventas del turno), la respuesta es `COMANDO_CAMBIO` y no el error de validación | PROPUESTA | 2026-10-15 | Encontrado al programar: sin esto salían `PAGOS_NO_CUADRAN` o `CORTE_REQUIERE_AUTORIZACION`, que confunden a la persona |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -959,3 +962,27 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 - **No incluye** migraciones de Flyway ni repositorios JDBC (F5), ni el esquema GraphQL (F4), salvo que el usuario lo pida. Tampoco cambia los contratos ya programados de Clientes.
 - D-76 a D-82 siguen como PROPUESTA: se programan tal cual están en el diseño y, si el equipo cambia alguna, se ajusta el código.
 - Trabajo en la rama local `uriel`, creada desde `main` (la remota `origin/uriel` estaba 4 commits atrás y sin nada propio). No se hace `git push` sin confirmar.
+
+### 2026-10-15 — Ventas y Caja programados en memoria (F2 y F3)
+**Pedido del usuario:** «Autorizo programar Ventas y Caja en la rama uriel» (entrada del 2026-10-14), con el flujo TDD.
+
+**Qué se hizo:**
+1. **`compartido.comandos`** (nuevo, D-84): preparar → confirmar genérico para Ventas y Caja. **`compartido.dinero.Redondeo`** (nuevo): la utilidad única de D-20.
+2. **Módulo `ventas`**: `VentasApi`, `RegistrarVenta` y `AnularVenta` con preparar → confirmar, folios por negocio y serie, cupón cotizado y canjeado en la misma confirmación (D-78), eventos `venta.registrada` v1 y `venta.anulada` v1 con el contrato de D-77, y `resumenTurno`. Catálogo, Pasaporte y permisos son puertos con dobles en las pruebas. Solo depende de `compartido`.
+3. **Módulo `caja`**: `CajaApi`, crear caja, abrir turno con fondo, entradas y retiros, corte con EN_CORTE al preparar (D-81) y conciliación contra Ventas (CJ-07), descartar corte, y `ConsumidorVentas` idempotente por evento y por venta, con marca de anulación previa. Depende de `compartido` y `ventas` en un solo sentido (D-76).
+4. Todo el código nuevo lleva JavaDoc que cita funciones, reglas y códigos (D-83). `mvn javadoc:javadoc -Ddoclint=all` da 0 advertencias en el código nuevo.
+5. `caja.md`: tres códigos nuevos (`CAJA_DUPLICADA`, `NOMBRE_CAJA_INVALIDO`, `TURNO_NO_ENCONTRADO`) y la precisión de CJ-02 (fondo 0.00 sin movimiento).
+
+**Verificación hecha:** RED real dos veces (no compilaba por las clases faltantes). GREEN: Ventas 54/54, Caja 41/41 y compartido 32 nuevas. `mvn -B verify` sin las 10 clases que necesitan Docker: **805/805, BUILD SUCCESS, cobertura cumplida** (Ventas 87.8 %, Caja 92.8 %, `compartido.comandos` 94.0 % de líneas). Detalle en `docs/pruebas/ventas-caja-f2-f3.tdd.md`.
+
+**No verificado:**
+- `mvn -B verify` completo: 146 errores en las 10 clases de persistencia y de arranque porque **Docker Desktop está apagado**. Ningún error viene de Ventas ni de Caja, pero hay que repetirlo con Docker encendido.
+- No hubo revisión de agentes de Java ni de seguridad, ni ronda de mutaciones.
+- **No hay commits**: la máquina no tiene identidad de Git (`user.name` y `user.email`). Todo está sin confirmar en la rama local `uriel`.
+
+**Decisiones:** D-84 y D-85 (PROPUESTA).
+
+**Pendiente:** identidad de Git y commits; verify completo con Docker; revisión de agentes; JavaDoc de `DecimalPlano` (4 advertencias, anterior a esta etapa); adaptadores reales y JDBC (F5) y GraphQL (F4), ambos sin autorización; VT-10 y CJ-11 (P2).
+
+**Archivos creados:** `backend/src/main/java/mx/negocio360/compartido/comandos/*` (8), `compartido/dinero/Redondeo.java`, `ventas/**` (30), `caja/**` (48); pruebas en `backend/src/test/java/mx/negocio360/{compartido/comandos,compartido/dinero,compartido/pruebas,ventas,caja}/**`; `docs/pruebas/ventas-caja-f2-f3.tdd.md`.
+**Archivos modificados:** `backend/src/test/java/mx/negocio360/EstructuraModulosTest.java` (módulos `ventas` y `caja`), `docs/diseno/caja.md`, `docs/BITACORA.md`.
