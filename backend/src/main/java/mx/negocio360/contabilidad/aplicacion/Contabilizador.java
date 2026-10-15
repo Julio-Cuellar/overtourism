@@ -1,5 +1,6 @@
 package mx.negocio360.contabilidad.aplicacion;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -14,14 +15,19 @@ import java.util.function.Function;
 import mx.negocio360.compartido.eventos.SobreEvento;
 import mx.negocio360.compartido.identidad.UuidV7;
 import mx.negocio360.compartido.tiempo.ZonaMexico;
+import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioCortesContables;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioEventosProcesados;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPendientes;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioReglas;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioVentasContables;
+import mx.negocio360.contabilidad.contratos.CajaCerradaV1;
 import mx.negocio360.contabilidad.contratos.DatosInvalidosException;
 import mx.negocio360.contabilidad.contratos.VentaRegistradaV1;
 import mx.negocio360.contabilidad.dominio.Asiento;
+import mx.negocio360.contabilidad.dominio.Conciliacion;
 import mx.negocio360.contabilidad.dominio.ContabilidadException;
+import mx.negocio360.contabilidad.dominio.CorteContable;
+import mx.negocio360.contabilidad.dominio.Montos;
 import mx.negocio360.contabilidad.dominio.DesgloseIva;
 import mx.negocio360.contabilidad.dominio.Disparador;
 import mx.negocio360.contabilidad.dominio.EstadoPendiente;
@@ -60,6 +66,7 @@ public final class Contabilizador {
     private final RepositorioPendientes pendientes;
     private final RepositorioReglas reglas;
     private final RepositorioVentasContables ventas;
+    private final RepositorioCortesContables cortes;
     private final LibroDiario libro;
     private final Clock reloj;
 
@@ -70,12 +77,14 @@ public final class Contabilizador {
      * @param pendientes tabla de pendientes
      * @param reglas     tabla de reglas
      * @param ventas     tabla de huellas de venta
+     * @param cortes     tabla de cortes de caja
      * @param libro      libro diario
      * @param reloj      reloj de la plataforma
      */
     public Contabilizador(RepositorioEventosProcesados procesados, RepositorioPendientes pendientes,
-                          RepositorioReglas reglas, RepositorioVentasContables ventas, LibroDiario libro,
-                          Clock reloj) {
+                          RepositorioReglas reglas, RepositorioVentasContables ventas,
+                          RepositorioCortesContables cortes, LibroDiario libro, Clock reloj) {
+        this.cortes = Objects.requireNonNull(cortes, "cortes");
         this.procesados = Objects.requireNonNull(procesados, "procesados");
         this.pendientes = Objects.requireNonNull(pendientes, "pendientes");
         this.reglas = Objects.requireNonNull(reglas, "reglas");
@@ -95,6 +104,33 @@ public final class Contabilizador {
      */
     public ResultadoEvento contabilizarVenta(SobreEvento evento) {
         return procesar(evento, VentaRegistradaV1.VERSION, VentaRegistradaV1.CAMPOS, this::aplicarVenta);
+    }
+
+    /**
+     * {@code contabilizarCorte}: registra el corte de caja con su diferencia de conteo (J-01).
+     *
+     * @param evento sobre de {@code caja.cerrada} v1
+     * @return APLICADO; OMITIDO con {@value #YA_PROCESADO} o {@value #DUPLICADO_NATURAL}; o PENDIENTE como en
+     *         {@link #contabilizarVenta}
+     */
+    public ResultadoEvento contabilizarCorte(SobreEvento evento) {
+        return procesar(evento, CajaCerradaV1.VERSION, CajaCerradaV1.CAMPOS, this::aplicarCorte);
+    }
+
+    private ResultadoEvento aplicarCorte(SobreEvento evento) {
+        var negocioId = evento.negocioId();
+        var corte = CajaCerradaV1.leer(evento.datos());
+        if (cortes.porCorte(negocioId, corte.corteId()).isPresent()) {
+            return ResultadoEvento.omitido(DUPLICADO_NATURAL);
+        }
+        var esperado = Montos.exacto(corte.efectivoEsperado());
+        var contado = Montos.exacto(corte.efectivoContado());
+        var diferencia = contado.subtract(esperado);
+        var conciliacion = diferencia.signum() == 0 ? Conciliacion.CUADRA : Conciliacion.DIFERENCIA_CAJA;
+        cortes.guardar(new CorteContable(UuidV7.generar(reloj.instant()), negocioId, corte.corteId(),
+                corte.cajaSesionId(), esperado, contado, diferencia, corte.ventasEfectivo(),
+                Montos.exacto(BigDecimal.ZERO), conciliacion, null, null, corte.cerradaEn()));
+        return ResultadoEvento.aplicado(null);
     }
 
     /**

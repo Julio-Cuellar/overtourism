@@ -1,6 +1,8 @@
 package mx.negocio360.contabilidad.contratos;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.UUID;
 import mx.negocio360.compartido.dinero.DecimalPlano;
@@ -54,6 +56,18 @@ final class LectorDatos {
             throw new DatosInvalidosException(campo);
         }
         return DecimalPlano.leer(texto).orElseThrow(() -> new DatosInvalidosException(campo));
+    }
+
+    Instant instante(String campo) {
+        var valor = datos.get(campo);
+        if (valor == null) {
+            throw new DatosInvalidosException(campo);
+        }
+        try {
+            return Instant.parse(valor.toString());
+        } catch (DateTimeParseException e) {
+            throw new DatosInvalidosException(campo);
+        }
     }
 
     String texto(String campo) {

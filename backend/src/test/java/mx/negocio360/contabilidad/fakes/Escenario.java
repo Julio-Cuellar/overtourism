@@ -40,13 +40,14 @@ public final class Escenario {
     public final PublicadorEventosEnMemoria eventos = new PublicadorEventosEnMemoria();
     public final RepositorioVentasContablesEnMemoria ventas = new RepositorioVentasContablesEnMemoria();
     public final RepositorioPendientesEnMemoria pendientes = new RepositorioPendientesEnMemoria();
+    public final RepositorioCortesContablesEnMemoria cortes = new RepositorioCortesContablesEnMemoria();
     public final RepositorioEventosProcesadosEnMemoria eventosProcesados =
             new RepositorioEventosProcesadosEnMemoria();
 
     public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, saldos, eventos,
             reloj);
     public final Contabilizador contabilizador = new Contabilizador(eventosProcesados, pendientes, reglas, ventas,
-            libro, reloj);
+            cortes, libro, reloj);
     public final ContabilidadApi api;
 
     public Escenario() {
@@ -62,7 +63,7 @@ public final class Escenario {
                         new ManejadorCerrarPeriodo(configuracion, periodos, pendientes, libro, eventos, reloj)),
                 reloj);
         api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro, contabilizador,
-                pendientes, configuracion, periodos);
+                pendientes, configuracion, periodos, cortes);
     }
 
     /** Prepara y confirma un comando, como lo haria el panel en dos pasos. */

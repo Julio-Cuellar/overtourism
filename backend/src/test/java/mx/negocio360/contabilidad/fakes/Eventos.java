@@ -36,6 +36,23 @@ public final class Eventos {
         return venta(negocioId, UUID.randomUUID(), total, medioPago, ocurridoEn, null);
     }
 
+    /**
+     * {@code caja.cerrada} v1 con el contrato propuesto (Caja no tiene diseno). {@code ventasEfectivo} es opcional.
+     */
+    public static SobreEvento corte(UUID negocioId, UUID corteId, UUID cajaSesionId, String esperado, String contado,
+                                    String ventasEfectivo, Instant cerradaEn) {
+        var datos = new LinkedHashMap<String, Object>();
+        datos.put("corte_id", corteId.toString());
+        datos.put("caja_sesion_id", cajaSesionId.toString());
+        datos.put("efectivo_esperado", esperado);
+        datos.put("efectivo_contado", contado);
+        if (ventasEfectivo != null) {
+            datos.put("ventas_efectivo", ventasEfectivo);
+        }
+        datos.put("cerrada_en", cerradaEn.toString());
+        return sobre("caja.cerrada", 1, negocioId, "caja", cerradaEn, cajaSesionId, datos);
+    }
+
     /** Sobre con id UUIDv7 nuevo. */
     public static SobreEvento sobre(String tipo, int version, UUID negocioId, String origen, Instant ocurridoEn,
                                     UUID correlacionId, Map<String, Object> datos) {

@@ -10,6 +10,7 @@ import mx.negocio360.contabilidad.aplicacion.Comando;
 import mx.negocio360.contabilidad.aplicacion.PreparacionCreada;
 import mx.negocio360.contabilidad.aplicacion.ResultadoComando;
 import mx.negocio360.contabilidad.dominio.Balanza;
+import mx.negocio360.contabilidad.dominio.CorteContable;
 import mx.negocio360.contabilidad.dominio.Cuenta;
 import mx.negocio360.contabilidad.dominio.EstadoPendiente;
 import mx.negocio360.contabilidad.dominio.Pendiente;
@@ -87,6 +88,22 @@ public interface ContabilidadApi {
      * @return lo que se hizo con el evento
      */
     ResultadoEvento contabilizarVenta(SobreEvento evento);
+
+    /**
+     * Escritura del sistema para {@code caja.cerrada} (J2). La llama el listener; el negocio sale del sobre.
+     *
+     * @param evento sobre del evento
+     * @return lo que se hizo con el evento
+     */
+    ResultadoEvento contabilizarCorte(SobreEvento evento);
+
+    /**
+     * Cortes de caja del negocio con su conciliacion (G8).
+     *
+     * @param contexto negocio
+     * @return los cortes, del mas antiguo al mas nuevo
+     */
+    List<CorteContable> cortes(ContextoNegocio contexto);
 
     /**
      * Bandeja de pendientes del negocio (G9).

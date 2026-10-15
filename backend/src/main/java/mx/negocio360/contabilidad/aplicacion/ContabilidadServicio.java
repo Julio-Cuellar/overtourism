@@ -10,12 +10,14 @@ import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.compartido.eventos.SobreEvento;
 import mx.negocio360.contabilidad.ContabilidadApi;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioConfiguracion;
+import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioCortesContables;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioCuentas;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPendientes;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPeriodos;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPolizas;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioReglas;
 import mx.negocio360.contabilidad.dominio.Balanza;
+import mx.negocio360.contabilidad.dominio.CorteContable;
 import mx.negocio360.contabilidad.dominio.Cuenta;
 import mx.negocio360.contabilidad.dominio.EstadoPendiente;
 import mx.negocio360.contabilidad.dominio.Pendiente;
@@ -36,6 +38,7 @@ public final class ContabilidadServicio implements ContabilidadApi {
     private final RepositorioPendientes pendientes;
     private final RepositorioConfiguracion configuracion;
     private final RepositorioPeriodos periodos;
+    private final RepositorioCortesContables cortes;
 
     /**
      * Crea el servicio.
@@ -49,11 +52,14 @@ public final class ContabilidadServicio implements ContabilidadApi {
      * @param pendientes     tabla de pendientes
      * @param configuracion  tabla de configuracion
      * @param periodos       tabla de periodos
+     * @param cortes         tabla de cortes de caja
      */
     public ContabilidadServicio(ServicioPreparacion preparacion, RepositorioCuentas cuentas,
                                 RepositorioReglas reglas, RepositorioPolizas polizas, LibroDiario libro,
                                 Contabilizador contabilizador, RepositorioPendientes pendientes,
-                                RepositorioConfiguracion configuracion, RepositorioPeriodos periodos) {
+                                RepositorioConfiguracion configuracion, RepositorioPeriodos periodos,
+                                RepositorioCortesContables cortes) {
+        this.cortes = Objects.requireNonNull(cortes, "cortes");
         this.preparacion = Objects.requireNonNull(preparacion, "preparacion");
         this.cuentas = Objects.requireNonNull(cuentas, "cuentas");
         this.reglas = Objects.requireNonNull(reglas, "reglas");
@@ -99,6 +105,16 @@ public final class ContabilidadServicio implements ContabilidadApi {
     @Override
     public ResultadoEvento contabilizarVenta(SobreEvento evento) {
         return contabilizador.contabilizarVenta(evento);
+    }
+
+    @Override
+    public ResultadoEvento contabilizarCorte(SobreEvento evento) {
+        return contabilizador.contabilizarCorte(evento);
+    }
+
+    @Override
+    public List<CorteContable> cortes(ContextoNegocio contexto) {
+        return cortes.delNegocio(contexto.negocioId());
     }
 
     @Override
