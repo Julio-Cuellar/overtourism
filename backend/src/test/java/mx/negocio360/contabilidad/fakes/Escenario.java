@@ -6,10 +6,13 @@ import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.contabilidad.ContabilidadApi;
 import mx.negocio360.contabilidad.aplicacion.Comando;
 import mx.negocio360.contabilidad.aplicacion.ContabilidadServicio;
+import mx.negocio360.contabilidad.aplicacion.LibroDiario;
 import mx.negocio360.contabilidad.aplicacion.ManejadorActivarContabilidad;
 import mx.negocio360.contabilidad.aplicacion.ManejadorCrearCuenta;
+import mx.negocio360.contabilidad.aplicacion.ManejadorRegistrarPolizaManual;
 import mx.negocio360.contabilidad.aplicacion.ResultadoComando;
 import mx.negocio360.contabilidad.aplicacion.ServicioPreparacion;
+import mx.negocio360.contabilidad.dominio.Cuenta;
 
 /** Arma el modulo completo con dobles en memoria y un reloj controlado por la prueba. */
 public final class Escenario {
@@ -24,20 +27,29 @@ public final class Escenario {
     public final RepositorioCuentasEnMemoria cuentas = new RepositorioCuentasEnMemoria();
     public final RepositorioReglasEnMemoria reglas = new RepositorioReglasEnMemoria();
     public final RepositorioConfiguracionEnMemoria configuracion = new RepositorioConfiguracionEnMemoria();
+    public final RepositorioPeriodosEnMemoria periodos = new RepositorioPeriodosEnMemoria();
+    public final RepositorioPolizasEnMemoria polizas = new RepositorioPolizasEnMemoria();
 
+    public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, reloj);
     public final ContabilidadApi api;
 
     public Escenario() {
         var preparacion = new ServicioPreparacion(preparaciones,
                 List.of(new ManejadorActivarContabilidad(configuracion, cuentas, reglas, reloj),
-                        new ManejadorCrearCuenta(configuracion, cuentas, reloj)),
+                        new ManejadorCrearCuenta(configuracion, cuentas, reloj),
+                        new ManejadorRegistrarPolizaManual(configuracion, libro)),
                 reloj);
-        api = new ContabilidadServicio(preparacion, cuentas, reglas);
+        api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas);
     }
 
     /** Prepara y confirma un comando, como lo haria el panel en dos pasos. */
     public ResultadoComando confirmar(ContextoNegocio contexto, Comando comando) {
         return api.confirmar(contexto, api.preparar(contexto, comando).token());
+    }
+
+    /** Cuenta del negocio por codigo; falla si no existe. */
+    public Cuenta cuenta(ContextoNegocio contexto, String codigo) {
+        return api.catalogo(contexto).stream().filter(c -> c.codigo().equals(codigo)).findFirst().orElseThrow();
     }
 
     /** Activa la contabilidad del negocio con la tasa de ejemplo. */

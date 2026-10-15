@@ -2,6 +2,7 @@ package mx.negocio360.contabilidad.fakes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import mx.negocio360.contabilidad.aplicacion.ActivarContabilidadComando;
 
 /**
@@ -11,10 +12,17 @@ public final class Fixtures {
 
     /** 2026-10-15 12:00 en Puebla (UTC-6). */
     public static final Instant AHORA = Instant.parse("2026-10-15T18:00:00Z");
+    /** Fecha contable de {@link #AHORA} en Puebla. */
+    public static final LocalDate HOY = LocalDate.of(2026, 10, 15);
     public static final BigDecimal TASA_EJEMPLO = new BigDecimal("0.16");
     public static final String FUENTE_EJEMPLO = "Dato de ejemplo de pruebas, no verificado";
 
     private Fixtures() {
+    }
+
+    /** Monto a partir de texto, para leer mejor las pruebas. */
+    public static BigDecimal m(String monto) {
+        return new BigDecimal(monto);
     }
 
     /** Activacion con precios con IVA, tasa de ejemplo y ejercicio desde enero. */

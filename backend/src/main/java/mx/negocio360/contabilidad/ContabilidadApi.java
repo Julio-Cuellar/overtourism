@@ -1,11 +1,14 @@
 package mx.negocio360.contabilidad;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.contabilidad.aplicacion.Comando;
 import mx.negocio360.contabilidad.aplicacion.PreparacionCreada;
 import mx.negocio360.contabilidad.aplicacion.ResultadoComando;
 import mx.negocio360.contabilidad.dominio.Cuenta;
+import mx.negocio360.contabilidad.dominio.Poliza;
 import mx.negocio360.contabilidad.dominio.ReglaContable;
 
 /**
@@ -51,4 +54,13 @@ public interface ContabilidadApi {
      * @return las reglas; vacio si la contabilidad no esta activa
      */
     List<ReglaContable> reglas(ContextoNegocio contexto);
+
+    /**
+     * Una poliza del negocio con sus renglones.
+     *
+     * @param contexto negocio
+     * @param polizaId poliza
+     * @return la poliza, o vacio si no existe o es de otro negocio (responden igual)
+     */
+    Optional<Poliza> poliza(ContextoNegocio contexto, UUID polizaId);
 }
