@@ -42,7 +42,7 @@ public final class Escenario {
                 List.of(new ManejadorActivarContabilidad(configuracion, cuentas, reglas, reloj),
                         new ManejadorCrearCuenta(configuracion, cuentas, reloj),
                         new ManejadorEditarCuenta(configuracion, cuentas, polizas),
-                        new ManejadorDesactivarCuenta(configuracion, cuentas),
+                        new ManejadorDesactivarCuenta(configuracion, cuentas, reglas, reloj),
                         new ManejadorRegistrarPolizaManual(configuracion, libro),
                         new ManejadorReversarPoliza(configuracion, polizas, libro, reloj)),
                 reloj);
