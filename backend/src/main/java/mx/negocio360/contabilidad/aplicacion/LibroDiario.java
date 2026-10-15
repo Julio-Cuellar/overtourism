@@ -48,6 +48,8 @@ public final class LibroDiario {
         }
     }
 
+    private static final int MAX_CONCEPTO = 200;
+
     private final RepositorioCuentas cuentas;
     private final RepositorioPeriodos periodos;
     private final RepositorioPolizas polizas;
@@ -124,7 +126,9 @@ public final class LibroDiario {
     }
 
     /**
-     * Registra el asiento como poliza.
+     * Registra el asiento como poliza. Una poliza automatica con fecha de un mes cerrado no falla: entra en el
+     * periodo abierto mas antiguo, con fecha del dia 1, marcada como extemporanea y con la fecha original en el
+     * concepto (T-05). Las manuales y las reversas si fallan con {@code PERIODO_CERRADO} (T-01).
      *
      * @param negocioId negocio
      * @param asiento   asiento cuadrado
@@ -133,14 +137,25 @@ public final class LibroDiario {
      * @throws ContabilidadException los codigos de {@link #validar}
      */
     public Poliza registrar(UUID negocioId, Asiento asiento, Registro registro) {
-        validar(negocioId, asiento);
+        if (registro.origen() == OrigenPoliza.AUTOMATICA) {
+            validarCuentas(negocioId, asiento);
+        } else {
+            validar(negocioId, asiento);
+        }
         var ahora = reloj.instant();
         var periodo = periodoDe(negocioId, YearMonth.from(asiento.fecha()));
+        var extemporanea = !periodo.abierto();
+        if (extemporanea) {
+            periodo = abiertoMasAntiguo(negocioId, periodo.mes());
+            asiento = new Asiento(asiento.tipo(), periodo.mes().atDay(1),
+                    recortar(asiento.concepto() + " (extemporanea, fecha original " + asiento.fecha() + ")"),
+                    asiento.renglones());
+        }
         var folio = polizas.siguienteFolio(negocioId, periodo.id(), asiento.tipo());
         var poliza = new Poliza(UuidV7.generar(ahora), negocioId, periodo.id(), asiento.tipo(), folio,
                 asiento.fecha(), asiento.concepto(), registro.origen(), registro.eventoId(), registro.referenciaTipo(),
-                registro.referenciaId(), false, registro.reviertePolizaId(), asiento.total(), asiento.renglones(),
-                registro.creadoPor(), ahora);
+                registro.referenciaId(), extemporanea, registro.reviertePolizaId(), asiento.total(),
+                asiento.renglones(), registro.creadoPor(), ahora);
         polizas.insertar(poliza);
         synchronized (mayor) {
             mayor.aplicar(poliza, periodo);
@@ -174,6 +189,17 @@ public final class LibroDiario {
         }
         periodoDe(negocioId, mes);
         return true;
+    }
+
+    /** El periodo abierto mas antiguo posterior a {@code cerrado}; si no hay, abre el mes siguiente al ultimo. */
+    private synchronized Periodo abiertoMasAntiguo(UUID negocioId, YearMonth cerrado) {
+        var todos = periodos.delNegocio(negocioId);
+        return todos.stream().filter(p -> p.abierto() && p.mes().isAfter(cerrado)).findFirst()
+                .orElseGet(() -> periodoDe(negocioId, todos.get(todos.size() - 1).mes().plusMonths(1)));
+    }
+
+    private static String recortar(String concepto) {
+        return concepto.length() <= MAX_CONCEPTO ? concepto : concepto.substring(0, MAX_CONCEPTO);
     }
 
     private synchronized Periodo periodoDe(UUID negocioId, YearMonth mes) {
