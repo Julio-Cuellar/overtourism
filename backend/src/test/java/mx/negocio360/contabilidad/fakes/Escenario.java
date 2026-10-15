@@ -9,6 +9,7 @@ import mx.negocio360.contabilidad.aplicacion.ContabilidadServicio;
 import mx.negocio360.contabilidad.aplicacion.Contabilizador;
 import mx.negocio360.contabilidad.aplicacion.LibroDiario;
 import mx.negocio360.contabilidad.aplicacion.ManejadorActivarContabilidad;
+import mx.negocio360.contabilidad.aplicacion.ManejadorConfigurarRegla;
 import mx.negocio360.contabilidad.aplicacion.ManejadorCrearCuenta;
 import mx.negocio360.contabilidad.aplicacion.ManejadorDesactivarCuenta;
 import mx.negocio360.contabilidad.aplicacion.ManejadorEditarCuenta;
@@ -53,7 +54,8 @@ public final class Escenario {
                         new ManejadorDesactivarCuenta(configuracion, cuentas, reglas, reloj),
                         new ManejadorRegistrarPolizaManual(configuracion, libro),
                         new ManejadorReversarPoliza(configuracion, polizas, libro, reloj),
-                        new ManejadorResolverPendiente(configuracion, pendientes, libro, reloj)),
+                        new ManejadorResolverPendiente(configuracion, pendientes, libro, reloj),
+                        new ManejadorConfigurarRegla(configuracion, reglas, libro, reloj)),
                 reloj);
         api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro, contabilizador,
                 pendientes);

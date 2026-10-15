@@ -82,14 +82,28 @@ public final class LibroDiario {
      */
     public void validarCuentas(UUID negocioId, Asiento asiento) {
         for (var renglon : asiento.renglones()) {
-            var cuenta = cuentas.porId(negocioId, renglon.cuentaId())
-                    .orElseThrow(() -> new ContabilidadException(CodigoError.CUENTA_NO_ENCONTRADA));
-            if (!cuenta.afectable()) {
-                throw new ContabilidadException(CodigoError.CUENTA_NO_AFECTABLE, cuenta.id());
-            }
-            if (!cuenta.recibeMovimientos()) {
-                throw new ContabilidadException(CodigoError.CUENTA_INACTIVA, cuenta.id());
-            }
+            validarCuenta(negocioId, renglon.cuentaId());
+        }
+    }
+
+    /**
+     * Revisa que una cuenta exista en el negocio, sea afectable y este activa (A-04).
+     *
+     * @param negocioId negocio
+     * @param cuentaId  cuenta; nula cuenta como inexistente
+     * @throws ContabilidadException {@code CUENTA_NO_ENCONTRADA}, {@code CUENTA_NO_AFECTABLE} o
+     *                               {@code CUENTA_INACTIVA}
+     */
+    public void validarCuenta(UUID negocioId, UUID cuentaId) {
+        var cuenta = cuentaId == null ? null : cuentas.porId(negocioId, cuentaId).orElse(null);
+        if (cuenta == null) {
+            throw new ContabilidadException(CodigoError.CUENTA_NO_ENCONTRADA);
+        }
+        if (!cuenta.afectable()) {
+            throw new ContabilidadException(CodigoError.CUENTA_NO_AFECTABLE, cuenta.id());
+        }
+        if (!cuenta.recibeMovimientos()) {
+            throw new ContabilidadException(CodigoError.CUENTA_INACTIVA, cuenta.id());
         }
     }
 
