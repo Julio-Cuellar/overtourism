@@ -1,6 +1,7 @@
 package mx.negocio360.contabilidad.contratos;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -18,17 +19,24 @@ public record VentaRegistradaV1(UUID ventaId, BigDecimal total, String medioPago
 
     /** Tipo del evento en el sobre. */
     public static final String TIPO = "venta.registrada";
+    /** Campos del contrato que usa Contabilidad; son los unicos que se copian a un pendiente (E-04). */
+    public static final List<String> CAMPOS = List.of("venta_id", "total", "medio_pago", "caja_sesion_id");
 
     /**
      * Lee los datos del evento.
      *
      * @param datos carga del sobre
      * @return el contrato leido
-     * @throws DatosInvalidosException si falta {@code venta_id} o {@code total}, o si un campo no tiene forma valida
+     * @throws DatosInvalidosException si falta {@code venta_id} o {@code total}, si el total es negativo o si un
+     *                                 campo no tiene forma valida
      */
     public static VentaRegistradaV1 leer(Map<String, Object> datos) {
         var lector = new LectorDatos(datos);
-        return new VentaRegistradaV1(lector.uuid("venta_id"), lector.dinero("total"), lector.texto("medio_pago"),
+        var total = lector.dinero("total");
+        if (total.signum() < 0) {
+            throw new DatosInvalidosException("total");
+        }
+        return new VentaRegistradaV1(lector.uuid("venta_id"), total, lector.texto("medio_pago"),
                 lector.uuidOpcional("caja_sesion_id"));
     }
 }

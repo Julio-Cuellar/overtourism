@@ -28,6 +28,8 @@ public enum CodigoError {
     PERIODO_ANTERIOR_ABIERTO,
     PENDIENTES_SIN_RESOLVER,
     PENDIENTE_YA_RESUELTO,
+    /** No esta en la lista del diseno (seccion 7.4); hace falta para ResolverPendiente. */
+    PENDIENTE_NO_ENCONTRADO,
     // Reglas y consultas
     REGLA_SUPERPUESTA,
     TASA_INVALIDA,

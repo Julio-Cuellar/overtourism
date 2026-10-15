@@ -11,6 +11,8 @@ import mx.negocio360.contabilidad.aplicacion.PreparacionCreada;
 import mx.negocio360.contabilidad.aplicacion.ResultadoComando;
 import mx.negocio360.contabilidad.dominio.Balanza;
 import mx.negocio360.contabilidad.dominio.Cuenta;
+import mx.negocio360.contabilidad.dominio.EstadoPendiente;
+import mx.negocio360.contabilidad.dominio.Pendiente;
 import mx.negocio360.contabilidad.dominio.Poliza;
 import mx.negocio360.contabilidad.dominio.ReglaContable;
 import mx.negocio360.contabilidad.dominio.ResultadoEvento;
@@ -84,4 +86,13 @@ public interface ContabilidadApi {
      * @return lo que se hizo con el evento
      */
     ResultadoEvento contabilizarVenta(SobreEvento evento);
+
+    /**
+     * Bandeja de pendientes del negocio (G9).
+     *
+     * @param contexto negocio
+     * @param estado   estado a listar
+     * @return los pendientes, del mas antiguo al mas nuevo
+     */
+    List<Pendiente> pendientes(ContextoNegocio contexto, EstadoPendiente estado);
 }

@@ -13,6 +13,7 @@ import mx.negocio360.contabilidad.aplicacion.ManejadorCrearCuenta;
 import mx.negocio360.contabilidad.aplicacion.ManejadorDesactivarCuenta;
 import mx.negocio360.contabilidad.aplicacion.ManejadorEditarCuenta;
 import mx.negocio360.contabilidad.aplicacion.ManejadorRegistrarPolizaManual;
+import mx.negocio360.contabilidad.aplicacion.ManejadorResolverPendiente;
 import mx.negocio360.contabilidad.aplicacion.ManejadorReversarPoliza;
 import mx.negocio360.contabilidad.aplicacion.ResultadoComando;
 import mx.negocio360.contabilidad.aplicacion.ServicioPreparacion;
@@ -35,12 +36,13 @@ public final class Escenario {
     public final RepositorioPolizasEnMemoria polizas = new RepositorioPolizasEnMemoria();
     public final RepositorioSaldosEnMemoria saldos = new RepositorioSaldosEnMemoria();
     public final RepositorioVentasContablesEnMemoria ventas = new RepositorioVentasContablesEnMemoria();
+    public final RepositorioPendientesEnMemoria pendientes = new RepositorioPendientesEnMemoria();
     public final RepositorioEventosProcesadosEnMemoria eventosProcesados =
             new RepositorioEventosProcesadosEnMemoria();
 
     public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, saldos, reloj);
-    public final Contabilizador contabilizador = new Contabilizador(eventosProcesados, reglas, ventas, libro,
-            reloj);
+    public final Contabilizador contabilizador = new Contabilizador(eventosProcesados, pendientes, reglas, ventas,
+            libro, reloj);
     public final ContabilidadApi api;
 
     public Escenario() {
@@ -50,9 +52,11 @@ public final class Escenario {
                         new ManejadorEditarCuenta(configuracion, cuentas, polizas),
                         new ManejadorDesactivarCuenta(configuracion, cuentas, reglas, reloj),
                         new ManejadorRegistrarPolizaManual(configuracion, libro),
-                        new ManejadorReversarPoliza(configuracion, polizas, libro, reloj)),
+                        new ManejadorReversarPoliza(configuracion, polizas, libro, reloj),
+                        new ManejadorResolverPendiente(configuracion, pendientes, libro, reloj)),
                 reloj);
-        api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro, contabilizador);
+        api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro, contabilizador,
+                pendientes);
     }
 
     /** Prepara y confirma un comando, como lo haria el panel en dos pasos. */

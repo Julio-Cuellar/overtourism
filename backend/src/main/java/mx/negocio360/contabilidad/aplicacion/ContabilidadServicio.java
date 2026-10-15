@@ -10,10 +10,13 @@ import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.compartido.eventos.SobreEvento;
 import mx.negocio360.contabilidad.ContabilidadApi;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioCuentas;
+import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPendientes;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPolizas;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioReglas;
 import mx.negocio360.contabilidad.dominio.Balanza;
 import mx.negocio360.contabilidad.dominio.Cuenta;
+import mx.negocio360.contabilidad.dominio.EstadoPendiente;
+import mx.negocio360.contabilidad.dominio.Pendiente;
 import mx.negocio360.contabilidad.dominio.Poliza;
 import mx.negocio360.contabilidad.dominio.ReglaContable;
 import mx.negocio360.contabilidad.dominio.ResultadoEvento;
@@ -27,6 +30,7 @@ public final class ContabilidadServicio implements ContabilidadApi {
     private final RepositorioPolizas polizas;
     private final LibroDiario libro;
     private final Contabilizador contabilizador;
+    private final RepositorioPendientes pendientes;
 
     /**
      * Crea el servicio.
@@ -37,16 +41,18 @@ public final class ContabilidadServicio implements ContabilidadApi {
      * @param polizas     tablas de polizas y movimientos
      * @param libro          libro diario, que tambien lleva los saldos
      * @param contabilizador escrituras del sistema
+     * @param pendientes     tabla de pendientes
      */
     public ContabilidadServicio(ServicioPreparacion preparacion, RepositorioCuentas cuentas,
                                 RepositorioReglas reglas, RepositorioPolizas polizas, LibroDiario libro,
-                                Contabilizador contabilizador) {
+                                Contabilizador contabilizador, RepositorioPendientes pendientes) {
         this.preparacion = Objects.requireNonNull(preparacion, "preparacion");
         this.cuentas = Objects.requireNonNull(cuentas, "cuentas");
         this.reglas = Objects.requireNonNull(reglas, "reglas");
         this.polizas = Objects.requireNonNull(polizas, "polizas");
         this.libro = Objects.requireNonNull(libro, "libro");
         this.contabilizador = Objects.requireNonNull(contabilizador, "contabilizador");
+        this.pendientes = Objects.requireNonNull(pendientes, "pendientes");
     }
 
     @Override
@@ -83,5 +89,10 @@ public final class ContabilidadServicio implements ContabilidadApi {
     @Override
     public ResultadoEvento contabilizarVenta(SobreEvento evento) {
         return contabilizador.contabilizarVenta(evento);
+    }
+
+    @Override
+    public List<Pendiente> pendientes(ContextoNegocio contexto, EstadoPendiente estado) {
+        return pendientes.delNegocio(contexto.negocioId(), estado);
     }
 }
