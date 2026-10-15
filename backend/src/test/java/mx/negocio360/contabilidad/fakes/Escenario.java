@@ -7,6 +7,7 @@ import mx.negocio360.contabilidad.ContabilidadApi;
 import mx.negocio360.contabilidad.aplicacion.Comando;
 import mx.negocio360.contabilidad.aplicacion.ContabilidadServicio;
 import mx.negocio360.contabilidad.aplicacion.ManejadorActivarContabilidad;
+import mx.negocio360.contabilidad.aplicacion.ManejadorCrearCuenta;
 import mx.negocio360.contabilidad.aplicacion.ResultadoComando;
 import mx.negocio360.contabilidad.aplicacion.ServicioPreparacion;
 
@@ -28,7 +29,8 @@ public final class Escenario {
 
     public Escenario() {
         var preparacion = new ServicioPreparacion(preparaciones,
-                List.of(new ManejadorActivarContabilidad(configuracion, cuentas, reglas, reloj)),
+                List.of(new ManejadorActivarContabilidad(configuracion, cuentas, reglas, reloj),
+                        new ManejadorCrearCuenta(configuracion, cuentas, reloj)),
                 reloj);
         api = new ContabilidadServicio(preparacion, cuentas, reglas);
     }
