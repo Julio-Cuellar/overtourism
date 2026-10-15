@@ -967,3 +967,11 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | J-01 a J-04 | pendiente | |
 | U-01, U-03, U-04 | pendiente | |
 | F-01 a F-04 | hecha: F-02, F-01 | ver `docs/pruebas/contabilidad.tdd.md` |
+
+**Notas del avance (2026-10-15):**
+- **Pregunta abierta para el equipo:** un evento de un negocio que no activó Contabilidad hoy queda PENDIENTE con REGLA_FALTANTE (lo decidió el usuario y lo fija `PendientesTest.negocioSinActivar_quedaPendiente`). Falta que el equipo confirme si debe quedar pendiente o ignorarse.
+- **Fuera del alcance, pendiente:** la capa que conecta los listeners con Postgres (repositorios JDBC y fijar `app.negocio_id` en cada transacción) no se programa, igual que en Clientes. Por eso la parte de base de E-03 solo existe como migración y prueba sin ejecutar.
+- **E-03 no tuvo rojo:** el negocio ya salía del sobre del evento desde F-02; su prueba en memoria pasó al primer intento.
+- **E-07** se verificó por mutación (una clase temporal con un campo `ClientesApi` hizo fallar la prueba de ArchUnit).
+- **E-05** se hará justo después de U-01, porque su prueba compara venta y cupón en distinto orden.
+- La máquina tiene 4 GB; las pruebas se corren clase por clase con `-Xmx256m`.

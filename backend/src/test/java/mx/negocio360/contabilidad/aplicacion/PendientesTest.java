@@ -86,6 +86,18 @@ class PendientesTest {
     }
 
     @Test
+    @DisplayName("E-04: un evento de un negocio sin Contabilidad activa queda pendiente con REGLA_FALTANTE")
+    void negocioSinActivar_quedaPendiente() {
+        var sinActivar = java.util.UUID.randomUUID();
+
+        var resultado = e.api.contabilizarVenta(Eventos.venta(sinActivar, "10.00", "EFECTIVO", Fixtures.AHORA));
+
+        assertThat(resultado.resultado()).isEqualTo(Resultado.PENDIENTE);
+        assertThat(resultado.motivo()).isEqualTo("REGLA_FALTANTE");
+        assertThat(e.pendientes.delNegocio(sinActivar, EstadoPendiente.ABIERTO)).hasSize(1);
+    }
+
+    @Test
     @DisplayName("E-04: el pendiente guarda solo los campos del contrato que usa Contabilidad")
     void pendiente_guardaSoloCamposDelContrato() {
         var datos = new LinkedHashMap<String, Object>();
