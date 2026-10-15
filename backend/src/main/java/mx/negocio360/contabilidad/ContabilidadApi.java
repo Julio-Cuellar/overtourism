@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
+import mx.negocio360.compartido.eventos.SobreEvento;
 import mx.negocio360.contabilidad.aplicacion.Comando;
 import mx.negocio360.contabilidad.aplicacion.PreparacionCreada;
 import mx.negocio360.contabilidad.aplicacion.ResultadoComando;
@@ -12,6 +13,7 @@ import mx.negocio360.contabilidad.dominio.Balanza;
 import mx.negocio360.contabilidad.dominio.Cuenta;
 import mx.negocio360.contabilidad.dominio.Poliza;
 import mx.negocio360.contabilidad.dominio.ReglaContable;
+import mx.negocio360.contabilidad.dominio.ResultadoEvento;
 
 /**
  * Funciones publicas del modulo (seccion 7 de {@code docs/diseno/contabilidad.md}). Los resolvedores GraphQL, los
@@ -74,4 +76,12 @@ public interface ContabilidadApi {
      * @return la balanza con todas las cuentas afectables y los totales del mes
      */
     Balanza balanza(ContextoNegocio contexto, YearMonth mes);
+
+    /**
+     * Escritura del sistema para {@code venta.registrada} (J2). La llama el listener; el negocio sale del sobre.
+     *
+     * @param evento sobre del evento
+     * @return lo que se hizo con el evento
+     */
+    ResultadoEvento contabilizarVenta(SobreEvento evento);
 }

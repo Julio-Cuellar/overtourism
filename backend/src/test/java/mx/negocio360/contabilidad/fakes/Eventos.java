@@ -1,0 +1,45 @@
+package mx.negocio360.contabilidad.fakes;
+
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+import mx.negocio360.compartido.eventos.SobreEvento;
+import mx.negocio360.compartido.identidad.UuidV7;
+
+/**
+ * Eventos de ejemplo de los otros modulos, con la forma de los contratos de {@code contabilidad-diagramas.md} §4.
+ * Los montos son simulados.
+ */
+public final class Eventos {
+
+    private Eventos() {
+    }
+
+    /** {@code venta.registrada} v1 con medio de pago y, si no es nula, sesion de caja. */
+    public static SobreEvento venta(UUID negocioId, UUID ventaId, String total, String medioPago, Instant ocurridoEn,
+                                    UUID cajaSesionId) {
+        var datos = new LinkedHashMap<String, Object>();
+        datos.put("venta_id", ventaId.toString());
+        datos.put("total", total);
+        if (medioPago != null) {
+            datos.put("medio_pago", medioPago);
+        }
+        if (cajaSesionId != null) {
+            datos.put("caja_sesion_id", cajaSesionId.toString());
+        }
+        return sobre("venta.registrada", 1, negocioId, "ventas", ocurridoEn, ventaId, datos);
+    }
+
+    /** {@code venta.registrada} v1 en efectivo, sin sesion de caja. */
+    public static SobreEvento venta(UUID negocioId, String total, String medioPago, Instant ocurridoEn) {
+        return venta(negocioId, UUID.randomUUID(), total, medioPago, ocurridoEn, null);
+    }
+
+    /** Sobre con id UUIDv7 nuevo. */
+    public static SobreEvento sobre(String tipo, int version, UUID negocioId, String origen, Instant ocurridoEn,
+                                    UUID correlacionId, Map<String, Object> datos) {
+        return new SobreEvento(UuidV7.generar(ocurridoEn), tipo, version, negocioId, origen, ocurridoEn,
+                correlacionId, null, datos);
+    }
+}

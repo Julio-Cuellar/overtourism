@@ -6,6 +6,7 @@ import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.contabilidad.ContabilidadApi;
 import mx.negocio360.contabilidad.aplicacion.Comando;
 import mx.negocio360.contabilidad.aplicacion.ContabilidadServicio;
+import mx.negocio360.contabilidad.aplicacion.Contabilizador;
 import mx.negocio360.contabilidad.aplicacion.LibroDiario;
 import mx.negocio360.contabilidad.aplicacion.ManejadorActivarContabilidad;
 import mx.negocio360.contabilidad.aplicacion.ManejadorCrearCuenta;
@@ -33,8 +34,10 @@ public final class Escenario {
     public final RepositorioPeriodosEnMemoria periodos = new RepositorioPeriodosEnMemoria();
     public final RepositorioPolizasEnMemoria polizas = new RepositorioPolizasEnMemoria();
     public final RepositorioSaldosEnMemoria saldos = new RepositorioSaldosEnMemoria();
+    public final RepositorioVentasContablesEnMemoria ventas = new RepositorioVentasContablesEnMemoria();
 
     public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, saldos, reloj);
+    public final Contabilizador contabilizador = new Contabilizador(reglas, ventas, libro, reloj);
     public final ContabilidadApi api;
 
     public Escenario() {
@@ -46,7 +49,7 @@ public final class Escenario {
                         new ManejadorRegistrarPolizaManual(configuracion, libro),
                         new ManejadorReversarPoliza(configuracion, polizas, libro, reloj)),
                 reloj);
-        api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro);
+        api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro, contabilizador);
     }
 
     /** Prepara y confirma un comando, como lo haria el panel en dos pasos. */
