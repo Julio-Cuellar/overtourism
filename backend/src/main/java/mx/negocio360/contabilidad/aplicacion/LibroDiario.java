@@ -8,7 +8,9 @@ import mx.negocio360.compartido.identidad.UuidV7;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioCuentas;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPeriodos;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPolizas;
+import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioSaldos;
 import mx.negocio360.contabilidad.dominio.Asiento;
+import mx.negocio360.contabilidad.dominio.Balanza;
 import mx.negocio360.contabilidad.dominio.CodigoError;
 import mx.negocio360.contabilidad.dominio.ContabilidadException;
 import mx.negocio360.contabilidad.dominio.OrigenPoliza;
@@ -17,7 +19,8 @@ import mx.negocio360.contabilidad.dominio.Poliza;
 
 /**
  * Unico punto por donde se registran polizas, sean manuales, reversas o automaticas. Revisa las cuentas (A-04) y
- * escribe la poliza en su periodo.
+ * escribe la poliza en su periodo con su folio (A-05) y actualiza los saldos (A-08). En Postgres todo ocurre en una
+ * sola transaccion; con los dobles en memoria, la actualizacion de saldos se serializa.
  */
 public final class LibroDiario {
 
@@ -49,6 +52,7 @@ public final class LibroDiario {
     private final RepositorioPeriodos periodos;
     private final RepositorioPolizas polizas;
     private final Clock reloj;
+    private final Mayor mayor;
 
     /**
      * Crea el libro.
@@ -56,14 +60,16 @@ public final class LibroDiario {
      * @param cuentas  tabla de cuentas
      * @param periodos tabla de periodos
      * @param polizas  tablas de polizas y movimientos
+     * @param saldos   tabla de saldos por cuenta y periodo
      * @param reloj    reloj de la plataforma
      */
     public LibroDiario(RepositorioCuentas cuentas, RepositorioPeriodos periodos, RepositorioPolizas polizas,
-                       Clock reloj) {
+                       RepositorioSaldos saldos, Clock reloj) {
         this.cuentas = Objects.requireNonNull(cuentas, "cuentas");
         this.periodos = Objects.requireNonNull(periodos, "periodos");
         this.polizas = Objects.requireNonNull(polizas, "polizas");
         this.reloj = Objects.requireNonNull(reloj, "reloj");
+        this.mayor = new Mayor(cuentas, periodos, saldos);
     }
 
     /**
@@ -102,12 +108,27 @@ public final class LibroDiario {
         var periodo = periodoDe(negocioId, YearMonth.from(asiento.fecha()));
         var folio = polizas.siguienteFolio(negocioId, periodo.id(), asiento.tipo());
         var poliza = new Poliza(UuidV7.generar(ahora), negocioId, periodo.id(), asiento.tipo(), folio,
-                asiento.fecha(),
-                asiento.concepto(), registro.origen(), registro.eventoId(), registro.referenciaTipo(),
+                asiento.fecha(), asiento.concepto(), registro.origen(), registro.eventoId(), registro.referenciaTipo(),
                 registro.referenciaId(), false, registro.reviertePolizaId(), asiento.total(), asiento.renglones(),
                 registro.creadoPor(), ahora);
         polizas.insertar(poliza);
+        synchronized (mayor) {
+            mayor.aplicar(poliza, periodo);
+        }
         return poliza;
+    }
+
+    /**
+     * Balanza de comprobacion de un mes.
+     *
+     * @param negocioId negocio
+     * @param mes       anio y mes
+     * @return la balanza; si el mes no tiene periodo, cada cuenta muestra el saldo que arrastra
+     */
+    public Balanza balanza(UUID negocioId, YearMonth mes) {
+        synchronized (mayor) {
+            return mayor.balanza(negocioId, mes);
+        }
     }
 
     private synchronized Periodo periodoDe(UUID negocioId, YearMonth mes) {

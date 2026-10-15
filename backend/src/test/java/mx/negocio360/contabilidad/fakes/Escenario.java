@@ -29,8 +29,9 @@ public final class Escenario {
     public final RepositorioConfiguracionEnMemoria configuracion = new RepositorioConfiguracionEnMemoria();
     public final RepositorioPeriodosEnMemoria periodos = new RepositorioPeriodosEnMemoria();
     public final RepositorioPolizasEnMemoria polizas = new RepositorioPolizasEnMemoria();
+    public final RepositorioSaldosEnMemoria saldos = new RepositorioSaldosEnMemoria();
 
-    public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, reloj);
+    public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, saldos, reloj);
     public final ContabilidadApi api;
 
     public Escenario() {
@@ -39,7 +40,7 @@ public final class Escenario {
                         new ManejadorCrearCuenta(configuracion, cuentas, reloj),
                         new ManejadorRegistrarPolizaManual(configuracion, libro)),
                 reloj);
-        api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas);
+        api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro);
     }
 
     /** Prepara y confirma un comando, como lo haria el panel en dos pasos. */

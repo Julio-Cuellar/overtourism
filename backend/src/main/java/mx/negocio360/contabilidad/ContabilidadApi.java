@@ -1,5 +1,6 @@
 package mx.negocio360.contabilidad;
 
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -7,6 +8,7 @@ import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.contabilidad.aplicacion.Comando;
 import mx.negocio360.contabilidad.aplicacion.PreparacionCreada;
 import mx.negocio360.contabilidad.aplicacion.ResultadoComando;
+import mx.negocio360.contabilidad.dominio.Balanza;
 import mx.negocio360.contabilidad.dominio.Cuenta;
 import mx.negocio360.contabilidad.dominio.Poliza;
 import mx.negocio360.contabilidad.dominio.ReglaContable;
@@ -63,4 +65,13 @@ public interface ContabilidadApi {
      * @return la poliza, o vacio si no existe o es de otro negocio (responden igual)
      */
     Optional<Poliza> poliza(ContextoNegocio contexto, UUID polizaId);
+
+    /**
+     * Balanza de comprobacion de un mes (G5). Lee los saldos, no los movimientos.
+     *
+     * @param contexto negocio
+     * @param mes      anio y mes
+     * @return la balanza con todas las cuentas afectables y los totales del mes
+     */
+    Balanza balanza(ContextoNegocio contexto, YearMonth mes);
 }
