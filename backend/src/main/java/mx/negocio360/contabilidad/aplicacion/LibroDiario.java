@@ -94,16 +94,32 @@ public final class LibroDiario {
     }
 
     /**
+     * Revisa todo lo que se puede revisar antes de registrar: las cuentas (A-04) y que el mes del asiento no este
+     * cerrado (T-01).
+     *
+     * @param negocioId negocio
+     * @param asiento   asiento a revisar
+     * @throws ContabilidadException los codigos de {@link #validarCuentas} o {@code PERIODO_CERRADO}
+     */
+    public void validar(UUID negocioId, Asiento asiento) {
+        validarCuentas(negocioId, asiento);
+        var periodo = periodos.delMes(negocioId, YearMonth.from(asiento.fecha()));
+        if (periodo.isPresent() && !periodo.get().abierto()) {
+            throw new ContabilidadException(CodigoError.PERIODO_CERRADO, periodo.get().id());
+        }
+    }
+
+    /**
      * Registra el asiento como poliza.
      *
      * @param negocioId negocio
      * @param asiento   asiento cuadrado
      * @param registro  origen y referencias
      * @return la poliza registrada
-     * @throws ContabilidadException los codigos de {@link #validarCuentas}
+     * @throws ContabilidadException los codigos de {@link #validar}
      */
     public Poliza registrar(UUID negocioId, Asiento asiento, Registro registro) {
-        validarCuentas(negocioId, asiento);
+        validar(negocioId, asiento);
         var ahora = reloj.instant();
         var periodo = periodoDe(negocioId, YearMonth.from(asiento.fecha()));
         var folio = polizas.siguienteFolio(negocioId, periodo.id(), asiento.tipo());

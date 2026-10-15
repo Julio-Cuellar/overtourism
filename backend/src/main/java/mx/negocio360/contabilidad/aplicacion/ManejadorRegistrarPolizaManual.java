@@ -39,13 +39,13 @@ public final class ManejadorRegistrarPolizaManual implements ManejadorComando<Re
      * Valida la poliza sin registrarla.
      *
      * @throws mx.negocio360.contabilidad.dominio.ContabilidadException {@code CONTABILIDAD_NO_ACTIVA}, los codigos de
-     *         partida doble (A-01, A-02) y los de cuentas (A-04)
+     *         partida doble (A-01, A-02), los de cuentas (A-04) y {@code PERIODO_CERRADO} (T-01)
      * @throws IllegalArgumentException si falta el tipo, la fecha o el concepto
      */
     @Override
     public String preparar(ContextoNegocio contexto, RegistrarPolizaManualComando comando) {
         var asiento = asiento(contexto, comando);
-        libro.validarCuentas(contexto.negocioId(), asiento);
+        libro.validar(contexto.negocioId(), asiento);
         return "Se registrara una poliza de " + asiento.tipo().name().toLowerCase() + " por " + asiento.total()
                 + ".";
     }
