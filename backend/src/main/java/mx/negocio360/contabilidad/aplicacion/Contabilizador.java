@@ -16,15 +16,18 @@ import mx.negocio360.compartido.eventos.SobreEvento;
 import mx.negocio360.compartido.identidad.UuidV7;
 import mx.negocio360.compartido.tiempo.ZonaMexico;
 import mx.negocio360.contabilidad.aplicacion.puertos.PublicadorEventos;
+import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioCanjesContables;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioCortesContables;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioEventosProcesados;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPendientes;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioReglas;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioVentasContables;
 import mx.negocio360.contabilidad.contratos.CajaCerradaV1;
+import mx.negocio360.contabilidad.contratos.CuponCanjeadoV1;
 import mx.negocio360.contabilidad.contratos.DatosInvalidosException;
 import mx.negocio360.contabilidad.contratos.VentaRegistradaV1;
 import mx.negocio360.contabilidad.dominio.Asiento;
+import mx.negocio360.contabilidad.dominio.CanjeContable;
 import mx.negocio360.contabilidad.dominio.Conciliacion;
 import mx.negocio360.contabilidad.dominio.ContabilidadException;
 import mx.negocio360.contabilidad.dominio.CorteContable;
@@ -68,6 +71,7 @@ public final class Contabilizador {
     private final RepositorioReglas reglas;
     private final RepositorioVentasContables ventas;
     private final RepositorioCortesContables cortes;
+    private final RepositorioCanjesContables canjes;
     private final PublicadorEventos eventos;
     private final LibroDiario libro;
     private final Clock reloj;
@@ -80,14 +84,16 @@ public final class Contabilizador {
      * @param reglas     tabla de reglas
      * @param ventas     tabla de huellas de venta
      * @param cortes     tabla de cortes de caja
+     * @param canjes     tabla de huellas de canje
      * @param eventos    publicacion de eventos
      * @param libro      libro diario
      * @param reloj      reloj de la plataforma
      */
     public Contabilizador(RepositorioEventosProcesados procesados, RepositorioPendientes pendientes,
                           RepositorioReglas reglas, RepositorioVentasContables ventas,
-                          RepositorioCortesContables cortes, PublicadorEventos eventos, LibroDiario libro,
-                          Clock reloj) {
+                          RepositorioCortesContables cortes, RepositorioCanjesContables canjes,
+                          PublicadorEventos eventos, LibroDiario libro, Clock reloj) {
+        this.canjes = Objects.requireNonNull(canjes, "canjes");
         this.eventos = Objects.requireNonNull(eventos, "eventos");
         this.cortes = Objects.requireNonNull(cortes, "cortes");
         this.procesados = Objects.requireNonNull(procesados, "procesados");
@@ -109,6 +115,44 @@ public final class Contabilizador {
      */
     public ResultadoEvento contabilizarVenta(SobreEvento evento) {
         return procesar(evento, VentaRegistradaV1.VERSION, VentaRegistradaV1.CAMPOS, this::aplicarVenta);
+    }
+
+    /**
+     * {@code contabilizarCanje}: reclasifica el descuento del cupon a Descuentos sobre ventas contra Ventas, por la
+     * base sin IVA, con la regla CUPON del financiador (U-01). Las ventas quedan en bruto y el neto no cambia.
+     *
+     * @param evento sobre de {@code cupon.canjeado} v1
+     * @return APLICADO; OMITIDO con {@value #YA_PROCESADO} o {@value #DUPLICADO_NATURAL}; o PENDIENTE como en
+     *         {@link #contabilizarVenta}
+     */
+    public ResultadoEvento contabilizarCanje(SobreEvento evento) {
+        return procesar(evento, CuponCanjeadoV1.VERSION, CuponCanjeadoV1.CAMPOS, this::aplicarCanje);
+    }
+
+    private ResultadoEvento aplicarCanje(SobreEvento evento) {
+        var negocioId = evento.negocioId();
+        var canje = CuponCanjeadoV1.leer(evento.datos());
+        if (canjes.porCupon(negocioId, canje.cuponId()).isPresent()) {
+            return ResultadoEvento.omitido(DUPLICADO_NATURAL);
+        }
+        if (canje.montoDescuento() == null) {
+            throw new DatosInvalidosException("descuento.monto");
+        }
+        var regla = reglaVigente(negocioId, Disparador.CUPON, canje.financiador());
+        if (regla.isEmpty()) {
+            return ResultadoEvento.pendiente(REGLA_FALTANTE);
+        }
+        var monto = Montos.exacto(canje.montoDescuento());
+        var base = DesgloseIva.de(monto, regla.get().tasaIva()).ventas();
+        var asiento = new Asiento(TipoPoliza.DIARIO, fechaContable(evento.ocurridoEn()),
+                "Cupon " + corto(canje.cuponId()), List.of(
+                        new Renglon(regla.get().cuentaCargoId(), base, null, null),
+                        new Renglon(regla.get().cuentaAbonoId(), null, base, null)));
+        var poliza = libro.registrar(negocioId, asiento, new LibroDiario.Registro(OrigenPoliza.AUTOMATICA,
+                evento.id(), "CANJE", canje.cuponId(), null, SISTEMA));
+        canjes.guardar(new CanjeContable(UuidV7.generar(reloj.instant()), negocioId, canje.cuponId(),
+                canje.ventaId(), monto, base, canje.financiador(), true, null, poliza.id()));
+        return ResultadoEvento.aplicado(poliza.id());
     }
 
     /**

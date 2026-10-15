@@ -113,6 +113,11 @@ public final class ContabilidadServicio implements ContabilidadApi {
     }
 
     @Override
+    public ResultadoEvento contabilizarCanje(SobreEvento evento) {
+        return contabilizador.contabilizarCanje(evento);
+    }
+
+    @Override
     public List<CorteContable> cortes(ContextoNegocio contexto) {
         return cortes.delNegocio(contexto.negocioId());
     }

@@ -98,6 +98,14 @@ public interface ContabilidadApi {
     ResultadoEvento contabilizarCorte(SobreEvento evento);
 
     /**
+     * Escritura del sistema para {@code cupon.canjeado} (J2). La llama el listener; el negocio sale del sobre.
+     *
+     * @param evento sobre del evento
+     * @return lo que se hizo con el evento
+     */
+    ResultadoEvento contabilizarCanje(SobreEvento evento);
+
+    /**
      * Cortes de caja del negocio con su conciliacion (G8).
      *
      * @param contexto negocio

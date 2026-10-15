@@ -41,13 +41,14 @@ public final class Escenario {
     public final RepositorioVentasContablesEnMemoria ventas = new RepositorioVentasContablesEnMemoria();
     public final RepositorioPendientesEnMemoria pendientes = new RepositorioPendientesEnMemoria();
     public final RepositorioCortesContablesEnMemoria cortes = new RepositorioCortesContablesEnMemoria();
+    public final RepositorioCanjesContablesEnMemoria canjes = new RepositorioCanjesContablesEnMemoria();
     public final RepositorioEventosProcesadosEnMemoria eventosProcesados =
             new RepositorioEventosProcesadosEnMemoria();
 
     public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, saldos, eventos,
             reloj);
     public final Contabilizador contabilizador = new Contabilizador(eventosProcesados, pendientes, reglas, ventas,
-            cortes, eventos, libro, reloj);
+            cortes, canjes, eventos, libro, reloj);
     public final ContabilidadApi api;
 
     public Escenario() {

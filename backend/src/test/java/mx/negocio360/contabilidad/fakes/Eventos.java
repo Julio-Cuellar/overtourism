@@ -37,6 +37,29 @@ public final class Eventos {
     }
 
     /**
+     * {@code cupon.canjeado} v1 con la forma del mockup de la app (E-07). {@code ventaId} y {@code financiador} pueden ser
+     * nulos; {@code monto} nulo omite el descuento.
+     */
+    public static SobreEvento canje(UUID negocioId, UUID cuponId, UUID ventaId, String monto, String financiador,
+                                    Instant canjeadoEn) {
+        var datos = new LinkedHashMap<String, Object>();
+        datos.put("cupon_id", cuponId.toString());
+        datos.put("visitante_id", UUID.randomUUID().toString());
+        if (ventaId != null) {
+            datos.put("venta_id", ventaId.toString());
+        }
+        if (monto != null) {
+            datos.put("descuento", Map.of("monto", monto, "moneda", "MXN"));
+        }
+        datos.put("canjeado_en", canjeadoEn.toString());
+        if (financiador != null) {
+            datos.put("financiador", financiador);
+        }
+        return sobre("cupon.canjeado", 1, negocioId, "pasaporte", canjeadoEn, ventaId == null ? cuponId : ventaId,
+                datos);
+    }
+
+    /**
      * {@code caja.cerrada} v1 con el contrato propuesto (Caja no tiene diseno). {@code ventasEfectivo} es opcional.
      */
     public static SobreEvento corte(UUID negocioId, UUID corteId, UUID cajaSesionId, String esperado, String contado,
