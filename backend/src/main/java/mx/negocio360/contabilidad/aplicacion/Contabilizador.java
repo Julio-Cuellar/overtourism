@@ -37,6 +37,8 @@ public final class Contabilizador {
 
     /** Motivo de un evento que ya se habia procesado (E-01). */
     public static final String YA_PROCESADO = "YA_PROCESADO";
+    /** Motivo de un evento distinto sobre una venta, cupon o corte ya contabilizado (E-02). */
+    public static final String DUPLICADO_NATURAL = "DUPLICADO_NATURAL";
 
     private final RepositorioEventosProcesados procesados;
     private final RepositorioReglas reglas;
@@ -67,7 +69,8 @@ public final class Contabilizador {
      * (F-02), con el desglose de A-07.
      *
      * @param evento sobre de {@code venta.registrada} v1
-     * @return el resultado del evento; OMITIDO con {@value #YA_PROCESADO} si ya se habia procesado (E-01)
+     * @return el resultado del evento; OMITIDO con {@value #YA_PROCESADO} si ya se habia procesado (E-01) o con
+     *         {@value #DUPLICADO_NATURAL} si la venta ya estaba contabilizada (E-02)
      */
     public ResultadoEvento contabilizarVenta(SobreEvento evento) {
         return procesar(evento, this::aplicarVenta);
@@ -93,6 +96,9 @@ public final class Contabilizador {
     private ResultadoEvento aplicarVenta(SobreEvento evento) {
         var negocioId = evento.negocioId();
         var venta = VentaRegistradaV1.leer(evento.datos());
+        if (ventas.porVenta(negocioId, venta.ventaId()).isPresent()) {
+            return ResultadoEvento.omitido(DUPLICADO_NATURAL);
+        }
         var regla = reglaVigente(negocioId, Disparador.VENTA, venta.medioPago()).orElseThrow();
         var desglose = DesgloseIva.de(venta.total(), regla.tasaIva());
         var renglones = new ArrayList<Renglon>();
