@@ -57,7 +57,7 @@ public final class Escenario {
                         new ManejadorReversarPoliza(configuracion, polizas, libro, reloj),
                         new ManejadorResolverPendiente(configuracion, pendientes, libro, reloj),
                         new ManejadorConfigurarRegla(configuracion, reglas, libro, reloj),
-                        new ManejadorCerrarPeriodo(configuracion, periodos, libro, reloj)),
+                        new ManejadorCerrarPeriodo(configuracion, periodos, pendientes, libro, reloj)),
                 reloj);
         api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro, contabilizador,
                 pendientes, configuracion, periodos);
