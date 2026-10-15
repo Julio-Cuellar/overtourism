@@ -961,7 +961,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | Regla | Estado | Commit |
 |---|---|---|
 | A-01 a A-08 | hecha: A-01, A-02, A-07, A-04, A-05, A-08, A-06 | ver `docs/pruebas/contabilidad.tdd.md` |
-| C-01 a C-04 | hecha: C-01, C-02 | ver `docs/pruebas/contabilidad.tdd.md` |
+| C-01 a C-04 | hecha: C-01, C-02, C-03 | ver `docs/pruebas/contabilidad.tdd.md` |
 | T-01 a T-05 | hecha: T-01 | ver `docs/pruebas/contabilidad.tdd.md` |
 | E-01 a E-08 | pendiente | |
 | J-01 a J-04 | pendiente | |

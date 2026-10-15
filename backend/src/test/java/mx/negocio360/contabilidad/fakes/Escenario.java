@@ -9,6 +9,8 @@ import mx.negocio360.contabilidad.aplicacion.ContabilidadServicio;
 import mx.negocio360.contabilidad.aplicacion.LibroDiario;
 import mx.negocio360.contabilidad.aplicacion.ManejadorActivarContabilidad;
 import mx.negocio360.contabilidad.aplicacion.ManejadorCrearCuenta;
+import mx.negocio360.contabilidad.aplicacion.ManejadorDesactivarCuenta;
+import mx.negocio360.contabilidad.aplicacion.ManejadorEditarCuenta;
 import mx.negocio360.contabilidad.aplicacion.ManejadorRegistrarPolizaManual;
 import mx.negocio360.contabilidad.aplicacion.ManejadorReversarPoliza;
 import mx.negocio360.contabilidad.aplicacion.ResultadoComando;
@@ -39,6 +41,8 @@ public final class Escenario {
         var preparacion = new ServicioPreparacion(preparaciones,
                 List.of(new ManejadorActivarContabilidad(configuracion, cuentas, reglas, reloj),
                         new ManejadorCrearCuenta(configuracion, cuentas, reloj),
+                        new ManejadorEditarCuenta(configuracion, cuentas, polizas),
+                        new ManejadorDesactivarCuenta(configuracion, cuentas),
                         new ManejadorRegistrarPolizaManual(configuracion, libro),
                         new ManejadorReversarPoliza(configuracion, polizas, libro, reloj)),
                 reloj);

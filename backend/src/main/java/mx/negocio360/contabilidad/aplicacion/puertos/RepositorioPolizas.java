@@ -49,6 +49,15 @@ public interface RepositorioPolizas {
     Optional<Poliza> reversaDe(UUID negocioId, UUID polizaId);
 
     /**
+     * Dice si alguna poliza del negocio mueve la cuenta (C-03).
+     *
+     * @param negocioId negocio
+     * @param cuentaId  cuenta
+     * @return verdadero si tiene al menos un movimiento
+     */
+    boolean cuentaTieneMovimientos(UUID negocioId, UUID cuentaId);
+
+    /**
      * Polizas del negocio en un periodo, en orden de registro.
      *
      * @param negocioId negocio

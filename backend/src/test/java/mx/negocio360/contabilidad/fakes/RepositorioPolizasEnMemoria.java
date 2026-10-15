@@ -41,6 +41,12 @@ public final class RepositorioPolizasEnMemoria implements RepositorioPolizas {
     }
 
     @Override
+    public synchronized boolean cuentaTieneMovimientos(UUID negocioId, UUID cuentaId) {
+        return filas.stream().filter(p -> p.negocioId().equals(negocioId))
+                .anyMatch(p -> p.renglones().stream().anyMatch(r -> r.cuentaId().equals(cuentaId)));
+    }
+
+    @Override
     public synchronized List<Poliza> delPeriodo(UUID negocioId, UUID periodoId) {
         return filas.stream().filter(p -> p.negocioId().equals(negocioId) && p.periodoId().equals(periodoId))
                 .toList();
