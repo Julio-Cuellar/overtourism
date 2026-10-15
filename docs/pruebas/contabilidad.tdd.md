@@ -16,3 +16,4 @@
 |---|---|---|---|---|
 | A-01 | Póliza con menos de dos renglones o descuadrada no se arma; el total es la suma de cargos | `contabilidad/dominio/AsientoTest` (5) | No compila: faltan `Asiento`, `Renglon`, `CodigoError`, `ContabilidadException` | 5/5 pasan; `EstructuraModulosTest` 2/2 |
 | A-02 | Renglón con cargo y abono, sin ninguno, negativo o sin cuenta falla con MOVIMIENTO_INVALIDO; más de 2 decimales o fuera de numeric(14,2) con MONTO_INVALIDO. El CHECK en la base queda para la prueba con Postgres | `dominio/RenglonTest` (12) | 11/12 fallan (sin validación; montoMaximo pasaba) | 12/12 y AsientoTest 5/5 |
+| A-07 | Desglose de los ejemplos del diseño (100.00 → 86.21 + 13.79; 232.00 → 200.00 + 32.00); ventas + IVA = total para los 30,000 montos de 0.01 a 300.00; exento y tasa cero; TASA_INVALIDA fuera de rango | `dominio/DesgloseIvaTest` (10) | No compila: falta DesgloseIva | 10/10 |
