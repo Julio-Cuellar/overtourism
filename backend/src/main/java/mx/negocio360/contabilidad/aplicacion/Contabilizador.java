@@ -107,7 +107,8 @@ public final class Contabilizador {
     }
 
     /**
-     * {@code contabilizarCorte}: registra el corte de caja con su diferencia de conteo (J-01).
+     * {@code contabilizarCorte}: registra el corte de caja con su diferencia de conteo (J-01) y, si hay faltante o
+     * sobrante, una poliza de diario con la regla CORTE_FALTANTE o CORTE_SOBRANTE (J-02).
      *
      * @param evento sobre de {@code caja.cerrada} v1
      * @return APLICADO; OMITIDO con {@value #YA_PROCESADO} o {@value #DUPLICADO_NATURAL}; o PENDIENTE como en
@@ -127,10 +128,26 @@ public final class Contabilizador {
         var contado = Montos.exacto(corte.efectivoContado());
         var diferencia = contado.subtract(esperado);
         var conciliacion = diferencia.signum() == 0 ? Conciliacion.CUADRA : Conciliacion.DIFERENCIA_CAJA;
+        UUID polizaId = null;
+        if (diferencia.signum() != 0) {
+            var disparador = diferencia.signum() < 0 ? Disparador.CORTE_FALTANTE : Disparador.CORTE_SOBRANTE;
+            var regla = reglaVigente(negocioId, disparador, null);
+            if (regla.isEmpty()) {
+                return ResultadoEvento.pendiente(REGLA_FALTANTE);
+            }
+            var monto = diferencia.abs();
+            var nombre = diferencia.signum() < 0 ? "Faltante" : "Sobrante";
+            var asiento = new Asiento(TipoPoliza.DIARIO, fechaContable(corte.cerradaEn()),
+                    nombre + " de caja, corte " + corto(corte.corteId()), List.of(
+                            new Renglon(regla.get().cuentaCargoId(), monto, null, null),
+                            new Renglon(regla.get().cuentaAbonoId(), null, monto, null)));
+            polizaId = libro.registrar(negocioId, asiento, new LibroDiario.Registro(OrigenPoliza.AUTOMATICA,
+                    evento.id(), "CORTE", corte.corteId(), null, SISTEMA)).id();
+        }
         cortes.guardar(new CorteContable(UuidV7.generar(reloj.instant()), negocioId, corte.corteId(),
                 corte.cajaSesionId(), esperado, contado, diferencia, corte.ventasEfectivo(),
-                Montos.exacto(BigDecimal.ZERO), conciliacion, null, null, corte.cerradaEn()));
-        return ResultadoEvento.aplicado(null);
+                Montos.exacto(BigDecimal.ZERO), conciliacion, null, polizaId, corte.cerradaEn()));
+        return ResultadoEvento.aplicado(polizaId);
     }
 
     /**
