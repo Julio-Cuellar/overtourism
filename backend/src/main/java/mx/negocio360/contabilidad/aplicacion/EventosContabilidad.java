@@ -8,6 +8,7 @@ import java.util.UUID;
 import mx.negocio360.compartido.dinero.DecimalPlano;
 import mx.negocio360.compartido.eventos.SobreEvento;
 import mx.negocio360.compartido.identidad.UuidV7;
+import mx.negocio360.contabilidad.dominio.CorteContable;
 import mx.negocio360.contabilidad.dominio.Poliza;
 
 /**
@@ -22,6 +23,8 @@ final class EventosContabilidad {
     static final String POLIZA_REGISTRADA = "poliza.registrada";
     /** Tipo del evento de un mes cerrado. */
     static final String PERIODO_CERRADO = "periodo.cerrado";
+    /** Tipo del aviso de un corte descuadrado. */
+    static final String DESCUADRE_DETECTADO = "contabilidad.descuadre_detectado";
 
     private EventosContabilidad() {
     }
@@ -45,6 +48,19 @@ final class EventosContabilidad {
         var correlacion = poliza.referenciaId() == null ? poliza.id() : poliza.referenciaId();
         return new SobreEvento(UuidV7.generar(ahora), POLIZA_REGISTRADA, 1, poliza.negocioId(), ORIGEN, ahora,
                 correlacion, poliza.eventoId(), datos);
+    }
+
+    /**
+     * {@code contabilidad.descuadre_detectado} v1 (J-03). El monto es lo que reporta Caja menos lo contabilizado.
+     */
+    static SobreEvento descuadreDetectado(CorteContable corte, BigDecimal monto, UUID causaId, Instant ahora) {
+        var datos = new LinkedHashMap<String, Object>();
+        datos.put("corte_contable_id", corte.id().toString());
+        datos.put("corte_id", corte.corteId().toString());
+        datos.put("tipo", corte.conciliacion().name());
+        datos.put("monto", DecimalPlano.escribir(monto));
+        return new SobreEvento(UuidV7.generar(ahora), DESCUADRE_DETECTADO, 1, corte.negocioId(), ORIGEN, ahora,
+                corte.corteId(), causaId, datos);
     }
 
     /** {@code periodo.cerrado} v1, con las ventas netas y el resultado del mes. */

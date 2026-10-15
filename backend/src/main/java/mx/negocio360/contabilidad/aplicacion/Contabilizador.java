@@ -15,6 +15,7 @@ import java.util.function.Function;
 import mx.negocio360.compartido.eventos.SobreEvento;
 import mx.negocio360.compartido.identidad.UuidV7;
 import mx.negocio360.compartido.tiempo.ZonaMexico;
+import mx.negocio360.contabilidad.aplicacion.puertos.PublicadorEventos;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioCortesContables;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioEventosProcesados;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPendientes;
@@ -67,6 +68,7 @@ public final class Contabilizador {
     private final RepositorioReglas reglas;
     private final RepositorioVentasContables ventas;
     private final RepositorioCortesContables cortes;
+    private final PublicadorEventos eventos;
     private final LibroDiario libro;
     private final Clock reloj;
 
@@ -78,12 +80,15 @@ public final class Contabilizador {
      * @param reglas     tabla de reglas
      * @param ventas     tabla de huellas de venta
      * @param cortes     tabla de cortes de caja
+     * @param eventos    publicacion de eventos
      * @param libro      libro diario
      * @param reloj      reloj de la plataforma
      */
     public Contabilizador(RepositorioEventosProcesados procesados, RepositorioPendientes pendientes,
                           RepositorioReglas reglas, RepositorioVentasContables ventas,
-                          RepositorioCortesContables cortes, LibroDiario libro, Clock reloj) {
+                          RepositorioCortesContables cortes, PublicadorEventos eventos, LibroDiario libro,
+                          Clock reloj) {
+        this.eventos = Objects.requireNonNull(eventos, "eventos");
         this.cortes = Objects.requireNonNull(cortes, "cortes");
         this.procesados = Objects.requireNonNull(procesados, "procesados");
         this.pendientes = Objects.requireNonNull(pendientes, "pendientes");
@@ -127,7 +132,6 @@ public final class Contabilizador {
         var esperado = Montos.exacto(corte.efectivoEsperado());
         var contado = Montos.exacto(corte.efectivoContado());
         var diferencia = contado.subtract(esperado);
-        var conciliacion = diferencia.signum() == 0 ? Conciliacion.CUADRA : Conciliacion.DIFERENCIA_CAJA;
         UUID polizaId = null;
         if (diferencia.signum() != 0) {
             var disparador = diferencia.signum() < 0 ? Disparador.CORTE_FALTANTE : Disparador.CORTE_SOBRANTE;
@@ -144,10 +148,36 @@ public final class Contabilizador {
             polizaId = libro.registrar(negocioId, asiento, new LibroDiario.Registro(OrigenPoliza.AUTOMATICA,
                     evento.id(), "CORTE", corte.corteId(), null, SISTEMA)).id();
         }
-        cortes.guardar(new CorteContable(UuidV7.generar(reloj.instant()), negocioId, corte.corteId(),
+        var nuevo = new CorteContable(UuidV7.generar(reloj.instant()), negocioId, corte.corteId(),
                 corte.cajaSesionId(), esperado, contado, diferencia, corte.ventasEfectivo(),
-                Montos.exacto(BigDecimal.ZERO), conciliacion, null, polizaId, corte.cerradaEn()));
+                Montos.exacto(BigDecimal.ZERO), Conciliacion.CUADRA, null, polizaId, corte.cerradaEn());
+        conciliar(nuevo, evento.id());
         return ResultadoEvento.aplicado(polizaId);
+    }
+
+    /**
+     * Concilia un corte contra las ventas en efectivo contabilizadas de su sesion, lo guarda y, si queda en
+     * DESCUADRE_VENTAS y aun no se habia avisado, publica el aviso (J-03). No hace ningun ajuste de ventas (D-84).
+     */
+    private void conciliar(CorteContable corte, UUID causaId) {
+        var contables = ventas.deSesion(corte.negocioId(), corte.cajaSesionId()).stream()
+                .filter(v -> "EFECTIVO".equals(v.medioPago()) && !v.revertida())
+                .map(VentaContable::total).reduce(Montos.exacto(BigDecimal.ZERO), BigDecimal::add);
+        var descuadre = corte.ventasEfectivoCaja() != null
+                && corte.ventasEfectivoCaja().compareTo(contables) != 0;
+        var conciliacion = descuadre ? Conciliacion.DESCUADRE_VENTAS
+                : corte.diferencia().signum() == 0 ? Conciliacion.CUADRA : Conciliacion.DIFERENCIA_CAJA;
+        var avisar = conciliacion == Conciliacion.DESCUADRE_VENTAS && corte.descuadrePublicadoEn() == null;
+        var ahora = reloj.instant();
+        var conciliado = new CorteContable(corte.id(), corte.negocioId(), corte.corteId(), corte.cajaSesionId(),
+                corte.efectivoEsperado(), corte.efectivoContado(), corte.diferencia(), corte.ventasEfectivoCaja(),
+                contables, conciliacion, avisar ? ahora : corte.descuadrePublicadoEn(), corte.polizaId(),
+                corte.cerradaEn());
+        cortes.guardar(conciliado);
+        if (avisar) {
+            eventos.publicar(EventosContabilidad.descuadreDetectado(conciliado,
+                    conciliado.ventasEfectivoCaja().subtract(contables), causaId, ahora));
+        }
     }
 
     /**

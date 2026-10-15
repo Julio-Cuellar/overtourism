@@ -47,7 +47,7 @@ public final class Escenario {
     public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, saldos, eventos,
             reloj);
     public final Contabilizador contabilizador = new Contabilizador(eventosProcesados, pendientes, reglas, ventas,
-            cortes, libro, reloj);
+            cortes, eventos, libro, reloj);
     public final ContabilidadApi api;
 
     public Escenario() {
