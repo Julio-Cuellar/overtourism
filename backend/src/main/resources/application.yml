@@ -2,8 +2,9 @@ spring:
   application:
     name: plataforma
   config:
-    # Lee backend/.env si existe (contraseñas locales, fuera de git). En un servidor se usan variables de entorno.
-    import: optional:file:.env[.properties]
+    # Lee backend/.env si existe (contraseñas locales, fuera de git), arranque la aplicación desde backend/ o desde la
+    # raíz del repositorio (IntelliJ usa la raíz por omisión). En un servidor se usan variables de entorno.
+    import: optional:file:.env[.properties],optional:file:backend/.env[.properties]
   # PostgreSQL. Las contraseñas no tienen valor por omisión: si faltan, la aplicación no arranca (falla cerrado).
   datasource:
     url: ${NEGOCIO360_DB_URL:jdbc:postgresql://localhost:5433/negocio360}
