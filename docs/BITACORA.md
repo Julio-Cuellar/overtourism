@@ -945,3 +945,25 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 
 **Archivos creados:** `docs/diseno/contabilidad.md`, `docs/diseno/contabilidad-diagramas.md`.
 **Archivos modificados:** `docs/BITACORA.md` (documentos relacionados, D-76 a D-89 y esta entrada).
+
+### 2026-10-15 — Autorización para programar el módulo de Contabilidad
+**Autorización escrita (cita textual del usuario):** «Implementa el módulo HORIZONTAL DE CONTABILIDAD de Negocio 360 Plataforma» con método TDD, «Alcance: solo lo marcado P1 en el diseño», y luego: «Sí, va así. Usa los ids de tu diseño. El alcance es todo el P1, no solo esas 13 reglas.»
+
+**Alcance que le doy:** el P1 de `docs/diseno/contabilidad.md` v0.2, regla por regla con sus identificadores (A, C, T, E, J, U y F), una prueba que falla antes del código y un commit por regla en la rama `liz`. Las letras G, P y S del pedido original se acordaron como E-01/E-02, T-01/T-02 y SK-01.
+
+**Límites conocidos al empezar:**
+- En esta computadora no hay Docker. Se instalaron Java 21 (Temurin 21.0.12.1) y Maven 3.9.9 en `C:\Users\doral\tools`, con autorización del usuario. Las pruebas contra PostgreSQL (Testcontainers) no corren aquí: línea base `mvn test` = 824 pruebas, 678 pasan y 146 fallan por falta de Docker, ninguna por código.
+- Por eso las reglas se prueban primero con dobles en memoria, como Clientes I2. Lo que solo se comprueba en la base (CHECK de A-02, trigger de A-03/SK-01, seguridad por fila de E-03/SK-03, migración) se escribe pero no se da por verde.
+- Siguen abiertas las preguntas de `contabilidad.md` §16. La exportación CSV (pregunta 8) no se programa hasta que se responda.
+
+**Avance por regla** (se actualiza en cada commit):
+
+| Regla | Estado | Commit |
+|---|---|---|
+| A-01 a A-08 | pendiente | |
+| C-01 a C-04 | pendiente | |
+| T-01 a T-05 | pendiente | |
+| E-01 a E-08 | pendiente | |
+| J-01 a J-04 | pendiente | |
+| U-01, U-03, U-04 | pendiente | |
+| F-01 a F-04 | pendiente | |
