@@ -27,6 +27,9 @@ Este archivo existe para que **cualquier agente o persona que entre al proyecto 
 | Mapa de Inventario (página publicada) | https://claude.ai/artifact/1M1DNRybgJoXheZmS7JJJt — vista visual de los dos documentos anteriores: mapa de comunicación, filtro de interacciones, secuencias, eventos y explorador de tablas. Desde la versión 2 (2026-10-09) incluye la propuesta de API del panel (GraphQL, WebSocket y REST), las 21 reglas de seguridad y el plan de trabajo. **Versión 0.3 (2026-10-13):** aplica D-55 y D-63 (sin REST de bot), agrega el estado del código tras la etapa I0 de Clientes, un kardex de ejemplo calculado y la sección Scrum con 7 épicas, 36 historias y 6 sprints. **Está compartida con cualquiera que tenga el enlace** (verificado al leerla; antes de esa fecha se había anotado como privada por error). |
 | Mapa de Clientes (página publicada, privada) | https://claude.ai/artifact/W6ubG316Laxipgbc4EqAV7 — versión 0.2 (2026-10-13): entidades con diagrama entidad-relación, 38 reglas de dominio, funciones, eventos, tabla de comunicación con la API (GraphQL, WebSocket, REST, Java y bus), plan de consultas, seguridad, tabla de cumplimiento de la LFPDPPP y plan. La versión escrita vive en `docs/diseno/clientes.md` (2026-10-13). Privada: solo la ve quien tenga acceso. |
 | Mapa de Identidad (página publicada, privada) | https://claude.ai/artifact/AyFzKR2Rp4cJszZYagsFpa — versión 0.1 (2026-10-13): módulo de autenticación y equipo del personal de los negocios, por REST y API Java: 13 tablas, 45 reglas, 26 endpoints, 25 permisos con matriz por rol, 20 reglas de seguridad, 15 diagramas y el plan en 8 épicas y 36 historias con sprints propuestos. Privada. Aún no hay documento en `docs/diseno/` ni nada en Jira. |
+| Mapa de Contabilidad (página publicada) | https://claude.ai/artifact/CYLdtRhkzV2o1wRZsCphmh — versión 0.2 (2026-10-15): 14 tablas con diagramas entidad-relación, 40 reglas de dominio, 30 funciones de `ContabilidadApi`, 4 eventos publicados y 3 consumidos, tabla de comunicación con la API (GraphQL, WebSocket, REST, Java y bus), plan de consultas, seguridad y plan. La versión escrita vive en `docs/diseno/contabilidad.md`. Compartida con cualquiera que tenga el enlace. |
+| `docs/diseno/contabilidad.md` | Diseño del módulo de Contabilidad (v0.2, PROPUESTA): dueño de cada dato, reglas A, C, T, E, J, U y F con prueba de aceptación, API pública, eventos, contratos que necesita de Ventas, Pasaporte y Caja, GraphQL y REST, seguridad SK, decisiones D-76 a D-89, hallazgos K-1 a K-12 y 9 preguntas abiertas. |
+| `docs/diseno/contabilidad-diagramas.md` | Diagramas de Contabilidad (12 en Mermaid), interacciones síncronas y asíncronas, ejemplos de contratos de eventos y modelo de datos con todas las columnas e índices. |
 | Mockup de la plataforma (página publicada) | https://claude.ai/artifact/3o4no2gWTCwAkG5tcatffJ — flujos, módulos, pantallas, sección de APIs (GraphQL, WebSocket, REST). Marca como primera opción de stack a Python; **ya está desactualizada en eso** (ver D-03). |
 | `docs/mockups/app-turista.html` | Mockup detallado de la app del turista (solo local, abrir en el navegador): teléfono interactivo con 16 pantallas, 75 acciones con su operación, entrada, salida y eventos, mapa de la interfaz (qué pasa al tocar cada botón), catálogo de 14 eventos publicados y 3 consumidos, mapa de comunicación con el bus y hallazgos H-1 a H-15. Operaciones y eventos son PROPUESTA. |
 | `docs/diseno/rutas.md` | Diseño del módulo de Rutas v2 (borrador v0.1): reglas de dominio RT-01 a RT-17 con prueba de aceptación, datos, operaciones, eventos E-11 y E-15 a E-17, cómo decide la IA, alcance P1/P2/P3 y preguntas abiertas. |
@@ -167,6 +170,20 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-63 | El bot de chat no continúa por ahora. Se eliminan las vías REST del bot y el origen `BOT` | ACEPTADA | 2026-10-13 | Dicho por el usuario. Cierra la decisión abierta sobre el bot. Afecta también el REST del bot de Inventario (D-46) |
 | D-64 | Umbrales iniciales de Clientes: inactivo a los 60 días sin comprar; frecuente con 3 compras en 90 días. Son reglas versionadas | ACEPTADA (delegada) | 2026-10-13 | El usuario respondió «cómo veas conveniente» |
 | D-65 | El `total` de `venta.registrada` es neto del cupón cuando aplica, y el total completo cuando no hay cupón | ACEPTADA | 2026-10-13 | Dicho por el usuario («sí, solo cuando aplica»). Falta congelarlo con el dueño de Ventas |
+| D-76 | Contabilidad es un módulo horizontal con esquema `contabilidad`; dueña del catálogo de cuentas, pólizas, periodos, saldos, reglas de contabilización y conciliación de cortes | PROPUESTA | 2026-10-15 | D-66 a D-75 no están en esta tabla: los usa el Mapa de Identidad (entrada del 2026-10-13). Por eso Contabilidad empieza en D-76 |
+| D-77 | Contabilidad solo escucha `venta.registrada`, `cupon.canjeado` y `caja.cerrada` | ACEPTADA | 2026-10-15 | Dicho por el usuario. Choca con `inventario.md`, que le asigna `inventario.movimiento_registrado` (K-10, pregunta 9) |
+| D-78 | Partida doble con pólizas inmutables; los errores se corrigen con póliza de reversa | PROPUESTA | 2026-10-15 | |
+| D-79 | Una póliza por evento, no una por día | PROPUESTA | 2026-10-15 | Idempotencia y trazabilidad simples |
+| D-80 | Catálogo base único para restaurantes, museos y misceláneos, copiado a cada negocio al activar; lo que cambia por giro son reglas en datos | PROPUESTA | 2026-10-15 | |
+| D-81 | Los cupones se presentan en bruto: cargo a Descuentos sobre ventas y abono a Ventas, por la base sin IVA | PROPUESTA | 2026-10-15 | El neto sigue igual a D-65 |
+| D-82 | Un evento con fecha de un periodo cerrado entra como extemporáneo en el periodo abierto más antiguo | PROPUESTA | 2026-10-15 | |
+| D-83 | Bandeja de pendientes en lugar de fallar: ningún evento se pierde ni bloquea la cola | PROPUESTA | 2026-10-15 | |
+| D-84 | La conciliación de cortes avisa pero no ajusta ventas; solo la diferencia de conteo genera póliza | PROPUESTA | 2026-10-15 | |
+| D-85 | Exportaciones de Contabilidad por REST: CSV de pólizas en P1, balanza en P2, XML del SAT en P3 | PROPUESTA | 2026-10-15 | El alcance original de `CLAUDE.md` dejaba fuera los reportes exportables (pregunta 8 de `contabilidad.md`) |
+| D-86 | Sin WebSocket de Contabilidad en P1; `actividadContable` en P2, alimentada por el bus | PROPUESTA | 2026-10-15 | |
+| D-87 | Contabilidad no guarda datos personales ni `cliente_id` | PROPUESTA | 2026-10-15 | |
+| D-88 | Campos nuevos opcionales: `medio_pago`, `caja_sesion_id` y `propina` en `venta.registrada` v1; `financiador` en `cupon.canjeado` v1; `caja.cerrada` v1 completo (Caja sin diseño) | PROPUESTA | 2026-10-15 | Falta congelar con Ventas, Pasaporte y Caja |
+| D-89 | Contabilidad no es herramienta fiscal: no emite CFDI ni calcula declaraciones | PROPUESTA | 2026-10-15 | |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -899,3 +916,32 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 
 **Archivos creados:** `backend/docker-compose.yml`, `backend/docker/postgres/01-roles.sh`, `backend/.env.example`, `backend/.env` (local, ignorado), `.gitattributes`, `backend/src/main/resources/db/migration/V001, V002, V010, V020`, `backend/src/test/java/mx/negocio360/persistencia/*` (11 clases), `backend/src/test/resources/META-INF/spring.factories`, `docs/pruebas/postgres-flyway-outbox.tdd.md`.
 **Archivos modificados:** `backend/pom.xml`, `backend/src/main/resources/application.yml`, `backend/postman/*` (descripción), `docs/BITACORA.md` (esta entrada).
+
+### 2026-10-15 — Diseño del módulo de Contabilidad (propuesta)
+**Pedido del usuario:** definir entidades, funciones y eventos del módulo horizontal de Contabilidad y planificar las consultas a la API, en un artefacto con diagrama entidad-relación, diagrama de eventos, tablas y tabla de comunicación con la API. Reglas: Postgres con seguridad por fila y `negocio_id` en toda tabla, eventos con UUIDv7, listeners idempotentes, ningún módulo lee las tablas de otro, igual para los tres giros, y Contabilidad solo escucha `venta.registrada`, `cupon.canjeado` y `caja.cerrada`. «No programes nada, solo diseño». Después: escribir el diseño en la rama `liz`.
+
+**Qué se hizo:**
+1. Se publicó el «Mapa de Contabilidad» (ver documentos relacionados). La versión 0.1 se hizo sin el repositorio a la vista; la 0.2 se revisó contra `CLAUDE.md`, esta Bitácora, `inventario.md`, `clientes.md`, el mockup de la app y el código de Clientes.
+2. **Lo que se corrigió en la 0.2:** las decisiones se renumeraron a D-76 a D-89 (D-66 a D-75 ya eran del Mapa de Identidad); el outbox propio se quitó porque es `plataforma.event_publication`; `venta.registrada` v1 no trae medio de pago, así que se pide como campo nuevo; `cupon.canjeado` ya trae `cupon_id` y `descuento.monto` (mockup E-07), así que la llave natural es `cupon_id` y solo falta `financiador`; token de 5 minutos (D-23); `preparacion`, `Preparacion` y `Resultado` con la forma ya programada; reglas fiscales con columna `fuente`.
+3. Se escribieron `docs/diseno/contabilidad.md` y `docs/diseno/contabilidad-diagramas.md` con la estructura de la skill `disenar-modulo`. Los diagramas se copiaron del mapa para que coincidan.
+
+**Decisiones:** D-77 (aceptada, regla del usuario). D-76 y D-78 a D-89 (propuestas).
+
+**Observaciones para quien continúe:**
+- **D-77 choca con Inventario (K-10):** `inventario.md` §2 e `inventario-diagramas.md` dicen que Contabilidad consume `inventario.movimiento_registrado`. No se tocaron esos documentos; hay que decidir cuál manda.
+- **Sin `venta.anulada` (K-1)** una venta anulada se queda como ingreso; con tarjeta no se detecta. Se recomienda agregarlo a lo que escucha Contabilidad.
+- **K-12:** la tarea programada `abrirPeriodo` tiene el mismo problema que A1 (purgas bajo seguridad por fila).
+- Caja no tiene diseño: todo el contrato de `caja.cerrada` es propuesta.
+- Tasas de IVA y el plazo de conservación de cinco años son de memoria y están marcados por verificar.
+- La rama `liz` se adelantó a `main` con un *fast-forward* local (estaba en el primer commit). No se hizo commit ni push.
+
+**No verificado:** los 12 diagramas Mermaid de `contabilidad-diagramas.md` no se renderizaron desde el archivo; son los mismos del mapa publicado, que sí los dibuja. No se revisó el diseño con la skill `revisar-diseno` ni con un agente revisor. No se actualizó la sección 10 de la skill `negocio360-reglas`.
+
+**Pendiente:**
+- Contestar las 9 preguntas de `contabilidad.md` §16 (el equipo).
+- Congelar los contratos de D-88 con los dueños de Ventas, Pasaporte y Caja.
+- Corregir `inventario.md` e `inventario-diagramas.md` si se confirma D-77 tal cual.
+- Autorización escrita para programar Contabilidad (no existe).
+
+**Archivos creados:** `docs/diseno/contabilidad.md`, `docs/diseno/contabilidad-diagramas.md`.
+**Archivos modificados:** `docs/BITACORA.md` (documentos relacionados, D-76 a D-89 y esta entrada).
