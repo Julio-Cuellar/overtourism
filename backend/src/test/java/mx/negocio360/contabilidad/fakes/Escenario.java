@@ -58,7 +58,7 @@ public final class Escenario {
                         new ManejadorConfigurarRegla(configuracion, reglas, libro, reloj)),
                 reloj);
         api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro, contabilizador,
-                pendientes);
+                pendientes, configuracion, periodos);
     }
 
     /** Prepara y confirma un comando, como lo haria el panel en dos pasos. */

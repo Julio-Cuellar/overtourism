@@ -13,6 +13,7 @@ import mx.negocio360.contabilidad.dominio.Balanza;
 import mx.negocio360.contabilidad.dominio.Cuenta;
 import mx.negocio360.contabilidad.dominio.EstadoPendiente;
 import mx.negocio360.contabilidad.dominio.Pendiente;
+import mx.negocio360.contabilidad.dominio.Periodo;
 import mx.negocio360.contabilidad.dominio.Poliza;
 import mx.negocio360.contabilidad.dominio.ReglaContable;
 import mx.negocio360.contabilidad.dominio.ResultadoEvento;
@@ -95,4 +96,23 @@ public interface ContabilidadApi {
      * @return los pendientes, del mas antiguo al mas nuevo
      */
     List<Pendiente> pendientes(ContextoNegocio contexto, EstadoPendiente estado);
+
+    /**
+     * Escritura del sistema que abre el periodo de un mes (J3, T-04). La llama la tarea del dia 1, una vez por
+     * negocio, fijando el negocio de cada uno (K-12).
+     *
+     * @param negocioId negocio
+     * @param mes       anio y mes
+     * @return {@code ABIERTO}, {@code YA_ABIERTO} o {@code CONTABILIDAD_NO_ACTIVA}
+     */
+    String abrirPeriodo(UUID negocioId, YearMonth mes);
+
+    /**
+     * Periodos del negocio en un anio (G7).
+     *
+     * @param contexto negocio
+     * @param anio     anio
+     * @return los periodos, ordenados por mes
+     */
+    List<Periodo> periodos(ContextoNegocio contexto, int anio);
 }

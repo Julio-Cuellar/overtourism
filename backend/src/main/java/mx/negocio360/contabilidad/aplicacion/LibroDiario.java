@@ -161,6 +161,21 @@ public final class LibroDiario {
         }
     }
 
+    /**
+     * Abre el periodo de un mes si no existe (T-04). Lo usan la tarea del dia 1 y el primer evento del mes.
+     *
+     * @param negocioId negocio
+     * @param mes       anio y mes
+     * @return verdadero si lo abrio; falso si ya existia
+     */
+    public synchronized boolean abrirPeriodo(UUID negocioId, YearMonth mes) {
+        if (periodos.delMes(negocioId, mes).isPresent()) {
+            return false;
+        }
+        periodoDe(negocioId, mes);
+        return true;
+    }
+
     private synchronized Periodo periodoDe(UUID negocioId, YearMonth mes) {
         return periodos.delMes(negocioId, mes).orElseGet(() -> {
             var nuevo = Periodo.abierto(UuidV7.generar(reloj.instant()), negocioId, mes, reloj.instant());
