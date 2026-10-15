@@ -7,15 +7,18 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import mx.negocio360.compartido.eventos.SobreEvento;
 import mx.negocio360.compartido.identidad.UuidV7;
 import mx.negocio360.compartido.tiempo.ZonaMexico;
+import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioEventosProcesados;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioReglas;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioVentasContables;
 import mx.negocio360.contabilidad.contratos.VentaRegistradaV1;
 import mx.negocio360.contabilidad.dominio.Asiento;
 import mx.negocio360.contabilidad.dominio.DesgloseIva;
 import mx.negocio360.contabilidad.dominio.Disparador;
+import mx.negocio360.contabilidad.dominio.EventoProcesado;
 import mx.negocio360.contabilidad.dominio.OrigenPoliza;
 import mx.negocio360.contabilidad.dominio.ReglaContable;
 import mx.negocio360.contabilidad.dominio.Renglon;
@@ -32,6 +35,10 @@ public final class Contabilizador {
     /** Actor de las polizas automaticas. */
     public static final String SISTEMA = "sistema";
 
+    /** Motivo de un evento que ya se habia procesado (E-01). */
+    public static final String YA_PROCESADO = "YA_PROCESADO";
+
+    private final RepositorioEventosProcesados procesados;
     private final RepositorioReglas reglas;
     private final RepositorioVentasContables ventas;
     private final LibroDiario libro;
@@ -40,13 +47,15 @@ public final class Contabilizador {
     /**
      * Crea el contabilizador.
      *
-     * @param reglas tabla de reglas
-     * @param ventas tabla de huellas de venta
+     * @param procesados tabla de eventos procesados
+     * @param reglas     tabla de reglas
+     * @param ventas     tabla de huellas de venta
      * @param libro  libro diario
      * @param reloj  reloj de la plataforma
      */
-    public Contabilizador(RepositorioReglas reglas, RepositorioVentasContables ventas, LibroDiario libro,
-                          Clock reloj) {
+    public Contabilizador(RepositorioEventosProcesados procesados, RepositorioReglas reglas,
+                          RepositorioVentasContables ventas, LibroDiario libro, Clock reloj) {
+        this.procesados = Objects.requireNonNull(procesados, "procesados");
         this.reglas = Objects.requireNonNull(reglas, "reglas");
         this.ventas = Objects.requireNonNull(ventas, "ventas");
         this.libro = Objects.requireNonNull(libro, "libro");
@@ -58,9 +67,30 @@ public final class Contabilizador {
      * (F-02), con el desglose de A-07.
      *
      * @param evento sobre de {@code venta.registrada} v1
-     * @return el resultado del evento
+     * @return el resultado del evento; OMITIDO con {@value #YA_PROCESADO} si ya se habia procesado (E-01)
      */
     public ResultadoEvento contabilizarVenta(SobreEvento evento) {
+        return procesar(evento, this::aplicarVenta);
+    }
+
+    /**
+     * Aplica un evento una sola vez. La fila de {@code evento_procesado} se escribe junto con el efecto: si el
+     * efecto falla, el evento no queda marcado y la reentrega lo intenta de nuevo (E-01).
+     */
+    private ResultadoEvento procesar(SobreEvento evento, Function<SobreEvento, ResultadoEvento> efecto) {
+        if (procesados.de(evento.negocioId(), evento.id()).isPresent()) {
+            return ResultadoEvento.omitido(YA_PROCESADO);
+        }
+        var resultado = efecto.apply(evento);
+        var fila = new EventoProcesado(evento.negocioId(), evento.id(), evento.tipo(), evento.version(),
+                reloj.instant(), resultado.resultado(), resultado.motivo());
+        if (!procesados.insertar(fila)) {
+            throw new IllegalStateException("Otra entrega del mismo evento gano la carrera; se deshace esta");
+        }
+        return resultado;
+    }
+
+    private ResultadoEvento aplicarVenta(SobreEvento evento) {
         var negocioId = evento.negocioId();
         var venta = VentaRegistradaV1.leer(evento.datos());
         var regla = reglaVigente(negocioId, Disparador.VENTA, venta.medioPago()).orElseThrow();

@@ -21,8 +21,14 @@ public final class RepositorioPolizasEnMemoria implements RepositorioPolizas {
         return folios.merge(negocioId + "/" + periodoId + "/" + tipo, 1, Integer::sum);
     }
 
+    /** Cuando es verdadero, insertar falla como lo haria una base caida. */
+    public volatile boolean fallarAlInsertar;
+
     @Override
     public synchronized void insertar(Poliza poliza) {
+        if (fallarAlInsertar) {
+            throw new IllegalStateException("fallo simulado al insertar");
+        }
         if (filas.stream().anyMatch(p -> p.id().equals(poliza.id()))) {
             throw new IllegalStateException("La poliza ya existe: las polizas solo se insertan");
         }

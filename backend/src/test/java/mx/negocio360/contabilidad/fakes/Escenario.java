@@ -35,9 +35,12 @@ public final class Escenario {
     public final RepositorioPolizasEnMemoria polizas = new RepositorioPolizasEnMemoria();
     public final RepositorioSaldosEnMemoria saldos = new RepositorioSaldosEnMemoria();
     public final RepositorioVentasContablesEnMemoria ventas = new RepositorioVentasContablesEnMemoria();
+    public final RepositorioEventosProcesadosEnMemoria eventosProcesados =
+            new RepositorioEventosProcesadosEnMemoria();
 
     public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, saldos, reloj);
-    public final Contabilizador contabilizador = new Contabilizador(reglas, ventas, libro, reloj);
+    public final Contabilizador contabilizador = new Contabilizador(eventosProcesados, reglas, ventas, libro,
+            reloj);
     public final ContabilidadApi api;
 
     public Escenario() {
