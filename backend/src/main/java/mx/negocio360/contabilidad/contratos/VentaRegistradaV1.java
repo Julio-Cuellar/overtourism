@@ -19,6 +19,8 @@ public record VentaRegistradaV1(UUID ventaId, BigDecimal total, String medioPago
 
     /** Tipo del evento en el sobre. */
     public static final String TIPO = "venta.registrada";
+    /** Unica version del contrato que Contabilidad sabe leer. */
+    public static final int VERSION = 1;
     /** Campos del contrato que usa Contabilidad; son los unicos que se copian a un pendiente (E-04). */
     public static final List<String> CAMPOS = List.of("venta_id", "total", "medio_pago", "caja_sesion_id");
 

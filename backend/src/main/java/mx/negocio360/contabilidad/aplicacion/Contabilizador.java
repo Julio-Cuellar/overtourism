@@ -53,6 +53,8 @@ public final class Contabilizador {
     public static final String CUENTA_INACTIVA = "CUENTA_INACTIVA";
     /** Pendiente: el evento no trae lo que su contrato promete. */
     public static final String DATOS_INVALIDOS = "DATOS_INVALIDOS";
+    /** Pendiente: el evento trae una version de contrato que Contabilidad no conoce (E-06). */
+    public static final String VERSION_NO_SOPORTADA = "VERSION_NO_SOPORTADA";
 
     private final RepositorioEventosProcesados procesados;
     private final RepositorioPendientes pendientes;
@@ -88,26 +90,28 @@ public final class Contabilizador {
      *
      * @param evento sobre de {@code venta.registrada} v1
      * @return APLICADO con la poliza; OMITIDO con {@value #YA_PROCESADO} (E-01) o {@value #DUPLICADO_NATURAL}
-     *         (E-02); o PENDIENTE con {@value #REGLA_FALTANTE}, {@value #CUENTA_INACTIVA} o {@value #DATOS_INVALIDOS}
-     *         (E-04)
+     *         (E-02); o PENDIENTE con {@value #REGLA_FALTANTE}, {@value #CUENTA_INACTIVA}, {@value #DATOS_INVALIDOS}
+     *         (E-04) o {@value #VERSION_NO_SOPORTADA} (E-06)
      */
     public ResultadoEvento contabilizarVenta(SobreEvento evento) {
-        return procesar(evento, VentaRegistradaV1.CAMPOS, this::aplicarVenta);
+        return procesar(evento, VentaRegistradaV1.VERSION, VentaRegistradaV1.CAMPOS, this::aplicarVenta);
     }
 
     /**
      * Aplica un evento una sola vez. La fila de {@code evento_procesado} se escribe junto con el efecto: si el
      * efecto falla por una causa tecnica, el evento no queda marcado y la reentrega lo intenta de nuevo (E-01). Si
-     * falla por una causa de negocio, queda pendiente (E-04).
+     * falla por una causa de negocio, queda pendiente (E-04). Una version que no se conoce tambien queda pendiente,
+     * sin intentar leerla (E-06).
      */
-    private ResultadoEvento procesar(SobreEvento evento, List<String> camposDelContrato,
+    private ResultadoEvento procesar(SobreEvento evento, int versionSoportada, List<String> camposDelContrato,
                                      Function<SobreEvento, ResultadoEvento> efecto) {
         if (procesados.de(evento.negocioId(), evento.id()).isPresent()) {
             return ResultadoEvento.omitido(YA_PROCESADO);
         }
         ResultadoEvento resultado;
         try {
-            resultado = efecto.apply(evento);
+            resultado = evento.version() == versionSoportada ? efecto.apply(evento)
+                    : ResultadoEvento.pendiente(VERSION_NO_SOPORTADA);
         } catch (DatosInvalidosException e) {
             resultado = ResultadoEvento.pendiente(DATOS_INVALIDOS);
         } catch (ContabilidadException e) {
