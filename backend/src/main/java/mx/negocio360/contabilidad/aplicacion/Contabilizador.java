@@ -100,7 +100,7 @@ public final class Contabilizador {
 
     /**
      * {@code contabilizarVenta}: poliza de ingreso con cargo a la cuenta del medio de pago y abono a ventas e IVA
-     * (F-02), con el desglose de A-07.
+     * (F-02), con el desglose de A-07. Si la sesion de caja de la venta ya cerro, recalcula su conciliacion (J-04).
      *
      * @param evento sobre de {@code venta.registrada} v1
      * @return APLICADO con la poliza; OMITIDO con {@value #YA_PROCESADO} (E-01) o {@value #DUPLICADO_NATURAL}
@@ -258,6 +258,9 @@ public final class Contabilizador {
         ventas.guardar(new VentaContable(UuidV7.generar(reloj.instant()), negocioId, venta.ventaId(),
                 venta.cajaSesionId(), venta.medioPago(), venta.total(), desglose.ventas(), desglose.iva(),
                 evento.ocurridoEn(), poliza.id(), false));
+        if (venta.cajaSesionId() != null) {
+            cortes.deSesion(negocioId, venta.cajaSesionId()).ifPresent(corte -> conciliar(corte, evento.id()));
+        }
         return ResultadoEvento.aplicado(poliza.id());
     }
 
