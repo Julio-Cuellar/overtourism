@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.YearMonth;
 import java.util.Objects;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
+import mx.negocio360.contabilidad.aplicacion.puertos.PublicadorEventos;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioConfiguracion;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPendientes;
 import mx.negocio360.contabilidad.aplicacion.puertos.RepositorioPeriodos;
@@ -15,8 +16,8 @@ import mx.negocio360.contabilidad.dominio.Periodo;
 
 /**
  * {@code CerrarPeriodo}: cierra un mes contable. Los meses se cierran en orden (T-02) y sin pendientes abiertos de
- * ese mes (T-03). Al cerrar se abre el mes
- * siguiente si no existe, para que las polizas nuevas tengan donde caer.
+ * ese mes (T-03). Al cerrar se abre el mes siguiente si no existe, para que las polizas nuevas tengan donde caer, y se
+ * publica {@code periodo.cerrado} (E-08).
  */
 public final class ManejadorCerrarPeriodo implements ManejadorComando<CerrarPeriodoComando> {
 
@@ -24,6 +25,7 @@ public final class ManejadorCerrarPeriodo implements ManejadorComando<CerrarPeri
     private final RepositorioPeriodos periodos;
     private final RepositorioPendientes pendientes;
     private final LibroDiario libro;
+    private final PublicadorEventos eventos;
     private final Clock reloj;
 
     /**
@@ -33,11 +35,14 @@ public final class ManejadorCerrarPeriodo implements ManejadorComando<CerrarPeri
      * @param periodos      tabla de periodos
      * @param pendientes    tabla de pendientes
      * @param libro         libro diario, para abrir el mes siguiente
+     * @param eventos       publicacion de eventos
      * @param reloj         reloj de la plataforma
      */
     public ManejadorCerrarPeriodo(RepositorioConfiguracion configuracion, RepositorioPeriodos periodos,
-                                  RepositorioPendientes pendientes, LibroDiario libro, Clock reloj) {
+                                  RepositorioPendientes pendientes, LibroDiario libro, PublicadorEventos eventos,
+                                  Clock reloj) {
         this.pendientes = Objects.requireNonNull(pendientes, "pendientes");
+        this.eventos = Objects.requireNonNull(eventos, "eventos");
         this.configuracion = Objects.requireNonNull(configuracion, "configuracion");
         this.periodos = Objects.requireNonNull(periodos, "periodos");
         this.libro = Objects.requireNonNull(libro, "libro");
@@ -75,8 +80,12 @@ public final class ManejadorCerrarPeriodo implements ManejadorComando<CerrarPeri
     @Override
     public ResultadoComando confirmar(ContextoNegocio contexto, CerrarPeriodoComando comando) {
         var p = cerrable(contexto, comando);
+        var ahora = reloj.instant();
         periodos.guardar(new Periodo(p.id(), p.negocioId(), p.mes(), EstadoPeriodo.CERRADO, p.abiertoEn(),
-                reloj.instant(), contexto.actor(), p.reaperturas(), p.version() + 1));
+                ahora, contexto.actor(), p.reaperturas(), p.version() + 1));
+        var cifras = libro.cifrasDelMes(p.negocioId(), p.mes());
+        eventos.publicar(EventosContabilidad.periodoCerrado(p.negocioId(), p.id(), p.mes(), cifras.ventasNetas(),
+                cifras.resultado(), ahora));
         libro.abrirPeriodo(contexto.negocioId(), p.mes().plusMonths(1));
         return ResultadoComando.ok("Periodo cerrado.", p.id());
     }

@@ -37,12 +37,14 @@ public final class Escenario {
     public final RepositorioPeriodosEnMemoria periodos = new RepositorioPeriodosEnMemoria();
     public final RepositorioPolizasEnMemoria polizas = new RepositorioPolizasEnMemoria();
     public final RepositorioSaldosEnMemoria saldos = new RepositorioSaldosEnMemoria();
+    public final PublicadorEventosEnMemoria eventos = new PublicadorEventosEnMemoria();
     public final RepositorioVentasContablesEnMemoria ventas = new RepositorioVentasContablesEnMemoria();
     public final RepositorioPendientesEnMemoria pendientes = new RepositorioPendientesEnMemoria();
     public final RepositorioEventosProcesadosEnMemoria eventosProcesados =
             new RepositorioEventosProcesadosEnMemoria();
 
-    public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, saldos, reloj);
+    public final LibroDiario libro = new LibroDiario(cuentas, periodos, polizas, saldos, eventos,
+            reloj);
     public final Contabilizador contabilizador = new Contabilizador(eventosProcesados, pendientes, reglas, ventas,
             libro, reloj);
     public final ContabilidadApi api;
@@ -57,7 +59,7 @@ public final class Escenario {
                         new ManejadorReversarPoliza(configuracion, polizas, libro, reloj),
                         new ManejadorResolverPendiente(configuracion, pendientes, libro, reloj),
                         new ManejadorConfigurarRegla(configuracion, reglas, libro, reloj),
-                        new ManejadorCerrarPeriodo(configuracion, periodos, pendientes, libro, reloj)),
+                        new ManejadorCerrarPeriodo(configuracion, periodos, pendientes, libro, eventos, reloj)),
                 reloj);
         api = new ContabilidadServicio(preparacion, cuentas, reglas, polizas, libro, contabilizador,
                 pendientes, configuracion, periodos);
