@@ -976,4 +976,6 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 - **E-05** se hará justo después de U-01, porque su prueba compara venta y cupón en distinto orden.
 - La máquina tiene 4 GB; las pruebas se corren clase por clase con `-Xmx256m`.
 - **Grupo J, preguntas abiertas para el equipo:** (1) si una DIFERENCIA_CAJA sola (conteo distinto, ventas iguales) también debe publicar `contabilidad.descuadre_detectado`; hoy solo se publica para DESCUADRE_VENTAS, como dicen J-03 y el diagrama F2. (2) Cuando hay a la vez diferencia de conteo y ventas distintas, el corte queda en DESCUADRE_VENTAS (prioridad tomada del diagrama F2). (3) Una reversa de venta no recalcula la conciliación del corte (flujo F4, depende de K-1).
+- **Grupo U:** si `cupon.canjeado` no trae `financiador` se asume NEGOCIO (K-3); un cupón de PLATAFORMA queda pendiente porque U-02 es P2. Pregunta abierta: `descuento.moneda` no se valida porque el diseño no dice qué hacer con otra moneda que no sea MXN.
+- **E-05 no tuvo rojo:** se verificó por mutación (sin el recálculo de J-04 falló la permutación cupón, corte, venta).
 - Las ventas netas de `periodo.cerrado` se calculan como el neto de las cuentas 401 menos el de las 402 (cuadra con el ejemplo del diseño: 225 − 25 = 200).
