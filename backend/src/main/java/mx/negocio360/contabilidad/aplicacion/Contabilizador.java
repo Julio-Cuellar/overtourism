@@ -67,6 +67,8 @@ public final class Contabilizador {
     public static final String VERSION_NO_SOPORTADA = "VERSION_NO_SOPORTADA";
     /** Omitido: un cupon canjeado sin venta no tiene efecto contable (U-03). */
     public static final String SIN_VENTA = "SIN_VENTA";
+    /** Omitido: un cupon con descuento cero no tiene efecto contable (U-04). */
+    public static final String MONTO_CERO = "MONTO_CERO";
 
     private final RepositorioEventosProcesados procesados;
     private final RepositorioPendientes pendientes;
@@ -125,7 +127,8 @@ public final class Contabilizador {
      *
      * @param evento sobre de {@code cupon.canjeado} v1
      * @return APLICADO; OMITIDO con {@value #YA_PROCESADO}, {@value #DUPLICADO_NATURAL} o {@value #SIN_VENTA}
-     *         (U-03); o PENDIENTE como en {@link #contabilizarVenta}
+     *         (U-03) o {@value #MONTO_CERO} (U-04); o PENDIENTE como en {@link #contabilizarVenta}, incluido un
+     *         descuento negativo, ausente o con mas de dos decimales (U-04)
      */
     public ResultadoEvento contabilizarCanje(SobreEvento evento) {
         return procesar(evento, CuponCanjeadoV1.VERSION, CuponCanjeadoV1.CAMPOS, this::aplicarCanje);
@@ -137,8 +140,11 @@ public final class Contabilizador {
         if (canjes.porCupon(negocioId, canje.cuponId()).isPresent()) {
             return ResultadoEvento.omitido(DUPLICADO_NATURAL);
         }
-        if (canje.montoDescuento() == null) {
+        if (canje.montoDescuento() == null || canje.montoDescuento().signum() < 0) {
             throw new DatosInvalidosException("descuento.monto");
+        }
+        if (Montos.exacto(canje.montoDescuento()).signum() == 0) {
+            return sinEfecto(negocioId, canje, MONTO_CERO);
         }
         if (canje.ventaId() == null) {
             return sinEfecto(negocioId, canje, SIN_VENTA);
