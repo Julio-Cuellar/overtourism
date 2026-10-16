@@ -16,6 +16,8 @@ mvn spring-boot:run -Dspring-boot.run.profiles=desarrollo
 - Con `desarrollo` se encienden **Ventas, Caja e Inventario en memoria** (los datos se pierden al reiniciar) y **seis productos simulados** rotulados `[SIMULADO]`. Con el perfil `produccion` esos tres módulos **no** se encienden todavía (falta su persistencia).
 - Los códigos de acceso no se envían: se leen en `GET /dev/canal/codigo?correo=...` (solo en desarrollo).
 
+**Colección de Postman:** `backend/postman/negocio360.postman_collection.json` con su entorno `negocio360.local.postman_environment.json` prueba todos los módulos en orden (carpetas 0 a 5, 77 peticiones, cada escritura en sus dos pasos). Requiere el perfil `desarrollo`.
+
 ## 2. Una sola puerta: sesión de Identidad
 
 Todo (REST y GraphQL) usa el mismo token: `Authorization: Bearer <token>`. El **negocio, el actor y los permisos salen de la sesión**; ninguna operación recibe `negocioId`.
