@@ -220,7 +220,7 @@ public final class Contabilizador {
 
     /**
      * Concilia un corte contra las ventas en efectivo contabilizadas de su sesion, lo guarda y, si queda en
-     * DESCUADRE_VENTAS y aun no se habia avisado, publica el aviso (J-03). No hace ningun ajuste de ventas (D-84).
+     * DESCUADRE_VENTAS y aun no se habia avisado, publica el aviso (J-03). No hace ningun ajuste de ventas (D-99).
      */
     private void conciliar(CorteContable corte, UUID causaId) {
         var contables = ventas.deSesion(corte.negocioId(), corte.cajaSesionId()).stream()

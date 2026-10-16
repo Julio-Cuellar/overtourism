@@ -28,7 +28,7 @@ Este archivo existe para que **cualquier agente o persona que entre al proyecto 
 | Mapa de Clientes (página publicada, privada) | https://claude.ai/artifact/W6ubG316Laxipgbc4EqAV7 — versión 0.2 (2026-10-13): entidades con diagrama entidad-relación, 38 reglas de dominio, funciones, eventos, tabla de comunicación con la API (GraphQL, WebSocket, REST, Java y bus), plan de consultas, seguridad, tabla de cumplimiento de la LFPDPPP y plan. La versión escrita vive en `docs/diseno/clientes.md` (2026-10-13). Privada: solo la ve quien tenga acceso. |
 | Mapa de Identidad (página publicada, privada) | https://claude.ai/artifact/AyFzKR2Rp4cJszZYagsFpa — versión 0.1 (2026-10-13): módulo de autenticación y equipo del personal de los negocios, por REST y API Java: 13 tablas, 45 reglas, 26 endpoints, 25 permisos con matriz por rol, 20 reglas de seguridad, 15 diagramas y el plan en 8 épicas y 36 historias con sprints propuestos. Privada. Aún no hay documento en `docs/diseno/` ni nada en Jira. |
 | Mapa de Contabilidad (página publicada) | https://claude.ai/artifact/CYLdtRhkzV2o1wRZsCphmh — versión 0.2 (2026-10-15): 14 tablas con diagramas entidad-relación, 40 reglas de dominio, 30 funciones de `ContabilidadApi`, 4 eventos publicados y 3 consumidos, tabla de comunicación con la API (GraphQL, WebSocket, REST, Java y bus), plan de consultas, seguridad y plan. La versión escrita vive en `docs/diseno/contabilidad.md`. Compartida con cualquiera que tenga el enlace. |
-| `docs/diseno/contabilidad.md` | Diseño del módulo de Contabilidad (v0.2, PROPUESTA): dueño de cada dato, reglas A, C, T, E, J, U y F con prueba de aceptación, API pública, eventos, contratos que necesita de Ventas, Pasaporte y Caja, GraphQL y REST, seguridad SK, decisiones D-76 a D-89, hallazgos K-1 a K-12 y 9 preguntas abiertas. |
+| `docs/diseno/contabilidad.md` | Diseño del módulo de Contabilidad (v0.2, PROPUESTA): dueño de cada dato, reglas A, C, T, E, J, U y F con prueba de aceptación, API pública, eventos, contratos que necesita de Ventas, Pasaporte y Caja, GraphQL y REST, seguridad SK, decisiones D-91 a D-104, hallazgos K-1 a K-12 y 9 preguntas abiertas. |
 | `docs/diseno/contabilidad-diagramas.md` | Diagramas de Contabilidad (12 en Mermaid), interacciones síncronas y asíncronas, ejemplos de contratos de eventos y modelo de datos con todas las columnas e índices. |
 | Mockup de la plataforma (página publicada) | https://claude.ai/artifact/3o4no2gWTCwAkG5tcatffJ — flujos, módulos, pantallas, sección de APIs (GraphQL, WebSocket, REST). Marca como primera opción de stack a Python; **ya está desactualizada en eso** (ver D-03). |
 | `docs/mockups/app-turista.html` | Mockup detallado de la app del turista (solo local, abrir en el navegador): teléfono interactivo con 16 pantallas, 75 acciones con su operación, entrada, salida y eventos, mapa de la interfaz (qué pasa al tocar cada botón), catálogo de 14 eventos publicados y 3 consumidos, mapa de comunicación con el bus y hallazgos H-1 a H-15. Operaciones y eventos son PROPUESTA. |
@@ -37,6 +37,11 @@ Este archivo existe para que **cualquier agente o persona que entre al proyecto 
 | App del turista (página publicada, privada) | https://claude.ai/artifact/2cTvdAS5Y5pTaSbiS29f67 — copia de `docs/mockups/app-turista.html` al 2026-10-08. Privada: solo la ve quien tenga acceso. Si el archivo del repositorio cambia, hay que volver a publicarla. |
 | Rutas del turista (página publicada, privada) | https://claude.ai/artifact/9iQfz3q8Zu77AkKcrRDTgE — copia de `docs/mockups/rutas.html` al 2026-10-08. Privada: solo la ve quien tenga acceso. |
 | Mockup original (página publicada) | https://claude.ai/artifact/SgG3tYJ4SVua6qagM6QVM1 — bot, panel de gestión y tablero de gobierno del alcance anterior. |
+| `docs/diseno/ventas.md` | Diseño del módulo de Ventas (borrador v0.1, 2026-10-14): reglas VT-01 a VT-13, modelo de datos, `VentasApi`, contrato de `venta.registrada` y `venta.anulada` (D-77), comunicación con la API, flujos y criterios de aceptación. |
+| `docs/diseno/caja.md` | Diseño del módulo de Caja (borrador v0.1, 2026-10-14): reglas CJ-01 a CJ-12, turnos, movimientos, corte, `CajaApi`, eventos `caja.*`, flujos y criterios de aceptación. |
+| `docs/pruebas/ventas-caja-f2-f3.tdd.md` | Evidencia TDD de Ventas y Caja en memoria (F2 y F3, 2026-10-15): RED y GREEN, qué garantiza cada prueba, cobertura, JavaDoc y pendientes. |
+| `docs/planes/ventas-caja-v1.md` | Plan mayor de Ventas y Caja (2026-10-14): requisitos, fases F0 a F6, estimación (≈ 9.9 días-persona), calendario (no cabe antes del evento) y preguntas. Esperando confirmación. |
+| Ventas y Caja (página publicada, compartida con cualquiera que tenga el enlace) | https://claude.ai/artifact/FVtCcUoJHC8A48rUcJ17xE — **versión 2** (2026-10-14), alineada con `ventas.md`, `caja.md` y el plan: qué se corrigió de la versión 1, decisiones, mapa de módulos y eventos, entidad-relación, entidades, reglas VT y CJ, funciones, códigos de error, eventos con JSON, tres secuencias, estados, tabla de comunicación con la API con filtros, contratos con otros módulos, criterios de aceptación, JavaDoc (D-83), plan y preguntas. La versión 1 (hecha sin leer el repositorio) quedó reemplazada. Copia local: `docs/mockups/ventas-caja.html`. Si cambian los documentos, hay que volver a publicarla. |
 
 ---
 
@@ -170,20 +175,35 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-63 | El bot de chat no continúa por ahora. Se eliminan las vías REST del bot y el origen `BOT` | ACEPTADA | 2026-10-13 | Dicho por el usuario. Cierra la decisión abierta sobre el bot. Afecta también el REST del bot de Inventario (D-46) |
 | D-64 | Umbrales iniciales de Clientes: inactivo a los 60 días sin comprar; frecuente con 3 compras en 90 días. Son reglas versionadas | ACEPTADA (delegada) | 2026-10-13 | El usuario respondió «cómo veas conveniente» |
 | D-65 | El `total` de `venta.registrada` es neto del cupón cuando aplica, y el total completo cuando no hay cupón | ACEPTADA | 2026-10-13 | Dicho por el usuario («sí, solo cuando aplica»). Falta congelarlo con el dueño de Ventas |
-| D-76 | Contabilidad es un módulo horizontal con esquema `contabilidad`; dueña del catálogo de cuentas, pólizas, periodos, saldos, reglas de contabilización y conciliación de cortes | PROPUESTA | 2026-10-15 | D-66 a D-75 no están en esta tabla: los usa el Mapa de Identidad (entrada del 2026-10-13). Por eso Contabilidad empieza en D-76 |
-| D-77 | Contabilidad solo escucha `venta.registrada`, `cupon.canjeado` y `caja.cerrada` | ACEPTADA | 2026-10-15 | Dicho por el usuario. Choca con `inventario.md`, que le asigna `inventario.movimiento_registrado` (K-10, pregunta 9) |
-| D-78 | Partida doble con pólizas inmutables; los errores se corrigen con póliza de reversa | PROPUESTA | 2026-10-15 | |
-| D-79 | Una póliza por evento, no una por día | PROPUESTA | 2026-10-15 | Idempotencia y trazabilidad simples |
-| D-80 | Catálogo base único para restaurantes, museos y misceláneos, copiado a cada negocio al activar; lo que cambia por giro son reglas en datos | PROPUESTA | 2026-10-15 | |
-| D-81 | Los cupones se presentan en bruto: cargo a Descuentos sobre ventas y abono a Ventas, por la base sin IVA | PROPUESTA | 2026-10-15 | El neto sigue igual a D-65 |
-| D-82 | Un evento con fecha de un periodo cerrado entra como extemporáneo en el periodo abierto más antiguo | PROPUESTA | 2026-10-15 | |
-| D-83 | Bandeja de pendientes en lugar de fallar: ningún evento se pierde ni bloquea la cola | PROPUESTA | 2026-10-15 | |
-| D-84 | La conciliación de cortes avisa pero no ajusta ventas; solo la diferencia de conteo genera póliza | PROPUESTA | 2026-10-15 | |
-| D-85 | Exportaciones de Contabilidad por REST: CSV de pólizas en P1, balanza en P2, XML del SAT en P3 | PROPUESTA | 2026-10-15 | El alcance original de `CLAUDE.md` dejaba fuera los reportes exportables (pregunta 8 de `contabilidad.md`) |
-| D-86 | Sin WebSocket de Contabilidad en P1; `actividadContable` en P2, alimentada por el bus | PROPUESTA | 2026-10-15 | |
-| D-87 | Contabilidad no guarda datos personales ni `cliente_id` | PROPUESTA | 2026-10-15 | |
-| D-88 | Campos nuevos opcionales: `medio_pago`, `caja_sesion_id` y `propina` en `venta.registrada` v1; `financiador` en `cupon.canjeado` v1; `caja.cerrada` v1 completo (Caja sin diseño) | PROPUESTA | 2026-10-15 | Falta congelar con Ventas, Pasaporte y Caja |
-| D-89 | Contabilidad no es herramienta fiscal: no emite CFDI ni calcula declaraciones | PROPUESTA | 2026-10-15 | |
+| D-76 | Ventas y Caja son dos módulos horizontales separados (`ventas`, `caja`). Ventas no conoce a Caja: el canal obtiene el turno con `CajaApi.turnoActivo` y pasa el `turno_id`. Caja escucha `venta.*` y llama a `VentasApi.resumenTurno` en el corte | PROPUESTA | 2026-10-14 | Evita un ciclo. `docs/diseno/ventas.md` y `caja.md`. La separación la pidió el usuario; el reparto de dependencias es mío |
+| D-77 | Contrato de `venta.registrada` v1 (`venta_id`, `folio`, `serie`, `turno_id`, `cliente_id?`, `cupon_id?`, `subtotal`, `descuento`, `total`, `lineas[]`, `pagos[]`) y `venta.anulada` v1 (`venta_id`, `turno_id`, `motivo?`, `lineas[]`, `pagos[]`) | PROPUESTA | 2026-10-14 | Une lo que piden Inventario (§7.2, D-25), Clientes (D-48, D-65) y Caja. Compatible con `VentaRegistradaV1` y `VentaAnuladaV1` de Clientes (lector tolerante). Falta acordarlo con quien programa Inventario y Clientes |
+| D-78 | Cupón: Ventas lo cotiza con `PasaporteApi.cotizarCupon` (nuevo, solo lectura) al preparar y lo canjea con `canjearCupon` al confirmar, en la misma transacción | PROPUESTA | 2026-10-14 | Precisa D-34. Revertir el canje al anular está abierto (VT-10) |
+| D-79 | El folio de venta es consecutivo por negocio y serie y se asigna al confirmar | PROPUESTA | 2026-10-14 | Sin huecos por preparaciones que expiran |
+| D-80 | Ventas no conoce boletos ni venta a granel: la unidad y si un producto admite fracción vienen de Catálogo; lo propio del museo vive en Museos | PROPUESTA | 2026-10-14 | Cumple R4 |
+| D-81 | Preparar el corte de caja pone el turno `EN_CORTE` (única preparación que cambia un estado); descartar o expirar lo regresa a `ABIERTO` | PROPUESTA | 2026-10-14 | Excepción a «preparar no escribe» de Inventario §6.2, para que no entren ventas entre el conteo y la confirmación |
+| D-82 | Anular una venta usa preparar → confirmar, con motivo y permiso de Identidad; una venta registrada no se edita | PROPUESTA | 2026-10-14 | Quién puede anular y hasta cuándo está abierto |
+| D-83 | Todo el código se documenta con **JavaDoc**: cada tipo y método público, con `@param`, `@return`, fallos (`@throws` o código de error), el ID de función y las reglas que aplica (`VT-04`, `CJ-07`), y escala y redondeo en todo monto. `mvn javadoc:javadoc` sin advertencias entra en la verificación | ACEPTADA | 2026-10-14 | Dicho por el usuario: «el codigo debe de ser documentado con JavaDoc para no batallar a la hora de encontrar errores». Falta reflejarlo en la skill `negocio360-reglas` (§7) si el equipo lo pide |
+| D-84 | El patrón preparar → confirmar genérico vive en `compartido.comandos` (`ServicioPreparacion`, `ManejadorComando`, `ResultadoComando` con `datos`); lo usan Ventas y Caja. Clientes conserva el suyo hasta que se migre | PROPUESTA | 2026-10-15 | Evita copiar 180 líneas por módulo. Agrega el ámbito de la preparación para contar ventas preparadas por turno (CJ-07) |
+| D-85 | Al confirmar, si el cálculo deja de cuadrar porque el mundo cambió entre los dos pasos (precio, cupón, ventas del turno), la respuesta es `COMANDO_CAMBIO` y no el error de validación | PROPUESTA | 2026-10-15 | Encontrado al programar: sin esto salían `PAGOS_NO_CUADRAN` o `CORTE_REQUIERE_AUTORIZACION`, que confunden a la persona |
+| D-86 | Ventas verifica que el turno siga abierto al preparar y al confirmar, preguntando por la interfaz `VerificadorDeTurno` de su propia API pública; Caja la implementa (`VerificadorDeTurnoDesdeCaja`, estado efectivo de D-81). Ventas sigue sin depender de Caja | PROPUESTA | 2026-10-15 | Revisión de seguridad A1: antes Ventas confiaba solo en el canal y una venta en un turno cerrado o en corte se registraba igual |
+| D-87 | `canjearCupon` recibe el descuento que vio el cajero; si Pasaporte calcula otro, rechaza con `COMANDO_CAMBIO` sin canjear | PROPUESTA | 2026-10-15 | Revisión de calidad (medio 2): evita que un cupón quede gastado en una venta que no se registra. Cambia el contrato J3 que hay que acordar con el dueño de Pasaporte |
+| D-88 | El consumidor de Caja marca un evento como procesado solo si lo aplicó. Si el turno no existe o cerró responde `SIN_TURNO_ABIERTO`, y si el evento no cumple el contrato o no viene de Ventas responde `DATOS_INVALIDOS`; en los dos casos el evento no se pierde. La anulación revierte lo que Caja registró, no los montos del evento | PROPUESTA | 2026-10-15 | Revisión de seguridad y calidad (A1, M3, M4): antes la venta se descartaba y quedaba marcada, y un método desconocido lanzaba excepción en cada reintento |
+| D-89 | El frontend se hace en **Dart y Flutter**, pensado sobre todo como app móvil, en la carpeta `frontend/` junto a `backend/`. Habla con el servidor por GraphQL (y REST para el inicio de sesión) | ACEPTADA | 2026-10-15 | Lo pidió el usuario: «comienza a maquetar el front con dart y flutter ya que mayormente sera app movil». Reemplaza la opción Next.js de `CLAUDE.md` |
+| D-90 | Mientras no exista el módulo de negocios, en la demo las sesiones sin negocio usan un **negocio de demostración** fijado en la configuración del servidor (`negocio360.demo.negocio-id`). El cliente nunca elige el negocio. Solo con `negocio360.demo.habilitada=true` y nunca con el perfil `produccion` | PROPUESTA | 2026-10-15 | F4: Identidad todavía no asigna negocio a la sesión, y sin negocio no hay contexto para Ventas ni Caja |
+| D-91 | Contabilidad es un módulo horizontal con esquema `contabilidad`; dueña del catálogo de cuentas, pólizas, periodos, saldos, reglas de contabilización y conciliación de cortes | PROPUESTA | 2026-10-15 | D-66 a D-75 no están en esta tabla: los usa el Mapa de Identidad (entrada del 2026-10-13). Contabilidad empezaba en D-76; al integrar `main` el 2026-10-15 se renumeró a D-91 porque Ventas y Caja ya usaban D-76 a D-90 |
+| D-92 | Contabilidad solo escucha `venta.registrada`, `cupon.canjeado` y `caja.cerrada` | ACEPTADA | 2026-10-15 | Dicho por el usuario. Choca con `inventario.md`, que le asigna `inventario.movimiento_registrado` (K-10, pregunta 9) |
+| D-93 | Partida doble con pólizas inmutables; los errores se corrigen con póliza de reversa | PROPUESTA | 2026-10-15 | |
+| D-94 | Una póliza por evento, no una por día | PROPUESTA | 2026-10-15 | Idempotencia y trazabilidad simples |
+| D-95 | Catálogo base único para restaurantes, museos y misceláneos, copiado a cada negocio al activar; lo que cambia por giro son reglas en datos | PROPUESTA | 2026-10-15 | |
+| D-96 | Los cupones se presentan en bruto: cargo a Descuentos sobre ventas y abono a Ventas, por la base sin IVA | PROPUESTA | 2026-10-15 | El neto sigue igual a D-65 |
+| D-97 | Un evento con fecha de un periodo cerrado entra como extemporáneo en el periodo abierto más antiguo | PROPUESTA | 2026-10-15 | |
+| D-98 | Bandeja de pendientes en lugar de fallar: ningún evento se pierde ni bloquea la cola | PROPUESTA | 2026-10-15 | |
+| D-99 | La conciliación de cortes avisa pero no ajusta ventas; solo la diferencia de conteo genera póliza | PROPUESTA | 2026-10-15 | |
+| D-100 | Exportaciones de Contabilidad por REST: CSV de pólizas en P1, balanza en P2, XML del SAT en P3 | PROPUESTA | 2026-10-15 | El alcance original de `CLAUDE.md` dejaba fuera los reportes exportables (pregunta 8 de `contabilidad.md`) |
+| D-101 | Sin WebSocket de Contabilidad en P1; `actividadContable` en P2, alimentada por el bus | PROPUESTA | 2026-10-15 | |
+| D-102 | Contabilidad no guarda datos personales ni `cliente_id` | PROPUESTA | 2026-10-15 | |
+| D-103 | Campos nuevos opcionales: `medio_pago`, `caja_sesion_id` y `propina` en `venta.registrada` v1; `financiador` en `cupon.canjeado` v1; `caja.cerrada` v1 completo (Caja sin diseño) | PROPUESTA | 2026-10-15 | Falta congelar con Ventas, Pasaporte y Caja |
+| D-104 | Contabilidad no es herramienta fiscal: no emite CFDI ni calcula declaraciones | PROPUESTA | 2026-10-15 | |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -192,7 +212,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | Bot de chat (Telegram o WhatsApp) para locatarios | Se mantiene o se descarta | DESCARTADO por ahora (D-63, 2026-10-13) |
 | Verticales reales en la demo | Solo Restaurantes real, Museos y Misceláneos como mockup (recomendado) | ABIERTA |
 | Aplicación del turista y del locatario | Una PWA con dos modos, o dos aplicaciones | ABIERTA |
-| Frontend y orquestación del bot | Next.js y n8n según `CLAUDE.md`, sin confirmar con el nuevo backend | ABIERTA |
+| Frontend y orquestación del bot | Next.js y n8n según `CLAUDE.md`, sin confirmar con el nuevo backend | Frontend: **Dart y Flutter, móvil primero** (D-89, ACEPTADA, 2026-10-15). Bot: descartado (D-63) |
 
 ---
 
@@ -917,18 +937,152 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 **Archivos creados:** `backend/docker-compose.yml`, `backend/docker/postgres/01-roles.sh`, `backend/.env.example`, `backend/.env` (local, ignorado), `.gitattributes`, `backend/src/main/resources/db/migration/V001, V002, V010, V020`, `backend/src/test/java/mx/negocio360/persistencia/*` (11 clases), `backend/src/test/resources/META-INF/spring.factories`, `docs/pruebas/postgres-flyway-outbox.tdd.md`.
 **Archivos modificados:** `backend/pom.xml`, `backend/src/main/resources/application.yml`, `backend/postman/*` (descripción), `docs/BITACORA.md` (esta entrada).
 
+### 2026-10-14 — Diseño y plan de Ventas y Caja (propuesta)
+**Pedido del usuario:** diseñar Ventas y Caja para el comerciante (museo y misceláneo), separados, con entidades, funciones, reglas con ID, eventos y comunicación con la API; los planes en Markdown y el código documentado con JavaDoc. Al clonar el repositorio respondió «si» a rehacer el plan dentro de él.
+
+**Qué se vio:**
+1. Un primer borrador se hizo antes de clonar el repositorio (página publicada, ver «Documentos relacionados»). Al leer la Bitácora y los diseños se encontraron choques y se corrigieron en los documentos nuevos: los eventos se llaman `venta.registrada` y `venta.anulada` (Clientes ya los consume); el cupón va por D-34 (Ventas llama a Pasaporte, no al revés); `C-xx` ya lo usa Inventario y `V-xx` Clientes, así que Ventas usa `VT-xx` y Caja `CJ-xx`; las mutaciones van por `prepararComando` / `confirmarComando` (D-55); redondeo HALF_UP (D-20); sin REST de bot (D-63).
+2. `preparar` no escribe en las tablas de negocio, como en Inventario: no existen ventas «preparadas». La única excepción propuesta es el corte de caja (D-81).
+3. Ventas no conoce a Caja para no crear un ciclo: el canal pasa el `turno_id` (D-76).
+4. El plan da ≈ 9.9 días-persona contra un día disponible: **no cabe** antes del evento. Recomendación: mostrar Ventas y Caja como mockup en la demo y programar después.
+
+**Decisiones:** D-76 a D-82 (PROPUESTA). D-83, JavaDoc obligatorio (ACEPTADA, dicho por el usuario).
+
+**Pendiente:**
+- Que el equipo responda §13 de `ventas.md`, §12 de `caja.md` y §13 del plan (programar o mockup, dueños de Catálogo y Pasaporte, quién anula, umbral del corte).
+- Acordar D-77 con quien programa Clientes e Inventario, y `cotizarCupon` / `canjearCupon` con el dueño de Pasaporte.
+- Si se acepta D-83 para todo el proyecto, agregarlo a la skill `negocio360-reglas` y a `.agent/rules/negocio360.md` (no se tocaron).
+- **No hay autorización para programar Ventas ni Caja.**
+
+**No verificado:** los diagramas Mermaid no se renderizaron. No se hizo commit ni se cambió de rama (los archivos quedan sin confirmar en `main`; el flujo de D-32 pide trabajar en la rama personal).
+
+**Archivos creados:** `docs/diseno/ventas.md`, `docs/diseno/caja.md`, `docs/planes/ventas-caja-v1.md`.
+**Archivos modificados:** `docs/BITACORA.md` (decisiones D-76 a D-83, documentos relacionados y esta entrada).
+
+### 2026-10-14 — Página de Ventas y Caja, versión 2
+**Pedido del usuario:** «Crea el artefacto como te lo pedi anteriormente, con la diferencia que corrigas y agreges lo que falto basandote en el repositorio y su contenido».
+
+**Qué se hizo:**
+1. Se republicó la página https://claude.ai/artifact/FVtCcUoJHC8A48rUcJ17xE (misma URL, versión 2) con el contenido de `docs/diseno/ventas.md`, `docs/diseno/caja.md` y `docs/planes/ventas-caja-v1.md`. Sigue la skill `generar-mockup-html`: chips de borrador y datos inventados, identidad talavera y cempasúchil, azul punteado = síncrono y dorado continuo = asíncrono, «Qué mirar» en cada figura y fuentes al pie.
+2. Lo pedido originalmente (entidad-relación, diagrama de eventos, secuencias, tablas de entidades, funciones, reglas y eventos con JSON, y tabla de comunicación con la API) más lo que faltaba: tabla de qué se corrigió de la versión 1, decisiones con su estado, códigos de error, contratos con otros módulos, estados, criterios de aceptación, convención JavaDoc (D-83), plan con veredicto de calendario y preguntas.
+3. Copia local en `docs/mockups/ventas-caja.html`, con Mermaid 11.4.1 desde jsDelivr (se comprobó que la URL responde 200).
+4. Al publicar se vio que la página ya está **compartida con cualquiera que tenga el enlace** (lo cambió el usuario). La versión 2 se publicó en esa misma URL, así que quien tenga el enlace ve los cambios.
+
+**Decisiones:** ninguna nueva. Se mantienen D-76 a D-82 (PROPUESTA) y D-83 (ACEPTADA).
+
+**No verificado:** no se abrió la página ni la copia local en un navegador, así que no se revisó a 400 y 1280 px, en tema claro y oscuro, ni que los 8 diagramas Mermaid se dibujen sin error. Solo se comprobó que el JavaScript de la página no tiene errores de sintaxis (`node --check`). No se hizo commit.
+
+**Archivos creados:** `docs/mockups/ventas-caja.html`.
+**Archivos modificados:** `docs/BITACORA.md` (fila de «Documentos relacionados» y esta entrada).
+
+### 2026-10-14 — Autorización para programar Ventas y Caja
+**Autorización escrita (cita textual del usuario):** «Autorizo programar Ventas y Caja en la rama uriel».
+
+**Alcance que le doy (interpretación mía):**
+- Código de los módulos `ventas` y `caja` según `docs/diseno/ventas.md`, `docs/diseno/caja.md` y `docs/planes/ventas-caja-v1.md`, empezando por las fases F2 (Ventas) y F3 (Caja) **en memoria**, como Clientes I2: dominio, comandos con preparar → confirmar, eventos y listeners, con pruebas primero (TDD) y JavaDoc (D-83).
+- Catálogo y Pasaporte no existen: Ventas los usa por puertos propios con dobles en las pruebas. No se crean esos módulos.
+- **No incluye** migraciones de Flyway ni repositorios JDBC (F5), ni el esquema GraphQL (F4), salvo que el usuario lo pida. Tampoco cambia los contratos ya programados de Clientes.
+- D-76 a D-82 siguen como PROPUESTA: se programan tal cual están en el diseño y, si el equipo cambia alguna, se ajusta el código.
+- Trabajo en la rama local `uriel`, creada desde `main` (la remota `origin/uriel` estaba 4 commits atrás y sin nada propio). No se hace `git push` sin confirmar.
+
+### 2026-10-15 — Ventas y Caja programados en memoria (F2 y F3)
+**Pedido del usuario:** «Autorizo programar Ventas y Caja en la rama uriel» (entrada del 2026-10-14), con el flujo TDD.
+
+**Qué se hizo:**
+1. **`compartido.comandos`** (nuevo, D-84): preparar → confirmar genérico para Ventas y Caja. **`compartido.dinero.Redondeo`** (nuevo): la utilidad única de D-20.
+2. **Módulo `ventas`**: `VentasApi`, `RegistrarVenta` y `AnularVenta` con preparar → confirmar, folios por negocio y serie, cupón cotizado y canjeado en la misma confirmación (D-78), eventos `venta.registrada` v1 y `venta.anulada` v1 con el contrato de D-77, y `resumenTurno`. Catálogo, Pasaporte y permisos son puertos con dobles en las pruebas. Solo depende de `compartido`.
+3. **Módulo `caja`**: `CajaApi`, crear caja, abrir turno con fondo, entradas y retiros, corte con EN_CORTE al preparar (D-81) y conciliación contra Ventas (CJ-07), descartar corte, y `ConsumidorVentas` idempotente por evento y por venta, con marca de anulación previa. Depende de `compartido` y `ventas` en un solo sentido (D-76).
+4. Todo el código nuevo lleva JavaDoc que cita funciones, reglas y códigos (D-83). `mvn javadoc:javadoc -Ddoclint=all` da 0 advertencias en el código nuevo.
+5. `caja.md`: tres códigos nuevos (`CAJA_DUPLICADA`, `NOMBRE_CAJA_INVALIDO`, `TURNO_NO_ENCONTRADO`) y la precisión de CJ-02 (fondo 0.00 sin movimiento).
+
+**Verificación hecha:** RED real dos veces (no compilaba por las clases faltantes). GREEN: Ventas 54/54, Caja 41/41 y compartido 32 nuevas. `mvn -B verify` sin las 10 clases que necesitan Docker: **805/805, BUILD SUCCESS, cobertura cumplida** (Ventas 87.8 %, Caja 92.8 %, `compartido.comandos` 94.0 % de líneas). Detalle en `docs/pruebas/ventas-caja-f2-f3.tdd.md`.
+
+**No verificado:**
+- `mvn -B verify` completo: 146 errores en las 10 clases de persistencia y de arranque porque **Docker Desktop está apagado**. Ningún error viene de Ventas ni de Caja, pero hay que repetirlo con Docker encendido.
+- No hubo revisión de agentes de Java ni de seguridad, ni ronda de mutaciones.
+- **No hay commits**: la máquina no tiene identidad de Git (`user.name` y `user.email`). Todo está sin confirmar en la rama local `uriel`.
+
+**Decisiones:** D-84 y D-85 (PROPUESTA).
+
+**Pendiente:** identidad de Git y commits; verify completo con Docker; revisión de agentes; JavaDoc de `DecimalPlano` (4 advertencias, anterior a esta etapa); adaptadores reales y JDBC (F5) y GraphQL (F4), ambos sin autorización; VT-10 y CJ-11 (P2).
+
+**Archivos creados:** `backend/src/main/java/mx/negocio360/compartido/comandos/*` (8), `compartido/dinero/Redondeo.java`, `ventas/**` (30), `caja/**` (48); pruebas en `backend/src/test/java/mx/negocio360/{compartido/comandos,compartido/dinero,compartido/pruebas,ventas,caja}/**`; `docs/pruebas/ventas-caja-f2-f3.tdd.md`.
+**Archivos modificados:** `backend/src/test/java/mx/negocio360/EstructuraModulosTest.java` (módulos `ventas` y `caja`), `docs/diseno/caja.md`, `docs/BITACORA.md`.
+
+### 2026-10-15 — Correcciones de la revisión de seguridad y calidad de Ventas y Caja
+**Pedido del usuario:** «realiza los 6 puntos como dices» (los seis puntos propuestos tras las revisiones de `ecc:security-reviewer` y `ecc:code-reviewer`). Dentro de la autorización del 2026-10-14; sin base de datos, GraphQL ni push.
+
+**Qué se hizo (con pruebas primero):**
+1. **Caja no pierde eventos** (D-88): un evento solo se marca como procesado si se aplicó. `SIN_TURNO_ABIERTO` y `DATOS_INVALIDOS` dejan el evento pendiente (`ResultadoAplicacion.completado()`). Exige origen `ventas`, método conocido y montos positivos, acotados y con 2 decimales. La anulación revierte los movimientos que Caja registró, no los montos del evento. Ya no lanza excepción en cada reintento.
+2. **Ventas verifica el turno** (D-86): interfaz `ventas.VerificadorDeTurno` que Caja implementa con `VerificadorDeTurnoDesdeCaja` (estado efectivo de D-81). Ventas sigue sin depender de Caja (`EstructuraModulosTest` en verde).
+3. **`turnoActivo` devuelve el estado efectivo** (`Turno.vigenteEn`): un corte vencido sale ABIERTO.
+4. **Límites con código propio:** `DEMASIADAS_LINEAS`, `DEMASIADOS_PAGOS`, `TEXTO_DEMASIADO_LARGO`; cupón de más de 40 caracteres es `CUPON_INVALIDO` sin llamar a Pasaporte; `Redondeo.dineroValido` (tope `NUMERIC(14, 2)`) rechaza `1E+999999999` sin calcular, en Ventas y en Caja. Los límites se revisan antes de consultar a Caja, Catálogo o Pasaporte.
+5. **El cupón no se gasta si la venta falla** (D-87): `canjear` recibe el descuento esperado y el puerto rechaza sin canjear.
+6. **Detalles:** el resumen de la venta lleva cada línea con su precio (detecta cambios que se compensan); copias defensivas en `RegistrarVentaComando` y `CerrarTurnoComando`; `toString` sin cupón, cliente, actores, motivo ni nota; los textos de `CONCURRENCIA`, `ERROR_TEMPORAL` y `CORTE_EVENTOS_PENDIENTES` piden volver a empezar porque el token ya se gastó; pruebas renombradas (`folios_preparacionVencida_noConsumeFolio` ahora sí deja vencer el token; `eventoMalFormado_falla` pasó a `metodoDesconocido_datosInvalidos`).
+
+**Verificación hecha:** RED en compilación (faltaban `VerificadorDeTurno` y su implementación) y luego RED en ejecución con firmas vacías: 37 fallas por la razón esperada. GREEN: `mvn -B verify` sin las 10 clases que necesitan Docker: **848/848, BUILD SUCCESS, cobertura cumplida** (Ventas 96.6 %, Caja 97.6 %, `compartido.comandos` 94.0 %, `compartido.dinero` 100 %). JavaDoc con `-Ddoclint=all`: 0 advertencias en los paquetes tocados.
+
+**No verificado:** `verify` completo con Docker (sigue apagado). No se repitió la revisión de agentes sobre estas correcciones.
+
+**Decisiones:** D-86, D-87 y D-88 (PROPUESTA). Siguen abiertas para el equipo: venta con total 0.00 (cupón del 100 %), quién puede retirar efectivo y preparar el corte, si quien autoriza una diferencia debe ser otra persona, y quitar el texto libre (`motivo`, `serie`) de los eventos (cambia D-77).
+
+**Pendiente para F5 (base de datos):** bloqueos del turno al cerrar y retirar, una sola transacción para marcar el evento y aplicarlo, limpieza de preparaciones viejas, firma del comando guardado y cola de revisión para `DATOS_INVALIDOS`.
+
+**Además:** documento para el equipo en lenguaje simple (qué se hizo, qué falta, dónde va el frontend y qué será funcional, demo o simulación en el concurso): https://claude.ai/code/artifact/b1efa956-2b71-48d5-b553-e81d2a9c6a67 (privado hasta que se comparta).
+
+**Archivos creados:** `ventas/VerificadorDeTurno.java`, `caja/aplicacion/VerificadorDeTurnoDesdeCaja.java`; pruebas `RevisionVentasTest`, `RevisionCajaTest` y `ventas/fakes/TurnosEnMemoria`.
+**Archivos modificados:** Ventas (manejador de venta, calculadora, plantillas, códigos, comandos, `Venta`, servicio, puerto de cupones), Caja (consumidor, resultado, servicio, API, `Turno`, validaciones, plantillas, códigos, comandos), `compartido/dinero/Redondeo`, dobles y pruebas existentes, `docs/diseno/ventas.md`, `docs/diseno/caja.md`, `docs/pruebas/ventas-caja-f2-f3.tdd.md` y esta Bitácora (D-86 a D-88).
+
+### 2026-10-15 — Rama `uriel` unida a `main`; autorización de F4 y del frontend en Flutter
+**Pedido del usuario (cita textual):** «los cambios qu ya hayas realizado y se encuentren bien y correctos [ ] Subir la rama uriel a GitHub y unirla a main, para que el equipo trabaje sobre Ventas y Caja. Dame opciones de datos publicos del gobierno del estado de puebla que se pueden colocar en la app, abrir las puertas de Ventas y Caja (fase F4) y crear la carpeta frontend/. que quede anotado en la Bitácora. Finalmente una vez creada la carpeta del front, comienza a maquetar el front con dart y flutter ya que mayormente sera app movil».
+
+**Hecho:** `git push` de `uriel` y avance directo (fast-forward) de `main` en GitHub hasta `407124c`, sin conflictos porque `uriel` contenía a `main`. Se hizo sin pull request porque la máquina no tiene `gh`.
+
+**Autorización escrita y alcance que le doy (interpretación mía):**
+- **F4 de Ventas y Caja:** exponer sus comandos y consultas por GraphQL (D-55: `prepararComando` y `confirmarComando`, más consultas propias), encender los módulos al arrancar con Spring y permitir CORS para el frontend. Catálogo y Pasaporte siguen sin existir: se cargan productos y cupones de demostración **rotulados como simulados**. Los repositorios siguen en memoria (F5, JDBC, **no** está autorizada).
+- **Carpeta `frontend/`** en la raíz, junto a `backend/`.
+- **Frontend en Dart y Flutter**, pensado sobre todo para móvil. Esto cierra la decisión abierta «Frontend» de la sección 4 (antes Next.js sin confirmar): **D-89 ACEPTADA**.
+
+### 2026-10-15 — F4 de Ventas y Caja por GraphQL y maqueta de la app en Flutter
+**Pedido del usuario:** la entrada anterior (autorización de F4, carpeta `frontend/` y Flutter).
+
+**Qué se hizo:**
+1. **F4 (commit `3c9419f`, sin push):** módulo nuevo `canal` con `prepararComando` y `confirmarComando` (D-55) para Ventas y Caja; el token lleva al frente su módulo (`ventas.` o `caja.`). Consultas `venta`, `ventasDelTurno`, `cajas`, `turnoActivo`, `saldoTurno` y `cortes`. Los errores de dominio salen con `codigo`, `regla` y el texto fijo. El negocio sale de la sesión de Identidad (D-90 para la demo).
+2. Ventas y Caja se encienden al arrancar con repositorios **en memoria** y el bus de Spring (sin outbox: F5). `canal.demo` simula Catálogo (6 productos), Pasaporte (cupones `PASAPORTE-20` y `PASAPORTE-50`, reutilizables en la demo) y permisos (toda cuenta puede anular y autorizar); todo va rotulado como simulado.
+3. Todo detrás de `negocio360.demo.habilitada=true`, encendido en `application-desarrollo.yml` con CORS para `localhost`. Nunca con el perfil `produccion`.
+4. Spring Modulith: interfaces con nombre `puertos`, `dominio`, `comandos` y `textos` en Ventas y Caja para que `canal` use solo lo expuesto.
+5. **Frontend:** proyecto Flutter en `frontend/` (Flutter 3.44.6, Dart 3.12.2; Android, iOS y web), sin dependencias extra. Una app con dos modos: turista (explorar por intereses, ficha, Pasaporte y ruta del día) y negocio (abrir turno, cobrar con cupón y forma de pago, ventas y corte). Funciona con datos de ejemplo rotulados; aún no llama al servidor. Instrucciones en `frontend/README.md`.
+
+**Verificación hecha:**
+- Backend: RED en compilación (faltaban las clases de `canal`). GREEN: `CanalGraphQlTest` 7/7 (camino dorado por GraphQL sin base de datos) y `ContextoDeSesionTest` 3/3. `mvn -B verify` sin las 10 clases de Docker: **858/858, BUILD SUCCESS, cobertura cumplida**. `EstructuraModulosTest` acepta el módulo `canal`.
+- Se ajustaron tres pruebas de `EsquemaGraphqlClientesTest` que suponían que todo el esquema era de Clientes. Siguen siendo listas exactas, así que una consulta o lista plana nueva sin anotar sigue haciéndolas fallar.
+- `PostgresDePruebasInicializador` ahora se puede apagar con `negocio360.pruebas.sin-base=true`; las demás pruebas no cambian.
+- Frontend: RED (no existían los archivos) y GREEN: `flutter analyze` sin avisos y `flutter test` **14/14** (carrito en centavos, caja simulada y cuatro recorridos de pantalla).
+
+**No verificado:** el arranque real con `mvn spring-boot:run -Dspring-boot.run.profiles=desarrollo` y una llamada HTTP a `/graphql` (Docker apagado: la aplicación no arranca sin PostgreSQL). La app no se abrió en un emulador ni en el navegador; solo pruebas de widgets.
+
+**Pendiente:** conectar la app al servidor (sesión REST + cliente GraphQL); paginar `cortes` antes de producción; outbox, JDBC y bloqueos (F5); reemplazar los negocios ficticios por datos reales.
+
+**Fuentes de datos públicas de Puebla investigadas (para elegir hoy):**
+- Gobierno del Estado: boletines trimestrales de turismo del CEIGEP/SEI (`sei.puebla.gob.mx/docs/boletines/turismo-*.pdf`; ocupación hotelera, llegada de turistas, derrama), indicadores del Observatorio Turístico de la Secretaría de Turismo (`sectur.puebla.gob.mx/observatorioturistico`), «Información estadística general» por municipio del SEI (CSV, replicada en datamx.io; última actualización 2019) y la Estrategia Estatal de Pueblos Mágicos (12 Pueblos Mágicos). El portal `datos.puebla.gob.mx` no respondió (DNS) el 2026-10-15.
+- Federales con detalle de Puebla: DENUE de INEGI (negocios con ubicación y giro) y DataTur (monitoreo hotelero por destino).
+
+**Decisiones:** D-89 (ACEPTADA), D-90 (PROPUESTA).
+
+**Archivos creados:** `backend/src/main/java/mx/negocio360/canal/**`, `ventas/infraestructura/*`, `caja/infraestructura/*`, `compartido/comandos/PreparacionesEnMemoria.java`, `package-info` de puertos y dominio, `graphql/{ventas,caja,canal}.graphqls`, pruebas de `canal`; `frontend/**`.
+**Archivos modificados:** comandos y plantillas de Ventas y Caja (anotaciones), `compartido.graphqls` (`Resultado.datos`), `application-desarrollo.yml`, `EstructuraModulosTest`, `EsquemaGraphqlClientesTest`, `PostgresDePruebasInicializador` y esta Bitácora.
 ### 2026-10-15 — Diseño del módulo de Contabilidad (propuesta)
 **Pedido del usuario:** definir entidades, funciones y eventos del módulo horizontal de Contabilidad y planificar las consultas a la API, en un artefacto con diagrama entidad-relación, diagrama de eventos, tablas y tabla de comunicación con la API. Reglas: Postgres con seguridad por fila y `negocio_id` en toda tabla, eventos con UUIDv7, listeners idempotentes, ningún módulo lee las tablas de otro, igual para los tres giros, y Contabilidad solo escucha `venta.registrada`, `cupon.canjeado` y `caja.cerrada`. «No programes nada, solo diseño». Después: escribir el diseño en la rama `liz`.
 
 **Qué se hizo:**
 1. Se publicó el «Mapa de Contabilidad» (ver documentos relacionados). La versión 0.1 se hizo sin el repositorio a la vista; la 0.2 se revisó contra `CLAUDE.md`, esta Bitácora, `inventario.md`, `clientes.md`, el mockup de la app y el código de Clientes.
-2. **Lo que se corrigió en la 0.2:** las decisiones se renumeraron a D-76 a D-89 (D-66 a D-75 ya eran del Mapa de Identidad); el outbox propio se quitó porque es `plataforma.event_publication`; `venta.registrada` v1 no trae medio de pago, así que se pide como campo nuevo; `cupon.canjeado` ya trae `cupon_id` y `descuento.monto` (mockup E-07), así que la llave natural es `cupon_id` y solo falta `financiador`; token de 5 minutos (D-23); `preparacion`, `Preparacion` y `Resultado` con la forma ya programada; reglas fiscales con columna `fuente`.
+2. **Lo que se corrigió en la 0.2:** las decisiones se renumeraron a D-91 a D-104 (D-66 a D-75 ya eran del Mapa de Identidad); el outbox propio se quitó porque es `plataforma.event_publication`; `venta.registrada` v1 no trae medio de pago, así que se pide como campo nuevo; `cupon.canjeado` ya trae `cupon_id` y `descuento.monto` (mockup E-07), así que la llave natural es `cupon_id` y solo falta `financiador`; token de 5 minutos (D-23); `preparacion`, `Preparacion` y `Resultado` con la forma ya programada; reglas fiscales con columna `fuente`.
 3. Se escribieron `docs/diseno/contabilidad.md` y `docs/diseno/contabilidad-diagramas.md` con la estructura de la skill `disenar-modulo`. Los diagramas se copiaron del mapa para que coincidan.
 
-**Decisiones:** D-77 (aceptada, regla del usuario). D-76 y D-78 a D-89 (propuestas).
+**Decisiones:** D-92 (aceptada, regla del usuario). D-91 y D-93 a D-104 (propuestas).
 
 **Observaciones para quien continúe:**
-- **D-77 choca con Inventario (K-10):** `inventario.md` §2 e `inventario-diagramas.md` dicen que Contabilidad consume `inventario.movimiento_registrado`. No se tocaron esos documentos; hay que decidir cuál manda.
+- **D-92 choca con Inventario (K-10):** `inventario.md` §2 e `inventario-diagramas.md` dicen que Contabilidad consume `inventario.movimiento_registrado`. No se tocaron esos documentos; hay que decidir cuál manda.
 - **Sin `venta.anulada` (K-1)** una venta anulada se queda como ingreso; con tarjeta no se detecta. Se recomienda agregarlo a lo que escucha Contabilidad.
 - **K-12:** la tarea programada `abrirPeriodo` tiene el mismo problema que A1 (purgas bajo seguridad por fila).
 - Caja no tiene diseño: todo el contrato de `caja.cerrada` es propuesta.
@@ -939,12 +1093,12 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 
 **Pendiente:**
 - Contestar las 9 preguntas de `contabilidad.md` §16 (el equipo).
-- Congelar los contratos de D-88 con los dueños de Ventas, Pasaporte y Caja.
-- Corregir `inventario.md` e `inventario-diagramas.md` si se confirma D-77 tal cual.
+- Congelar los contratos de D-103 con los dueños de Ventas, Pasaporte y Caja.
+- Corregir `inventario.md` e `inventario-diagramas.md` si se confirma D-92 tal cual.
 - Autorización escrita para programar Contabilidad (no existe).
 
 **Archivos creados:** `docs/diseno/contabilidad.md`, `docs/diseno/contabilidad-diagramas.md`.
-**Archivos modificados:** `docs/BITACORA.md` (documentos relacionados, D-76 a D-89 y esta entrada).
+**Archivos modificados:** `docs/BITACORA.md` (documentos relacionados, D-91 a D-104 y esta entrada).
 
 ### 2026-10-15 — Autorización para programar el módulo de Contabilidad
 **Autorización escrita (cita textual del usuario):** «Implementa el módulo HORIZONTAL DE CONTABILIDAD de Negocio 360 Plataforma» con método TDD, «Alcance: solo lo marcado P1 en el diseño», y luego: «Sí, va así. Usa los ids de tu diseño. El alcance es todo el P1, no solo esas 13 reglas.»
@@ -978,6 +1132,21 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 - **Grupo J, preguntas abiertas para el equipo:** (1) si una DIFERENCIA_CAJA sola (conteo distinto, ventas iguales) también debe publicar `contabilidad.descuadre_detectado`; hoy solo se publica para DESCUADRE_VENTAS, como dicen J-03 y el diagrama F2. (2) Cuando hay a la vez diferencia de conteo y ventas distintas, el corte queda en DESCUADRE_VENTAS (prioridad tomada del diagrama F2). (3) Una reversa de venta no recalcula la conciliación del corte (flujo F4, depende de K-1).
 - **Grupo U:** si `cupon.canjeado` no trae `financiador` se asume NEGOCIO (K-3); un cupón de PLATAFORMA queda pendiente porque U-02 es P2. Pregunta abierta: `descuento.moneda` no se valida porque el diseño no dice qué hacer con otra moneda que no sea MXN.
 - **E-05 no tuvo rojo:** se verificó por mutación (sin el recálculo de J-04 falló la permutación cupón, corte, venta).
-- **Grupo F:** F-03 pone el aviso de D-89 en la balanza, el único reporte que existe; falta en la exportación CSV (pregunta 8) y en los reportes que aún no se programan. F-04 no tuvo rojo natural y se verificó por mutación; el plazo de 5 años (CFF art. 30) sigue por verificar y el respaldo es tema de operación.
-- **2026-10-15, cambio de rama (pedido del usuario):** todo el trabajo de Contabilidad (diseño, autorización y las 36 reglas, de `e1f62fd` a `c5ea02b`) se movió de `liz` a `liz-testing` con un avance directo (fast-forward). `liz` volvió a `4276917` (el merge de `main`), en local y en GitHub con un push forzado protegido (`--force-with-lease` contra `1cd71ab`), con autorización del usuario. Desde aquí se trabaja en `liz-testing`, que todavía no se ha subido a GitHub.
+- **Grupo F:** F-03 pone el aviso de D-104 en la balanza, el único reporte que existe; falta en la exportación CSV (pregunta 8) y en los reportes que aún no se programan. F-04 no tuvo rojo natural y se verificó por mutación; el plazo de 5 años (CFF art. 30) sigue por verificar y el respaldo es tema de operación.
+- **2026-10-15, cambio de rama (pedido del usuario):** todo el trabajo de Contabilidad (diseño, autorización y las 36 reglas, de `e1f62fd` a `c5ea02b`) se movió de `liz` a `liz-testing` con un avance directo (fast-forward). `liz` volvió a `4276917` (el merge de `main`), en local y en GitHub con un push forzado protegido (`--force-with-lease` contra `1cd71ab`), con autorización del usuario. Desde aquí se trabaja en `liz-testing`, que se subió a GitHub el mismo día (`5e20223..e2f7bc0`).
 - Las ventas netas de `periodo.cerrado` se calculan como el neto de las cuentas 401 menos el de las 402 (cuadra con el ejemplo del diseño: 225 − 25 = 200).
+
+### 2026-10-15 — Integración de `main` en `liz-testing` para el pull request de Contabilidad
+**Pedido del usuario:** después de subir `liz-testing` a GitHub, «hacer el siguiente paso según el repo». Ante la duda entre `pre-main` (D-32, propuesta) y `main`, eligió traer `main` a `liz-testing` y abrir el pull request hacia `main`, como se hizo con el PR #1.
+
+**Qué se hizo:**
+1. Merge de `origin/main` (`6c8c689`, Ventas, Caja y la maqueta en Flutter) en `liz-testing`. Solo chocó esta Bitácora.
+2. **Choque de IDs de decisión:** Ventas y Caja usaban D-76 a D-90 y Contabilidad D-76 a D-89, en ramas distintas. Como lo de `main` ya estaba integrado, se renumeraron las de Contabilidad sumando 15: **D-76 a D-89 de Contabilidad pasan a D-91 a D-104** en esta Bitácora, `docs/diseno/contabilidad.md`, `contabilidad-diagramas.md`, `docs/pruebas/contabilidad.tdd.md` y los comentarios del código de `contabilidad`. Las referencias a D-76 a D-90 de otras entradas son de Ventas y Caja.
+3. En la tabla de decisiones y en el historial, lo de Ventas y Caja va primero y lo de Contabilidad después.
+
+**Hallazgos para el equipo (no se tocaron):**
+- **Nombre del evento de cierre de caja:** Caja publica `caja.corte_confirmado` (y `caja.diferencia_detectada`), pero Contabilidad escucha `caja.cerrada` (D-92, J-01). Mientras no se acuerde un nombre, los cortes no llegan a Contabilidad.
+- **Contrato de `venta.registrada`:** Ventas publica `turno_id` y `pagos[]` (D-77); Contabilidad pide `medio_pago` y `caja_sesion_id` (D-103). Hay que acordar uno solo.
+- `caja.cerrada` v1 lo definió Contabilidad porque Caja no tenía diseño (D-103); ahora Caja sí lo tiene.
+
+**Pendiente:** revisión del pull request por otra persona del equipo (D-32) y decidir los dos contratos de arriba.

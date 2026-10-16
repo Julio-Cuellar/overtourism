@@ -120,7 +120,7 @@ flowchart LR
   bus -.-> f2
 ```
 
-Qué mirar: entran exactamente tres flechas, una por evento permitido (D-77). Ningún productor escucha a Contabilidad.
+Qué mirar: entran exactamente tres flechas, una por evento permitido (D-92). Ningún productor escucha a Contabilidad.
 
 ### 3.2 Una venta entregada dos veces
 
@@ -167,7 +167,7 @@ Qué mirar: `evento_procesado` se inserta primero, dentro de la misma transacci�
 Base: `venta.registrada` en `inventario.md` §7.2; `cupon.canjeado` en el mockup de la app del turista (E-07); `caja.cerrada` no existe todavía porque Caja no tiene diseño.
 
 ```text
-// Todos los campos nuevos son opcionales (R5, D-88). Datos de ejemplo inventados.
+// Todos los campos nuevos son opcionales (R5, D-103). Datos de ejemplo inventados.
 
 venta.registrada v1   (Ventas; base en inventario.md §7.2)
 {
@@ -493,8 +493,8 @@ Todas las tablas viven en el esquema `contabilidad`, llevan `negocio_id uuid NOT
 |---|---|---|
 | `id` | uuid PK | |
 | `venta_id` | uuid | UNIQUE (`negocio_id`, `venta_id`) (E-02) |
-| `caja_sesion_id` | uuid nulo | D-88 |
-| `medio_pago` | text nulo | D-88 |
+| `caja_sesion_id` | uuid nulo | D-103 |
+| `medio_pago` | text nulo | D-103 |
 | `total`, `base`, `iva`, `propina` | numeric(14,2) | |
 | `ocurrido_en` | timestamptz | |
 | `poliza_id` | uuid FK | |
@@ -701,5 +701,5 @@ sequenceDiagram
 
 Los hallazgos K-1 a K-12 están en `contabilidad.md` §15. Los que afectan a otros documentos:
 
-- **K-10:** `inventario.md` §2 e `inventario-diagramas.md` (líneas del mapa y de eventos) asignan a Contabilidad `inventario.movimiento_registrado`. Si se confirma D-77 tal cual, hay que corregirlos.
+- **K-10:** `inventario.md` §2 e `inventario-diagramas.md` (líneas del mapa y de eventos) asignan a Contabilidad `inventario.movimiento_registrado`. Si se confirma D-92 tal cual, hay que corregirlos.
 - **K-12:** la tarea `abrirPeriodo` tiene el mismo problema que las purgas (A1, Bitácora 2026-10-14): sin `app.negocio_id` no ve filas.

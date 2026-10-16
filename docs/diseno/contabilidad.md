@@ -2,14 +2,14 @@
 
 **Versión:** 0.2
 **Fecha:** 2026-10-15
-**Estado:** PROPUESTA. Solo D-77 está aceptada (regla del usuario). No hay autorización escrita para programar Contabilidad.
+**Estado:** PROPUESTA. Solo D-92 está aceptada (regla del usuario). No hay autorización escrita para programar Contabilidad.
 **Contexto de decisiones:** `docs/BITACORA.md` (los identificadores `D-xx` remiten a ahí).
 **Diseño visual:** artefacto «Mapa de Contabilidad» (https://claude.ai/artifact/CYLdtRhkzV2o1wRZsCphmh). Este documento es la versión escrita y vive en el repositorio.
 **Diagramas y modelo de datos completo:** `docs/diseno/contabilidad-diagramas.md`.
 
 Prioridades: **P1** = MVP y demo, **P2** = si alcanza el tiempo, **P3** = fuera del MVP.
 
-> **Aviso.** Contabilidad no es una herramienta fiscal: no emite CFDI ni calcula declaraciones (D-89). Los ejemplos de tasas de IVA y el plazo de conservación son de memoria y están **por verificar** contra el SAT y el Código Fiscal de la Federación, con fuente y fecha, como pide `CLAUDE.md`. Todos los montos de ejemplo son simulados.
+> **Aviso.** Contabilidad no es una herramienta fiscal: no emite CFDI ni calcula declaraciones (D-104). Los ejemplos de tasas de IVA y el plazo de conservación son de memoria y están **por verificar** contra el SAT y el Código Fiscal de la Federación, con fuente y fecha, como pide `CLAUDE.md`. Todos los montos de ejemplo son simulados.
 
 ---
 
@@ -17,7 +17,7 @@ Prioridades: **P1** = MVP y demo, **P2** = si alcanza el tiempo, **P3** = fuera 
 
 Contabilidad es un módulo **horizontal**: lleva el registro contable del negocio en partida doble. Cada venta, cada cupón canjeado y cada cierre de caja se convierte en una **póliza** con cargos y abonos que cuadran. Con esas pólizas arma el libro mayor, la balanza de comprobación y el estado de resultados que el locatario le entrega a su persona contadora.
 
-Una fonda, un museo y una miscelánea usan el mismo catálogo de cuentas y las mismas reglas. Lo que cambia por giro (tasa de IVA, propinas, medios de pago) son **reglas en datos**, no código (D-80).
+Una fonda, un museo y una miscelánea usan el mismo catálogo de cuentas y las mismas reglas. Lo que cambia por giro (tasa de IVA, propinas, medios de pago) son **reglas en datos**, no código (D-95).
 
 Qué logra el negocio con él:
 
@@ -39,10 +39,10 @@ Qué **no** es: no guarda ventas (Ventas), cupones (Pasaporte), sesiones de caja
 | R2 y R6 | No llama a la API de ningún otro módulo y nadie la llama salvo el panel. Escucha tres eventos; ningún productor escucha a Contabilidad, así que no hay ciclo. |
 | R3 | Todo evento lleva UUIDv7. Los listeners deduplican con `evento_procesado` y con la llave natural de cada referencia (E-01, E-02). |
 | R4 | Es horizontal. No depende de ningún vertical. |
-| R5 | Los únicos cambios a contratos ajenos son campos nuevos y opcionales (D-88). |
+| R5 | Los únicos cambios a contratos ajenos son campos nuevos y opcionales (D-103). |
 | RLS | Cada transacción fija `set_config('app.negocio_id', ..., true)`: desde la sesión en el panel y desde el sobre del evento en los listeners (E-03). Política `aislamiento_por_negocio` con `plataforma.negocio_actual()`, igual que Clientes. Rol de grupo `rol_contabilidad`. |
 
-### 2.2 Eventos que escucha (D-77, aceptada)
+### 2.2 Eventos que escucha (D-92, aceptada)
 
 Solo estos tres: `venta.registrada`, `cupon.canjeado` y `caja.cerrada`. Lo que no llega por ahí entra como póliza manual del locatario.
 
@@ -52,7 +52,7 @@ Solo estos tres: `venta.registrada`, `cupon.canjeado` y `caja.cerrada`. Lo que n
 |---|---|---|---|
 | Contabilidad (horizontal) | Ninguna | `venta.registrada`, `cupon.canjeado`, `caja.cerrada` | `poliza.registrada`, `periodo.cerrado`, `contabilidad.descuadre_detectado`, `contabilidad.pendiente_creado` (P2) |
 
-> **Choque con Inventario (K-10).** `inventario.md` §2 y `inventario-diagramas.md` dicen que Contabilidad consume `venta.*` e `inventario.movimiento_registrado`, «base del costo de ventas». La regla D-77 lo excluye. Hay que decidir cuál manda (pregunta 9).
+> **Choque con Inventario (K-10).** `inventario.md` §2 y `inventario-diagramas.md` dicen que Contabilidad consume `venta.*` e `inventario.movimiento_registrado`, «base del costo de ventas». La regla D-92 lo excluye. Hay que decidir cuál manda (pregunta 9).
 
 ---
 
@@ -78,12 +78,12 @@ Solo estos tres: `venta.registrada`, `cupon.canjeado` y `caja.cerrada`. Lo que n
 | Periodos contables y su cierre | Contabilidad | Propio |
 | Reglas de contabilización y configuración de impuestos del negocio | Contabilidad | Propio |
 | Conciliación de cortes de caja | Contabilidad (derivado) | Se calcula con los eventos de Ventas y Caja. No se edita |
-| La venta: líneas, total y medio de pago | Ventas | Solo `venta_id` y `total`, más `medio_pago` y `caja_sesion_id` si se agregan (D-88) |
-| El canje del cupón | Pasaporte | Solo `cupon_id`, `venta_id` y `descuento.monto`, más `financiador` si se agrega (D-88) |
+| La venta: líneas, total y medio de pago | Ventas | Solo `venta_id` y `total`, más `medio_pago` y `caja_sesion_id` si se agregan (D-103) |
+| El canje del cupón | Pasaporte | Solo `cupon_id`, `venta_id` y `descuento.monto`, más `financiador` si se agrega (D-103) |
 | Sesiones de caja, fondo, retiros y conteo | Caja | Solo los totales del corte que vienen en `caja.cerrada` |
-| Clientes y sus datos personales | Clientes | Nada. Contabilidad no guarda `cliente_id` (D-87) |
+| Clientes y sus datos personales | Clientes | Nada. Contabilidad no guarda `cliente_id` (D-102) |
 | Costo de lo vendido y existencias | Inventario | Nada en el MVP (K-4, K-10) |
-| CFDI, declaraciones y nómina | Fuera del MVP | No se generan (D-89) |
+| CFDI, declaraciones y nómina | Fuera del MVP | No se generan (D-104) |
 
 ---
 
@@ -262,7 +262,7 @@ Sobre común ya programado (`SobreEvento`): `id` UUIDv7, `tipo`, `version`, `neg
 ### 8.1 Consume
 | Evento | Lo publica | Datos que usa | Qué hace | P |
 |---|---|---|---|---|
-| `venta.registrada` v1 | Ventas | `venta_id`, `total` (`inventario.md` §7.2, neto de cupón por D-65); `ocurrido_en` del sobre. Nuevos y opcionales (D-88): `medio_pago`, `caja_sesion_id`, `propina` | `contabilizarVenta` | P1 |
+| `venta.registrada` v1 | Ventas | `venta_id`, `total` (`inventario.md` §7.2, neto de cupón por D-65); `ocurrido_en` del sobre. Nuevos y opcionales (D-103): `medio_pago`, `caja_sesion_id`, `propina` | `contabilizarVenta` | P1 |
 | `cupon.canjeado` v1 | Pasaporte | `cupon_id`, `venta_id`, `descuento.monto`, `canjeado_en` (mockup de la app, E-07). Ignora `visitante_id`. Nuevo y opcional: `financiador` | `contabilizarCanje` | P1 |
 | `caja.cerrada` v1 | Caja | Contrato completo propuesto (Caja no tiene diseño): `corte_id`, `caja_sesion_id`, `efectivo_esperado`, `efectivo_contado`, `ventas_efectivo`, `retiros` (P2), `cerrada_en` | `contabilizarCorte` | P1 |
 
@@ -282,9 +282,9 @@ Ningún evento de Contabilidad lleva datos personales.
 
 | De quién | Qué | Estado |
 |---|---|---|
-| Ventas | `venta.registrada` v1 con `medio_pago`, `caja_sesion_id` y `propina` opcionales | Falta congelar (D-88, K-2, K-6) |
+| Ventas | `venta.registrada` v1 con `medio_pago`, `caja_sesion_id` y `propina` opcionales | Falta congelar (D-103, K-2, K-6) |
 | Ventas | `venta.anulada` (con líneas, D-25), si se autoriza escucharlo | Pregunta 1 (K-1) |
-| Pasaporte | `cupon.canjeado` v1 con `financiador` opcional | Falta congelar (D-88, K-3). El canje lo dispara Ventas llamando a `Pasaporte.canjearCupon` (D-34) |
+| Pasaporte | `cupon.canjeado` v1 con `financiador` opcional | Falta congelar (D-103, K-3). El canje lo dispara Ventas llamando a `Pasaporte.canjearCupon` (D-34) |
 | Caja | `caja.cerrada` v1 completo | Caja sin diseño; todo es propuesta |
 
 Ejemplos de carga en `contabilidad-diagramas.md` §4.
@@ -311,7 +311,7 @@ El par `prepararComando` / `confirmarComando`, `Preparacion`, `Resultado`, `Page
 | G12 | `balanceGeneral(periodo)` | Costo fijo | P2 |
 | G13 | `prepararComando(input)` | Una variante por solicitud | P1 |
 | G14 | `confirmarComando(token)` | Token de un solo uso, 5 minutos (D-23) | P1 |
-| W1 | `subscription actividadContable` | Alimentada por el bus (D-86) | P2 |
+| W1 | `subscription actividadContable` | Alimentada por el bus (D-101) | P2 |
 | R1 | `GET /contabilidad/exportaciones/polizas?periodo=AAAA-MM&formato=csv` | Solo el dueño, límite de tasa | P1 (pregunta 8) |
 | R2 | `GET /contabilidad/exportaciones/balanza?periodo=AAAA-MM&formato=csv\|xlsx` | Igual | P2 |
 | R3 | `GET /contabilidad/exportaciones/sat?periodo=AAAA-MM&tipo=catalogo\|balanza` | Exige C-05 | P3 |
@@ -382,22 +382,22 @@ P1 suma 5.25 días-persona y P2 1.25. Heurísticas sin medir contra el equipo. L
 
 | Id | Decisión | Estado |
 |---|---|---|
-| D-76 | Contabilidad es horizontal con esquema `contabilidad`; dueña del catálogo, pólizas, periodos, saldos, reglas y conciliación | PROPUESTA |
-| D-77 | Solo escucha `venta.registrada`, `cupon.canjeado` y `caja.cerrada` | ACEPTADA |
-| D-78 | Partida doble con pólizas inmutables; corrección por reversa | PROPUESTA |
-| D-79 | Una póliza por evento, no una por día | PROPUESTA |
-| D-80 | Catálogo base único para los tres giros, copiado al activar; diferencias por giro en reglas | PROPUESTA |
-| D-81 | Cupones en bruto: Descuentos sobre ventas contra Ventas, por la base sin IVA | PROPUESTA |
-| D-82 | Evento de un mes cerrado entra como extemporáneo en el periodo abierto más antiguo | PROPUESTA |
-| D-83 | Bandeja de pendientes en lugar de fallar | PROPUESTA |
-| D-84 | La conciliación avisa pero no ajusta ventas | PROPUESTA |
-| D-85 | Exportaciones por REST: CSV en P1, balanza en P2, XML SAT en P3 | PROPUESTA (pregunta 8) |
-| D-86 | Sin WebSocket en P1; `actividadContable` en P2 | PROPUESTA |
-| D-87 | Sin datos personales ni `cliente_id` | PROPUESTA |
-| D-88 | Campos nuevos opcionales: `medio_pago`, `caja_sesion_id`, `propina` en `venta.registrada`; `financiador` en `cupon.canjeado`; `caja.cerrada` completo | PROPUESTA |
-| D-89 | No es herramienta fiscal | PROPUESTA |
+| D-91 | Contabilidad es horizontal con esquema `contabilidad`; dueña del catálogo, pólizas, periodos, saldos, reglas y conciliación | PROPUESTA |
+| D-92 | Solo escucha `venta.registrada`, `cupon.canjeado` y `caja.cerrada` | ACEPTADA |
+| D-93 | Partida doble con pólizas inmutables; corrección por reversa | PROPUESTA |
+| D-94 | Una póliza por evento, no una por día | PROPUESTA |
+| D-95 | Catálogo base único para los tres giros, copiado al activar; diferencias por giro en reglas | PROPUESTA |
+| D-96 | Cupones en bruto: Descuentos sobre ventas contra Ventas, por la base sin IVA | PROPUESTA |
+| D-97 | Evento de un mes cerrado entra como extemporáneo en el periodo abierto más antiguo | PROPUESTA |
+| D-98 | Bandeja de pendientes en lugar de fallar | PROPUESTA |
+| D-99 | La conciliación avisa pero no ajusta ventas | PROPUESTA |
+| D-100 | Exportaciones por REST: CSV en P1, balanza en P2, XML SAT en P3 | PROPUESTA (pregunta 8) |
+| D-101 | Sin WebSocket en P1; `actividadContable` en P2 | PROPUESTA |
+| D-102 | Sin datos personales ni `cliente_id` | PROPUESTA |
+| D-103 | Campos nuevos opcionales: `medio_pago`, `caja_sesion_id`, `propina` en `venta.registrada`; `financiador` en `cupon.canjeado`; `caja.cerrada` completo | PROPUESTA |
+| D-104 | No es herramienta fiscal | PROPUESTA |
 
-Se numeran desde D-76 porque D-66 a D-75 ya los usa el Mapa de Identidad.
+Se numeran desde D-91 porque D-66 a D-75 ya los usa el Mapa de Identidad.
 
 ---
 
@@ -406,7 +406,7 @@ Se numeran desde D-76 porque D-66 a D-75 ya los usa el Mapa de Identidad.
 | Id | Qué se encontró | Qué se propone |
 |---|---|---|
 | K-1 | Sin `venta.anulada`, una venta anulada se queda como ingreso; con tarjeta no se detecta nunca | Escuchar `venta.anulada` (pregunta 1). Mientras, reversa manual |
-| K-2 | `venta.registrada` v1 no trae medio de pago ni sesión de caja | Agregarlos opcionales (D-88); sin `medio_pago` la venta queda pendiente |
+| K-2 | `venta.registrada` v1 no trae medio de pago ni sesión de caja | Agregarlos opcionales (D-103); sin `medio_pago` la venta queda pendiente |
 | K-3 | `cupon.canjeado` no dice quién paga el descuento | `financiador` opcional; mientras falte, se asume `NEGOCIO` |
 | K-4 | Sin Inventario no hay costo de ventas | Resultado «antes de costo»; P3 si se autoriza |
 | K-5 | El IVA puede variar por giro y producto | Tasa por regla, con fuente; validación de una persona contadora |
@@ -428,8 +428,8 @@ Se numeran desde D-76 porque D-66 a D-75 ya los usa el Mapa de Identidad.
 4. ¿La propina se cobra dentro del total de la venta? (K-6)
 5. ¿Quién valida el catálogo base y las reglas fiscales? (C-01, F-01 a F-04)
 6. ¿Contabilidad corre en vivo en la demo o como mockup?
-7. ¿Autorizas por escrito programar Contabilidad? (D-76)
-8. ¿La exportación CSV entra a P1? El alcance original de `CLAUDE.md` la dejaba fuera. (D-85)
+7. ¿Autorizas por escrito programar Contabilidad? (D-91)
+8. ¿La exportación CSV entra a P1? El alcance original de `CLAUDE.md` la dejaba fuera. (D-100)
 9. ¿Contabilidad escucha solo los tres eventos aunque Inventario le asigne `inventario.movimiento_registrado`? (K-4, K-10)
 
 Para aprobar basta responder, por ejemplo: «aprobado salvo 2 y 9».

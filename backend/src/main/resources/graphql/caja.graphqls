@@ -1,0 +1,112 @@
+# Esquema del modulo de Caja (docs/diseno/caja.md, F4). Sin negocioId: el negocio sale de la sesion (SG-02).
+# Usa MetodoPago de ventas.graphqls: es el mismo contrato de pagos (D-77).
+
+extend type Query {
+  "CF-04: cajas del negocio."
+  cajas: [Caja!]!
+  "CF-01: turno abierto o en corte de una caja, con su estado efectivo (D-81); null si no hay."
+  turnoActivo(cajaId: ID!): Turno
+  "CF-02: esperado por metodo y movimientos de un turno."
+  saldoTurno(turnoId: ID!): SaldoTurno!
+  "CF-03: cortes del negocio."
+  cortes: [Corte!]!
+}
+
+enum EstadoTurno { ABIERTO EN_CORTE CERRADO }
+enum TipoMovimiento { FONDO VENTA ANULACION ENTRADA RETIRO AJUSTE }
+enum TipoMovimientoManual { ENTRADA RETIRO }
+
+type Caja {
+  id: ID!
+  nombre: String!
+  activa: Boolean!
+}
+
+type Turno {
+  id: ID!
+  cajaId: ID!
+  estado: EstadoTurno!
+  fondoInicial: Decimal!
+  abiertoEn: DateTime!
+  cerradoEn: DateTime
+  corteVenceEn: DateTime
+}
+
+type MontoPorMetodo {
+  metodo: MetodoPago!
+  monto: Decimal!
+}
+
+type MovimientoCaja {
+  id: ID!
+  tipo: TipoMovimiento!
+  metodo: MetodoPago!
+  monto: Decimal!
+  ventaId: ID
+  nota: String
+  registradoEn: DateTime!
+}
+
+type SaldoTurno {
+  turnoId: ID!
+  cajaId: ID!
+  estado: EstadoTurno!
+  esperadoPorMetodo: [MontoPorMetodo!]!
+  movimientos: [MovimientoCaja!]!
+  ventasAplicadas: Int!
+}
+
+type Corte {
+  id: ID!
+  turnoId: ID!
+  cajaId: ID!
+  esperadoPorMetodo: [MontoPorMetodo!]!
+  contadoPorMetodo: [MontoPorMetodo!]!
+  diferenciaEfectivo: Decimal!
+  abiertoEn: DateTime!
+  confirmadoEn: DateTime!
+}
+
+extend input ComandoInput {
+  crearCaja: CrearCajaInput
+  abrirTurno: AbrirTurnoInput
+  registrarMovimientoCaja: MovimientoCajaInput
+  cerrarTurno: CerrarTurnoInput
+  descartarCorte: DescartarCorteInput
+}
+
+"CF-14."
+input CrearCajaInput {
+  nombre: String!
+}
+
+"CF-10: fondo de cero o mas (CJ-02)."
+input AbrirTurnoInput {
+  cajaId: ID!
+  fondoInicial: Decimal!
+}
+
+"CF-11: entrada o retiro de efectivo con nota (CJ-05)."
+input MovimientoCajaInput {
+  turnoId: ID!
+  tipo: TipoMovimientoManual!
+  monto: Decimal!
+  nota: String!
+}
+
+input MontoPorMetodoInput {
+  metodo: MetodoPago!
+  monto: Decimal!
+}
+
+"CF-12: el corte. Preparar pone el turno EN_CORTE (D-81); un metodo que falta cuenta como 0.00."
+input CerrarTurnoInput {
+  turnoId: ID!
+  contado: [MontoPorMetodoInput!]!
+  autorizar: Boolean! = false
+}
+
+"CF-13."
+input DescartarCorteInput {
+  turnoId: ID!
+}

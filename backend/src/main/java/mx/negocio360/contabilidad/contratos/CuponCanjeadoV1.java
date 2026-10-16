@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * Lo que Contabilidad lee de {@code cupon.canjeado} v1 (seccion 8.1 del diseno). La forma viene del mockup de la app
  * del turista (E-07): {@code cupon_id}, {@code venta_id}, {@code descuento.monto}. {@code financiador} es el campo
- * nuevo y opcional de D-88; si falta se asume {@code NEGOCIO} (K-3). Ignora {@code visitante_id} y
+ * nuevo y opcional de D-103; si falta se asume {@code NEGOCIO} (K-3). Ignora {@code visitante_id} y
  * {@code descuento.moneda}.
  *
  * @param cuponId        cupon; llave natural, un cupon se canjea una vez (E-02)

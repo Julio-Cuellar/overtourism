@@ -10,7 +10,7 @@ import java.util.UUID;
 import mx.negocio360.compartido.identidad.UuidV7;
 
 /**
- * Catalogo base y reglas por defecto que recibe cada negocio al activar Contabilidad (C-01, D-80). Es el mismo para
+ * Catalogo base y reglas por defecto que recibe cada negocio al activar Contabilidad (C-01, D-95). Es el mismo para
  * restaurantes, museos y misceláneos: el giro no cambia el catalogo. Los codigos son ilustrativos y una persona
  * contadora debe validarlos (pregunta 5 del diseno).
  */

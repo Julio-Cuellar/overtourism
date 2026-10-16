@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Lo que Contabilidad lee de {@code caja.cerrada} v1. Caja no tiene diseno: este contrato es la propuesta de D-88 y
+ * Lo que Contabilidad lee de {@code caja.cerrada} v1. Caja no tiene diseno: este contrato es la propuesta de D-103 y
  * hay que congelarlo con su dueno. {@code ventas_efectivo} es opcional; sin el no se concilia contra las ventas.
  *
  * @param corteId          corte de caja; llave natural (E-02)

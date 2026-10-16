@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * Lo que Contabilidad lee de {@code venta.registrada} v1 (seccion 8.1 del diseno). {@code venta_id} y {@code total}
  * estan en el contrato de {@code inventario.md} §7.2; {@code medio_pago} y {@code caja_sesion_id} son campos nuevos y
- * opcionales que propone D-88.
+ * opcionales que propone D-103.
  *
  * @param ventaId      venta
  * @param total        total cobrado, neto de cupon cuando aplica (D-65)
