@@ -14,6 +14,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import mx.negocio360.compartido.graphql.EntradaGraphQl;
+import mx.negocio360.compartido.seguridad.LimitadorDeTasa;
+import mx.negocio360.compartido.seguridad.SubidaWebSocket;
 import mx.negocio360.compartido.seguridad.TokenOpaco;
 import mx.negocio360.identidad.IdentidadApi;
 import mx.negocio360.identidad.aplicacion.puertos.LimiteDeTasa;
@@ -45,21 +47,39 @@ public final class FiltroDeEntrada extends OncePerRequestFilter {
         }
     }
 
+    /**
+     * Controles que se suman a los de IDN-4 al unirlo con la puerta de la plataforma; cada uno es opcional (nulo = sin ese
+     * control). {@code fallosPorIp} cuenta solo los tokens que no sirven y se consulta antes de autenticar, para que adivinar
+     * tokens tenga un tope sin costo para Identidad; {@code peticionesPorCuenta} limita lo que puede pedir una cuenta.
+     */
+    public record Controles(LimitadorDeTasa fallosPorIp, LimitadorDeTasa peticionesPorCuenta) {
+        static final Controles NINGUNO = new Controles(null, null);
+    }
+
     private static final Pattern BEARER = Pattern.compile("(?i)^Bearer\\s+(\\S+)$");
     private static final Pattern TIPO_JSON = Pattern.compile("(?i)^application/(json|graphql-response\\+json)\\s*(;.*)?$");
     private static final Duration VENTANA = Duration.ofMinutes(1);
     private static final int LARGO_DE_UUID = 36;
+    /** Un token valido mide 43 caracteres; uno mas largo ni se consulta (el WebSocket y el filtro de Bearer usan el mismo tope). */
+    private static final int MAXIMO_DEL_TOKEN = 256;
 
     private final IdentidadApi identidad;
     private final LimiteDeTasa tasa;
     private final Clock reloj;
     private final Limites limites;
+    private final Controles controles;
 
     public FiltroDeEntrada(IdentidadApi identidad, LimiteDeTasa tasa, Clock reloj, Limites limites) {
+        this(identidad, tasa, reloj, limites, Controles.NINGUNO);
+    }
+
+    public FiltroDeEntrada(IdentidadApi identidad, LimiteDeTasa tasa, Clock reloj, Limites limites,
+                           Controles controles) {
         this.identidad = Objects.requireNonNull(identidad, "identidad");
         this.tasa = Objects.requireNonNull(tasa, "tasa");
         this.reloj = Objects.requireNonNull(reloj, "reloj");
         this.limites = Objects.requireNonNull(limites, "limites");
+        this.controles = Objects.requireNonNull(controles, "controles");
     }
 
     @Override
@@ -70,6 +90,12 @@ public final class FiltroDeEntrada extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest peticion, HttpServletResponse respuesta, FilterChain cadena)
             throws ServletException, IOException {
+        // El apreton de manos de un WebSocket no es una consulta: no lleva cuerpo ni sesion (el navegador no puede mandar
+        // Authorization ahi). Sigue a los controles de la subida (origen, conexiones por IP); la sesion se pide en connection_init.
+        if (SubidaWebSocket.es(peticion)) {
+            cadena.doFilter(peticion, respuesta);
+            return;
+        }
         respuesta.setHeader("Cache-Control", "no-store");
         respuesta.setHeader("X-Content-Type-Options", "nosniff");
 
@@ -119,14 +145,29 @@ public final class FiltroDeEntrada extends OncePerRequestFilter {
             cadena.doFilter(peticion, respuesta);
             return;
         }
+        // SG-10: una IP que ya agoto sus fallos ni siquiera llega a consultar a Identidad.
+        var ip = peticion.getRemoteAddr();
+        if (controles.fallosPorIp() != null && !controles.fallosPorIp().probar(ip).permitido()) {
+            rechazar(respuesta, 429, "DEMASIADAS_SOLICITUDES", "Hiciste demasiadas solicitudes. Inténtalo más tarde.");
+            return;
+        }
         var coincidencia = encabezados.size() == 1 ? BEARER.matcher(encabezados.get(0)) : null;
-        var sesion = coincidencia != null && coincidencia.matches() ? identidad.autenticar(coincidencia.group(1))
+        var sesion = coincidencia != null && coincidencia.matches() && coincidencia.group(1).length() <= MAXIMO_DEL_TOKEN
+                ? identidad.autenticar(coincidencia.group(1))
                 : java.util.Optional.<mx.negocio360.identidad.SesionAutenticada>empty();
         if (sesion.isEmpty()) {
+            if (controles.fallosPorIp() != null) {
+                controles.fallosPorIp().consumir(ip);
+            }
             rechazar(respuesta, 401, "NO_AUTENTICADO", "Inicia sesión para continuar.");
             return;
         }
         var s = sesion.get();
+        if (controles.peticionesPorCuenta() != null
+                && !controles.peticionesPorCuenta().consumir(s.cuentaId().toString()).permitido()) {
+            rechazar(respuesta, 429, "DEMASIADAS_SOLICITUDES", "Hiciste demasiadas solicitudes. Inténtalo más tarde.");
+            return;
+        }
         peticion.setAttribute(EntradaGraphQl.ATRIBUTO, EntradaGraphQl.de(s.cuentaId(), s.contextoNegocio().orElse(null),
                 s.autorizacion(), id));
         cadena.doFilter(peticion, respuesta);
@@ -156,6 +197,9 @@ public final class FiltroDeEntrada extends OncePerRequestFilter {
             throws IOException {
         if (estado == 429) {
             respuesta.setHeader("Retry-After", "60");
+        }
+        if (estado == 401) {
+            respuesta.setHeader("WWW-Authenticate", "Bearer");
         }
         respuesta.setStatus(estado);
         respuesta.setContentType("application/json");

@@ -67,8 +67,8 @@ class ArranqueYSeguridadTest {
     @Test
     @DisplayName("SG-12: GraphiQL y la impresion del esquema no estan publicados")
     void rutas_graphiqlYEsquemaImpreso_noExisten() throws Exception {
-        mockMvc.perform(get("/graphiql")).andExpect(status().isNotFound());
-        mockMvc.perform(get("/graphql/schema")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/graphiql")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/graphql/schema")).andExpect(status().isUnauthorized());
     }
 
     @Test

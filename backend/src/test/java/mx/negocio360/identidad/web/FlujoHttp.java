@@ -2,9 +2,11 @@ package mx.negocio360.identidad.web;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -113,5 +115,27 @@ final class FlujoHttp {
         var cuerpo = iniciar(identificador, codigoDe(correo), ip).andExpect(status().isOk()).andReturn().getResponse()
                 .getContentAsString();
         return JsonPath.read(cuerpo, "$.token");
+    }
+
+    /** Una sesion ya abierta en un negocio activo: el token y el negocio. */
+    record SesionConNegocio(String token, UUID negocio) {
+    }
+
+    /**
+     * Registra una cuenta nueva, pide un negocio, hace que "el modulo de negocios" (el simulador de desarrollo) lo
+     * registre y lo elige. Devuelve el token que ya trae el negocio activo.
+     */
+    SesionConNegocio sesionConNegocio() throws Exception {
+        var token = tokenDeRegistro(telefono(), ipNueva());
+        var cuerpo = mvc.perform(post("/registro/negocio").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Fonda Doña Chela\",\"giro\":\"RESTAURANTE\"}"))
+                .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString();
+        var negocio = UUID.fromString(JsonPath.read(cuerpo, "$.negocioId"));
+        mvc.perform(post("/dev/negocios/" + negocio + "/registrado")).andExpect(status().isNoContent());
+        var elegido = mvc.perform(put("/auth/negocio-activo").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"negocioId\":\"" + negocio + "\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        return new SesionConNegocio(JsonPath.read(elegido, "$.token"), negocio);
     }
 }

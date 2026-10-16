@@ -14,6 +14,10 @@ public final class Redondeo {
     public static final int ESCALA_DINERO = 2;
     /** Decimales de cantidades y precios unitarios. */
     public static final int ESCALA_CANTIDAD = 4;
+    /** Decimales del costo unitario y del costo promedio (Inventario). */
+    public static final int ESCALA_COSTO = 4;
+    /** Decimales del factor de conversion entre unidades (Inventario). */
+    public static final int ESCALA_FACTOR = 8;
     /** Modo de redondeo de toda la plataforma. */
     public static final RoundingMode MODO = RoundingMode.HALF_UP;
 
@@ -76,5 +80,38 @@ public final class Redondeo {
     public static String cantidadComoTexto(BigDecimal valor) {
         var limpio = Objects.requireNonNull(valor, "valor").stripTrailingZeros();
         return DecimalPlano.escribir(limpio.scale() < 0 ? limpio.setScale(0, MODO) : limpio);
+    }
+
+    /**
+     * Redondea un costo unitario o promedio.
+     *
+     * @param valor costo, no nulo
+     * @return el costo con 4 decimales, HALF_UP
+     */
+    public static BigDecimal costoUnitario(BigDecimal valor) {
+        return Objects.requireNonNull(valor, "valor").setScale(ESCALA_COSTO, MODO);
+    }
+
+    /**
+     * Redondea el factor de conversion entre dos unidades.
+     *
+     * @param valor factor, no nulo
+     * @return el factor con 8 decimales, HALF_UP
+     */
+    public static BigDecimal factor(BigDecimal valor) {
+        return Objects.requireNonNull(valor, "valor").setScale(ESCALA_FACTOR, MODO);
+    }
+
+    /**
+     * Divide con la escala indicada y el modo de la plataforma.
+     *
+     * @param dividendo no nulo
+     * @param divisor   no nulo y distinto de cero
+     * @param escala    decimales del resultado
+     * @return el cociente redondeado HALF_UP
+     */
+    public static BigDecimal dividir(BigDecimal dividendo, BigDecimal divisor, int escala) {
+        return Objects.requireNonNull(dividendo, "dividendo").divide(Objects.requireNonNull(divisor, "divisor"), escala,
+                MODO);
     }
 }

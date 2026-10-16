@@ -1,0 +1,47 @@
+# Solo pruebas: campos que ejercitan el filtro de entrada y los limites de consulta (IDN-4).
+extend type Query {
+  "Devuelve el negocio y el actor que el resolvedor recibe de la sesion."
+  contextoDePrueba: String!
+  "Un arbol recursivo, para probar profundidad, complejidad y alias sin tocar datos reales."
+  arbolDePrueba: NodoDePrueba
+  "Tarda lo que se le pida, para probar el tiempo maximo de ejecucion."
+  lentoDePrueba(milisegundos: Int! = 2000): String!
+  "Falla con una excepcion inesperada cuyo mensaje trae datos que nunca deben salir."
+  fallaInternaDePrueba: String
+  permisoDenegadoDePrueba: String
+  noAutenticadoDePrueba: String
+  "Falla con SIN_NEGOCIO_ACTIVO, como un resolvedor que pide el contexto sin tenerlo."
+  sinNegocioDePrueba: String
+  "Recibe un id que debe ser un UUID: uno ilegible es una consulta invalida, no un error interno."
+  uuidDePrueba(id: ID!): String
+  "Falla de forma asincrona (un Mono con error)."
+  asincronoQueFallaDePrueba: String
+  "Falla con un error de negocio de prueba que un traductor convierte en un codigo."
+  errorDeNegocioDePrueba: String
+  "Devuelve null en un campo que no admite null."
+  nuloDePrueba: String!
+  "Pide el permiso clientes.sugerir."
+  soloConPermisoDePrueba: String
+  "Pide un permiso sensible (clientes.cliente.anonimizar): exige confirmacion reforzada."
+  sensibleDePrueba: String
+}
+
+extend type Mutation {
+  "Su permiso depende de la variante del comando, como prepararComando."
+  comandoDePrueba(input: ComandoInput!): String
+}
+
+type NodoDePrueba {
+  valor: String!
+  hijo: NodoDePrueba
+  hermanos: [NodoDePrueba!]!
+}
+
+extend type Subscription {
+  "Los eventos de prueba del negocio de la sesion, y de ningun otro (SG-16)."
+  eventosDePrueba: String!
+  "Pide un permiso sensible: exige confirmacion reforzada."
+  sensibleSuscripcionDePrueba: String!
+  "Falla con una excepcion cuyo mensaje trae datos que nunca deben salir."
+  suscripcionQueFallaDePrueba: String!
+}

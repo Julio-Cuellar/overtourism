@@ -3,3 +3,31 @@
 identidad:
   canal-simulado:
     habilitado: true
+
+# Los esquemas de prueba (src/test/resources/graphql-prueba) se suman a los del codigo. Con `classpath:` Spring GraphQL
+# toma solo la primera raiz del classpath y las pruebas perderian los esquemas de los modulos; con `classpath*:` toma
+# todas. Van en otra carpeta para que las pruebas que leen graphql/** (el inventario de operaciones de Clientes) no
+# vean los campos de prueba.
+spring:
+  # Cada combinacion distinta de propiedades crea un contexto de Spring que se guarda en cache, y cada uno con su pool.
+  # Con los 10 conexiones por omision, varios contextos agotan las 100 de la base de pruebas. Estas pruebas no necesitan mas.
+  datasource:
+    hikari:
+      maximum-pool-size: 3
+      minimum-idle: 0
+  graphql:
+    schema:
+      locations: classpath*:graphql/**/,classpath*:graphql-prueba/**/
+
+# Solo pruebas: el origen de navegador que la puerta HTTP de /graphql deja pasar (SG-14). En produccion no hay valor
+# por omision: sin origenes configurados, cualquier peticion que traiga Origin se rechaza.
+seguridad:
+  http:
+    origenes-permitidos: https://panel.ejemplo.test
+  # Topes altos para que las pruebas que comparten contexto (y la IP 127.0.0.1) no se estorben. Los valores iniciales
+  # (60 y 20) los fija PropiedadesTasaTest y TasaGraphqlConSesionTest baja los topes en su propio contexto.
+  tasa:
+    peticiones-por-minuto-cuenta: 10000
+    fallos-por-minuto-ip: 10000
+  websocket:
+    conexiones-por-minuto-ip: 10000

@@ -4,15 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import mx.negocio360.canal.web.ContextoDeSesion;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
-import mx.negocio360.identidad.CuentaVista;
 import mx.negocio360.identidad.IdentidadApi;
-import mx.negocio360.identidad.PerfilVista;
 import mx.negocio360.identidad.SesionAutenticada;
-import mx.negocio360.identidad.SesionIniciada;
 import org.junit.jupiter.api.DisplayName;
+import org.mockito.Mockito;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -27,44 +26,11 @@ class ContextoDeSesionTest {
 
     /** Identidad que solo reconoce {@link #TOKEN}, con el negocio que se le diga. */
     private static IdentidadApi identidadCon(UUID negocioDeLaSesion) {
-        return new IdentidadApi() {
-            @Override
-            public Optional<SesionAutenticada> autenticar(String token) {
-                return TOKEN.equals(token)
-                        ? Optional.of(new SesionAutenticada(CUENTA, "Ana", negocioDeLaSesion, Instant.now()))
-                        : Optional.empty();
-            }
-
-            @Override
-            public void solicitarCodigo(String telefono, String ip) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public SesionIniciada iniciarSesion(String t, String c, String n, String d, String ip) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public PerfilVista yo(String token) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void cerrarSesion(String token) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void cerrarTodasLasSesiones(String token) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public CuentaVista actualizarNombre(String token, String nombre) {
-                throw new UnsupportedOperationException();
-            }
-        };
+        var identidad = Mockito.mock(IdentidadApi.class);
+        Mockito.when(identidad.autenticar(Mockito.anyString())).thenReturn(Optional.empty());
+        Mockito.when(identidad.autenticar(TOKEN)).thenReturn(Optional.of(new SesionAutenticada(CUENTA, "Ana",
+                negocioDeLaSesion, negocioDeLaSesion == null ? null : "DUENO", Set.of(), Instant.now())));
+        return identidad;
     }
 
     @Test

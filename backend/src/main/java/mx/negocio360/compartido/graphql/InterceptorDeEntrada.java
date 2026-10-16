@@ -4,6 +4,7 @@ import java.util.Map;
 import org.springframework.graphql.server.WebGraphQlInterceptor;
 import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.graphql.server.WebGraphQlResponse;
+import org.springframework.graphql.server.WebSocketGraphQlRequest;
 import reactor.core.publisher.Mono;
 
 /**
@@ -14,6 +15,11 @@ public final class InterceptorDeEntrada implements WebGraphQlInterceptor {
 
     @Override
     public Mono<WebGraphQlResponse> intercept(WebGraphQlRequest peticion, Chain cadena) {
+        // En un WebSocket la entrada la deja la autenticacion de la conexion (AutenticacionWebSocketInterceptor), por operacion;
+        // una anonima de aqui podria pisarla segun el orden en que se apliquen los interceptores.
+        if (peticion instanceof WebSocketGraphQlRequest) {
+            return cadena.next(peticion);
+        }
         var puesta = peticion.getAttributes().get(EntradaGraphQl.ATRIBUTO);
         var entrada = puesta instanceof EntradaGraphQl e ? e : EntradaGraphQl.anonima(null);
         peticion.configureExecutionInput((entradaDeEjecucion, constructor) -> constructor
