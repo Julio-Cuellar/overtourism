@@ -1,6 +1,9 @@
 package mx.negocio360.caja.aplicacion;
 
+import org.springframework.modulith.NamedInterface;
+
 /** Movimientos que una persona puede registrar a mano (CF-11): siempre en efectivo. */
+@NamedInterface("comandos")
 public enum TipoMovimientoManual {
     /** Meter efectivo, por ejemplo cambio del banco. */
     ENTRADA,

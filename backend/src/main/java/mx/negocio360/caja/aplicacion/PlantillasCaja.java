@@ -6,8 +6,10 @@ import java.util.stream.Collectors;
 import mx.negocio360.caja.dominio.CodigoError;
 import mx.negocio360.caja.dominio.MetodoPago;
 import mx.negocio360.compartido.dinero.DecimalPlano;
+import org.springframework.modulith.NamedInterface;
 
 /** Textos fijos de Caja en espanol de Mexico; las cifras llegan ya calculadas por el codigo. */
+@NamedInterface("textos")
 public final class PlantillasCaja {
 
     /** Mensaje al confirmar CrearCaja. */

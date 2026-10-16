@@ -27,6 +27,14 @@ type Resultado {
   codigo: String!
   mensajePlantilla: String!
   recursoId: ID
+  "Datos del resultado, por ejemplo folio, total y cambio de una venta. Ordenados por clave."
+  datos: [Dato!]!
+}
+
+"Un dato con nombre de un resultado; el valor siempre es texto (el dinero como decimal exacto)."
+type Dato {
+  clave: String!
+  valor: String!
 }
 
 type PageInfo {

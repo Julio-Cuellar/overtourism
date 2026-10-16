@@ -185,6 +185,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-86 | Ventas verifica que el turno siga abierto al preparar y al confirmar, preguntando por la interfaz `VerificadorDeTurno` de su propia API pública; Caja la implementa (`VerificadorDeTurnoDesdeCaja`, estado efectivo de D-81). Ventas sigue sin depender de Caja | PROPUESTA | 2026-10-15 | Revisión de seguridad A1: antes Ventas confiaba solo en el canal y una venta en un turno cerrado o en corte se registraba igual |
 | D-87 | `canjearCupon` recibe el descuento que vio el cajero; si Pasaporte calcula otro, rechaza con `COMANDO_CAMBIO` sin canjear | PROPUESTA | 2026-10-15 | Revisión de calidad (medio 2): evita que un cupón quede gastado en una venta que no se registra. Cambia el contrato J3 que hay que acordar con el dueño de Pasaporte |
 | D-88 | El consumidor de Caja marca un evento como procesado solo si lo aplicó. Si el turno no existe o cerró responde `SIN_TURNO_ABIERTO`, y si el evento no cumple el contrato o no viene de Ventas responde `DATOS_INVALIDOS`; en los dos casos el evento no se pierde. La anulación revierte lo que Caja registró, no los montos del evento | PROPUESTA | 2026-10-15 | Revisión de seguridad y calidad (A1, M3, M4): antes la venta se descartaba y quedaba marcada, y un método desconocido lanzaba excepción en cada reintento |
+| D-89 | El frontend se hace en **Dart y Flutter**, pensado sobre todo como app móvil, en la carpeta `frontend/` junto a `backend/`. Habla con el servidor por GraphQL (y REST para el inicio de sesión) | ACEPTADA | 2026-10-15 | Lo pidió el usuario: «comienza a maquetar el front con dart y flutter ya que mayormente sera app movil». Reemplaza la opción Next.js de `CLAUDE.md` |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -193,7 +194,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | Bot de chat (Telegram o WhatsApp) para locatarios | Se mantiene o se descarta | DESCARTADO por ahora (D-63, 2026-10-13) |
 | Verticales reales en la demo | Solo Restaurantes real, Museos y Misceláneos como mockup (recomendado) | ABIERTA |
 | Aplicación del turista y del locatario | Una PWA con dos modos, o dos aplicaciones | ABIERTA |
-| Frontend y orquestación del bot | Next.js y n8n según `CLAUDE.md`, sin confirmar con el nuevo backend | ABIERTA |
+| Frontend y orquestación del bot | Next.js y n8n según `CLAUDE.md`, sin confirmar con el nuevo backend | Frontend: **Dart y Flutter, móvil primero** (D-89, ACEPTADA, 2026-10-15). Bot: descartado (D-63) |
 
 ---
 
@@ -1013,3 +1014,13 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 
 **Archivos creados:** `ventas/VerificadorDeTurno.java`, `caja/aplicacion/VerificadorDeTurnoDesdeCaja.java`; pruebas `RevisionVentasTest`, `RevisionCajaTest` y `ventas/fakes/TurnosEnMemoria`.
 **Archivos modificados:** Ventas (manejador de venta, calculadora, plantillas, códigos, comandos, `Venta`, servicio, puerto de cupones), Caja (consumidor, resultado, servicio, API, `Turno`, validaciones, plantillas, códigos, comandos), `compartido/dinero/Redondeo`, dobles y pruebas existentes, `docs/diseno/ventas.md`, `docs/diseno/caja.md`, `docs/pruebas/ventas-caja-f2-f3.tdd.md` y esta Bitácora (D-86 a D-88).
+
+### 2026-10-15 — Rama `uriel` unida a `main`; autorización de F4 y del frontend en Flutter
+**Pedido del usuario (cita textual):** «los cambios qu ya hayas realizado y se encuentren bien y correctos [ ] Subir la rama uriel a GitHub y unirla a main, para que el equipo trabaje sobre Ventas y Caja. Dame opciones de datos publicos del gobierno del estado de puebla que se pueden colocar en la app, abrir las puertas de Ventas y Caja (fase F4) y crear la carpeta frontend/. que quede anotado en la Bitácora. Finalmente una vez creada la carpeta del front, comienza a maquetar el front con dart y flutter ya que mayormente sera app movil».
+
+**Hecho:** `git push` de `uriel` y avance directo (fast-forward) de `main` en GitHub hasta `407124c`, sin conflictos porque `uriel` contenía a `main`. Se hizo sin pull request porque la máquina no tiene `gh`.
+
+**Autorización escrita y alcance que le doy (interpretación mía):**
+- **F4 de Ventas y Caja:** exponer sus comandos y consultas por GraphQL (D-55: `prepararComando` y `confirmarComando`, más consultas propias), encender los módulos al arrancar con Spring y permitir CORS para el frontend. Catálogo y Pasaporte siguen sin existir: se cargan productos y cupones de demostración **rotulados como simulados**. Los repositorios siguen en memoria (F5, JDBC, **no** está autorizada).
+- **Carpeta `frontend/`** en la raíz, junto a `backend/`.
+- **Frontend en Dart y Flutter**, pensado sobre todo para móvil. Esto cierra la decisión abierta «Frontend» de la sección 4 (antes Next.js sin confirmar): **D-89 ACEPTADA**.

@@ -8,11 +8,13 @@ import mx.negocio360.compartido.dinero.Redondeo;
 import mx.negocio360.ventas.dominio.CodigoError;
 import mx.negocio360.ventas.dominio.LineaVenta;
 import mx.negocio360.ventas.dominio.Venta;
+import org.springframework.modulith.NamedInterface;
 
 /**
  * Textos fijos en espanol de Mexico. La capa que responde a la persona usa estas plantillas y no improvisa texto;
  * toda cifra la calcula el codigo antes de llegar aqui.
  */
+@NamedInterface("textos")
 public final class PlantillasVentas {
 
     /** Mensaje al confirmar RegistrarVenta. */

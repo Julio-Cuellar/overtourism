@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import mx.negocio360.compartido.comandos.Comando;
+import org.springframework.modulith.NamedInterface;
 
 /**
  * VF-10 RegistrarVenta. Lo prepara y confirma el cajero desde el panel.
@@ -18,6 +19,7 @@ import mx.negocio360.compartido.comandos.Comando;
  * @param codigoCupon codigo del cupon del Pasaporte, opcional (VT-07)
  * @param clienteId   cliente elegido con {@code sugerirClientes}, opcional (VT-13)
  */
+@NamedInterface("comandos")
 public record RegistrarVentaComando(UUID turnoId, List<LineaSolicitada> lineas, List<PagoSolicitado> pagos,
                                     String codigoCupon, UUID clienteId) implements Comando {
 

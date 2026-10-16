@@ -4,3 +4,12 @@
 identidad:
   canal-simulado:
     habilitado: true
+
+# F4 en demo: Ventas, Caja y el canal GraphQL con repositorios en memoria y Catalogo, Pasaporte y permisos SIMULADOS
+# (D-90). Todas las sesiones sin negocio usan este negocio de demostracion. Los datos se pierden al reiniciar.
+negocio360:
+  demo:
+    habilitada: true
+    negocio-id: 0192f000-0000-7000-8000-000000000360
+    # Flutter web y el navegador en la misma laptop (la app movil no necesita CORS).
+    cors-origenes: http://localhost:*,http://127.0.0.1:*
