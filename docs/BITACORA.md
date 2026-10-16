@@ -966,7 +966,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | E-01 a E-08 | hecha: E-01, E-02, E-04, E-06, E-03 (sin ejecutar, falta Docker), E-07, E-08, E-05 | ver `docs/pruebas/contabilidad.tdd.md` |
 | J-01 a J-04 | hecha: J-01, J-02, J-03, J-04 | ver `docs/pruebas/contabilidad.tdd.md` |
 | U-01, U-03, U-04 | hecha: U-01, U-03, U-04 | ver `docs/pruebas/contabilidad.tdd.md` |
-| F-01 a F-04 | hecha: F-02, F-01, F-03 | ver `docs/pruebas/contabilidad.tdd.md` |
+| F-01 a F-04 | hecha: F-02, F-01, F-03, F-04 | ver `docs/pruebas/contabilidad.tdd.md` |
 
 **Notas del avance (2026-10-15):**
 - **Pregunta abierta para el equipo:** un evento de un negocio que no activó Contabilidad hoy queda PENDIENTE con REGLA_FALTANTE (lo decidió el usuario y lo fija `PendientesTest.negocioSinActivar_quedaPendiente`). Falta que el equipo confirme si debe quedar pendiente o ignorarse.
