@@ -12,5 +12,8 @@ public interface RepositorioCuentas {
     /** Busca por telefono E.164 ya normalizado. */
     Optional<Cuenta> porTelefono(String telefono);
 
+    /** Busca por correo ya normalizado (minusculas). */
+    Optional<Cuenta> porCorreo(String correo);
+
     Cuenta guardar(Cuenta cuenta);
 }

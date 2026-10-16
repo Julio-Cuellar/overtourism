@@ -79,12 +79,13 @@ class EsquemaClientesPostgresTest {
     void aislamiento_todasLasTablasConNegocioLaTienenForzada() throws Exception {
         try (var sesion = SesionSql.comoDueno()) {
             // Cualquier esquema propio, no solo clientes: un módulo futuro con negocio_id también queda vigilado.
-            // Excepción: identidad.sesion guarda el negocio activo de la sesión, no pertenece a un negocio; se aísla por rol.
+            // Excepciones de Identidad: sesion guarda el negocio activo de la sesión y negocio_ref es la copia global del
+            // negocio (su negocio_id es la llave, no el dueño de la fila); ninguna pertenece a un negocio, se aíslan por rol.
             List<String> sinProteger = sesion.columna(
                     "select n.nspname || '.' || c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace "
                             + "where n.nspname not in ('pg_catalog', 'information_schema', 'public') "
                             + "and n.nspname not like 'pg\\_%' and c.relkind = 'r' "
-                            + "and not (n.nspname = 'identidad' and c.relname = 'sesion') "
+                            + "and not (n.nspname = 'identidad' and c.relname in ('sesion', 'negocio_ref')) "
                             + "and exists (select 1 from information_schema.columns k where k.table_schema = n.nspname "
                             + "and k.table_name = c.relname and k.column_name = 'negocio_id') "
                             + "and not (c.relrowsecurity and c.relforcerowsecurity) order by 1", String.class);

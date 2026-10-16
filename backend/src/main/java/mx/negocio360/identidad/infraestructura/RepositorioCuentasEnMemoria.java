@@ -25,6 +25,11 @@ public final class RepositorioCuentasEnMemoria implements RepositorioCuentas {
     }
 
     @Override
+    public synchronized Optional<Cuenta> porCorreo(String correo) {
+        return porId.values().stream().filter(c -> c.correo().equals(correo)).findFirst();
+    }
+
+    @Override
     public synchronized Cuenta guardar(Cuenta cuenta) {
         porId.put(cuenta.id(), cuenta);
         return cuenta;

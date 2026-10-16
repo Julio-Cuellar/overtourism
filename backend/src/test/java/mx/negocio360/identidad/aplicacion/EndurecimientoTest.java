@@ -4,6 +4,7 @@ import static mx.negocio360.identidad.aplicacion.Escenario.DISPOSITIVO;
 import static mx.negocio360.identidad.aplicacion.Escenario.IP;
 import static mx.negocio360.identidad.aplicacion.Escenario.TEL_A;
 import static mx.negocio360.identidad.aplicacion.Escenario.TEL_A_E164;
+import static mx.negocio360.identidad.aplicacion.Escenario.correoDe;
 import static mx.negocio360.identidad.aplicacion.Escenario.fallaCon;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -14,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Locale;
 import mx.negocio360.compartido.seguridad.TokenOpaco;
-import mx.negocio360.identidad.IdentidadServicio;
 import mx.negocio360.identidad.dominio.CodigoError;
 import mx.negocio360.identidad.dominio.EstadoCuenta;
 import org.junit.jupiter.api.DisplayName;
@@ -25,43 +25,54 @@ import org.junit.jupiter.params.provider.EnumSource;
 /** Segundo ciclo de IDN-1: lo que encontraron las revisiones de codigo y de seguridad. Cada prueba nace en rojo. */
 class EndurecimientoTest {
 
+    private static final String CORREO_A = correoDe(TEL_A);
+
     private final Escenario e = new Escenario();
+
+    /** Una cuenta registrada y la ventana de topes limpia. */
+    private void cuentaDeAna() {
+        e.registrar(TEL_A, "Ana López");
+        e.reloj.avanzar(Duration.ofMinutes(20));
+    }
 
     // ---- el canal ----
 
     @Test
     @DisplayName("si el canal falla al reenviar, el codigo anterior que la persona ya recibio sigue sirviendo")
     void solicitar_canalCaidoAlReenviar_noInutilizaElCodigoPrevio() {
+        cuentaDeAna();
         var previo = e.pedirCodigo(TEL_A);
         e.canal.caido(true);
 
         fallaCon(() -> e.api.solicitarCodigo(TEL_A, IP), CodigoError.ERROR_TEMPORAL);
 
         e.canal.caido(false);
-        assertThatCode(() -> e.api.iniciarSesion(TEL_A, previo, "Ana López", DISPOSITIVO, IP)).doesNotThrowAnyException();
+        assertThatCode(() -> e.api.iniciarSesion(TEL_A, previo, DISPOSITIVO, IP)).doesNotThrowAnyException();
     }
 
     @Test
     @DisplayName("si el canal falla, no queda guardado ningun codigo nuevo")
     void solicitar_canalCaido_noGuardaNada() {
+        cuentaDeAna();
         e.canal.caido(true);
 
         fallaCon(() -> e.api.solicitarCodigo(TEL_A, IP), CodigoError.ERROR_TEMPORAL);
 
-        assertThat(e.codigos.ultimoDe(TEL_A_E164)).isEmpty();
+        assertThat(e.codigos.ultimoDe(CORREO_A)).isEmpty();
     }
 
     @Test
     @DisplayName("cualquier fallo del canal, no solo el previsto, responde ERROR_TEMPORAL sin filtrar su mensaje")
     void solicitar_canalLanzaOtraExcepcion_respondeErrorTemporal() {
-        var explota = new IdentidadServicio(e.cuentas, e.codigos, e.sesiones, (tel, codigo) -> {
-            throw new IllegalStateException("fallo con " + tel + " y " + codigo);
-        }, e.limite, e.reloj, e.politica);
+        cuentaDeAna();
+        var explota = e.servicio((destino, codigo) -> {
+            throw new IllegalStateException("fallo con " + destino + " y " + codigo);
+        }, e.politica);
 
         var error = fallaCon(() -> explota.solicitarCodigo(TEL_A, IP), CodigoError.ERROR_TEMPORAL);
 
-        assertThat(error.toString() + error.getMessage()).doesNotContain("2221110001").doesNotContain("fallo con");
-        assertThat(e.codigos.ultimoDe(TEL_A_E164)).isEmpty();
+        assertThat(error.toString() + error.getMessage()).doesNotContain("example.com").doesNotContain("fallo con");
+        assertThat(e.codigos.ultimoDe(CORREO_A)).isEmpty();
     }
 
     // ---- el codigo ----
@@ -69,6 +80,7 @@ class EndurecimientoTest {
     @Test
     @DisplayName("el codigo siempre sale con digitos ASCII, aunque el servidor tenga un idioma con otros digitos")
     void solicitar_localeConOtrosDigitos_generaCodigoAscii() {
+        cuentaDeAna();
         var original = Locale.getDefault();
         var arabe = Locale.forLanguageTag("ar-SA-u-nu-arab");
         assumeThat(String.format(arabe, "%06d", 1)).as("el JDK usa digitos arabes con ese idioma").isNotEqualTo("000001");
@@ -122,8 +134,8 @@ class EndurecimientoTest {
     @Test
     @DisplayName("el dispositivo se corta por caracteres completos: nunca deja la mitad de un emoji")
     void iniciar_dispositivoConEmojiEnElLimite_noParteElPar() {
-        var sesion = e.api.iniciarSesion(TEL_A, e.pedirCodigo(TEL_A), "Ana López",
-                "a".repeat(79) + "😀😀", IP);
+        e.preRegistrar(TEL_A, "Ana López");
+        var sesion = e.api.verificarRegistro(CORREO_A, e.canal.ultimoCodigo(), "a".repeat(79) + "😀😀", IP);
 
         var dispositivo = e.sesiones.porHash(TokenOpaco.hash(sesion.token())).orElseThrow().dispositivo();
 
@@ -134,7 +146,8 @@ class EndurecimientoTest {
     @Test
     @DisplayName("el dispositivo pierde los caracteres que invierten el sentido del texto")
     void iniciar_dispositivoConCaracterDeFormato_seLimpia() {
-        var sesion = e.api.iniciarSesion(TEL_A, e.pedirCodigo(TEL_A), "Ana López", "Chrome‮exe.txt", IP);
+        e.preRegistrar(TEL_A, "Ana López");
+        var sesion = e.api.verificarRegistro(CORREO_A, e.canal.ultimoCodigo(), "Chrome‮exe.txt", IP);
 
         var dispositivo = e.sesiones.porHash(TokenOpaco.hash(sesion.token())).orElseThrow().dispositivo();
 
@@ -162,13 +175,13 @@ class EndurecimientoTest {
     void iniciar_conUnaSesionMaxima_laNuevaReemplazaALaAnterior() {
         var unaSola = new PoliticaDeAcceso(Duration.ofMinutes(5), 5, 3, 20, Duration.ofMinutes(15), Duration.ofHours(8),
                 Duration.ofDays(30), 1);
-        var api = new IdentidadServicio(e.cuentas, e.codigos, e.sesiones, e.canal, e.limite, e.reloj, unaSola);
-        api.solicitarCodigo(TEL_A, IP);
-        var primera = api.iniciarSesion(TEL_A, e.canal.ultimoCodigo(), "Ana López", DISPOSITIVO, IP).token();
+        var api = e.servicio(e.canal, unaSola);
+        api.registrar(Escenario.solicitud(TEL_A, "Ana López"), IP);
+        var primera = api.verificarRegistro(CORREO_A, e.canal.ultimoCodigo(), DISPOSITIVO, IP).token();
         e.reloj.avanzar(Duration.ofMinutes(1));
         api.solicitarCodigo(TEL_A, IP);
 
-        var segunda = api.iniciarSesion(TEL_A, e.canal.ultimoCodigo(), null, DISPOSITIVO, IP).token();
+        var segunda = api.iniciarSesion(TEL_A, e.canal.ultimoCodigo(), DISPOSITIVO, IP).token();
 
         assertThat(api.autenticar(primera)).isEmpty();
         assertThat(api.autenticar(segunda)).isPresent();
@@ -180,7 +193,7 @@ class EndurecimientoTest {
     @DisplayName("la politica acepta sus valores maximos")
     void politica_enSusCotas_esValida() {
         assertThatCode(() -> new PoliticaDeAcceso(Duration.ofMinutes(15), 10, 10, 10_000, Duration.ofHours(24),
-                Duration.ofDays(30), Duration.ofDays(90), 20)).doesNotThrowAnyException();
+                Duration.ofDays(30), Duration.ofDays(90), 20, Duration.ofMinutes(30))).doesNotThrowAnyException();
     }
 
     @Test
@@ -192,7 +205,7 @@ class EndurecimientoTest {
         assertThatThrownBy(() -> new PoliticaDeAcceso(m, 11, 3, 20, m, m, m, 5))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("intentosMaximos");
         assertThatThrownBy(() -> new PoliticaDeAcceso(m, 5, 11, 20, m, m, m, 5))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("solicitudesPorTelefono");
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("solicitudesPorCorreo");
         assertThatThrownBy(() -> new PoliticaDeAcceso(m, 5, 3, 10_001, m, m, m, 5))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("solicitudesPorIp");
         assertThatThrownBy(() -> new PoliticaDeAcceso(m, 5, 3, 20, Duration.ofHours(25), m, m, 5))
@@ -203,5 +216,17 @@ class EndurecimientoTest {
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("topeAbsoluto");
         assertThatThrownBy(() -> new PoliticaDeAcceso(m, 5, 3, 20, m, m, m, 21))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("sesionesMaximas");
+        assertThatThrownBy(() -> new PoliticaDeAcceso(m, 5, 3, 20, m, m, m, 5, Duration.ofMinutes(31)))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("preregistroVigencia");
+        assertThatThrownBy(() -> new PoliticaDeAcceso(m, 5, 3, 20, m, m, m, 5, Duration.ZERO))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("preregistroVigencia");
+    }
+
+    @Test
+    @DisplayName("D-84: el pre-registro vale 15 minutos por omision, tambien en la politica de 8 argumentos")
+    void politica_preregistro_vale15MinutosPorOmision() {
+        assertThat(PoliticaDeAcceso.porDefecto().preregistroVigencia()).isEqualTo(Duration.ofMinutes(15));
+        var m = Duration.ofMinutes(1);
+        assertThat(new PoliticaDeAcceso(m, 5, 3, 20, m, m, m, 5).preregistroVigencia()).isEqualTo(Duration.ofMinutes(15));
     }
 }

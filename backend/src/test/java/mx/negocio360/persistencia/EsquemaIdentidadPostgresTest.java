@@ -23,9 +23,15 @@ class EsquemaIdentidadPostgresTest {
         return "+52222" + String.format("%07d", ThreadLocalRandom.current().nextInt(10_000_000));
     }
 
+    private static final String INSERTAR_CUENTA = "insert into identidad.cuenta (id, nombre, apellidos, telefono, correo, "
+            + "aviso_version, aviso_aceptado_en, estado, creada_en) values (?, ?, ?, ?, ?, ?, now(), ?, now())";
+
+    private static String correo() {
+        return "p" + ThreadLocalRandom.current().nextInt(100_000_000) + "@example.com";
+    }
+
     private static void insertarCuenta(SesionSql sesion, UUID id, String telefono) throws Exception {
-        sesion.ejecutar("insert into identidad.cuenta (id, nombre, telefono, estado, creada_en) "
-                + "values (?, 'Ana Prueba', ?, 'ACTIVA', now())", id, telefono);
+        sesion.ejecutar(INSERTAR_CUENTA, id, "Ana", "Prueba Ruiz", telefono, correo(), 1, "ACTIVA");
     }
 
     @Test
@@ -36,8 +42,8 @@ class EsquemaIdentidadPostgresTest {
             var tel = telefono();
 
             insertarCuenta(sesion, cuenta, tel);
-            sesion.ejecutar("insert into identidad.codigo_acceso (id, telefono, sal, hash, intentos, expira_en, creado_en) "
-                    + "values (?, ?, ?, ?, 0, now() + interval '5 minutes', now())", UUID.randomUUID(), tel, SAL_DE_32, HASH_DE_64);
+            sesion.ejecutar("insert into identidad.codigo_acceso (id, destino, sal, hash, intentos, expira_en, creado_en) "
+                    + "values (?, ?, ?, ?, 0, now() + interval '5 minutes', now())", UUID.randomUUID(), correo(), SAL_DE_32, HASH_DE_64);
             sesion.ejecutar("insert into identidad.sesion (token_hash, cuenta_id, dispositivo, ip_truncada, creada_en, "
                     + "ultimo_uso_en, expira_en, expira_absoluta_en) values (?, ?, 'Chrome en Windows', '189.203.10.0', "
                     + "now(), now(), now() + interval '8 hours', now() + interval '30 days')", HASH_DE_64, cuenta);
@@ -53,8 +59,8 @@ class EsquemaIdentidadPostgresTest {
             var tel = telefono();
             insertarCuenta(sesion, UUID.randomUUID(), tel);
 
-            assertThat(sesion.intentar("insert into identidad.cuenta (id, nombre, telefono, estado, creada_en) "
-                    + "values (?, 'Otra Persona', ?, 'ACTIVA', now())", UUID.randomUUID(), tel)).isEqualTo("23505");
+            assertThat(sesion.intentar(INSERTAR_CUENTA, UUID.randomUUID(), "Otra", "Persona", tel, correo(), 1, "ACTIVA"))
+                    .isEqualTo("23505");
         }
     }
 
@@ -63,8 +69,7 @@ class EsquemaIdentidadPostgresTest {
     void cuenta_telefonoFueraDeFormato_seRechaza() throws Exception {
         try (var sesion = SesionSql.comoAplicacion()) {
             for (var invalido : new String[] {"2221110001", "+521234", "+1 2221110001", "+52abcdefghij", ""}) {
-                assertThat(sesion.intentar("insert into identidad.cuenta (id, nombre, telefono, estado, creada_en) "
-                        + "values (?, 'Ana Prueba', ?, 'ACTIVA', now())", UUID.randomUUID(), invalido))
+                assertThat(sesion.intentar(INSERTAR_CUENTA, UUID.randomUUID(), "Ana", "Prueba", invalido, correo(), 1, "ACTIVA"))
                         .as("teléfono «%s»", invalido).isEqualTo("23514");
             }
         }
@@ -74,10 +79,10 @@ class EsquemaIdentidadPostgresTest {
     @DisplayName("AC-04: el estado de la cuenta es ACTIVA, SUSPENDIDA o ANONIMIZADA, y el nombre no está vacío")
     void cuenta_estadoONombreInvalido_seRechaza() throws Exception {
         try (var sesion = SesionSql.comoAplicacion()) {
-            assertThat(sesion.intentar("insert into identidad.cuenta (id, nombre, telefono, estado, creada_en) "
-                    + "values (?, 'Ana Prueba', ?, 'BORRADA', now())", UUID.randomUUID(), telefono())).isEqualTo("23514");
-            assertThat(sesion.intentar("insert into identidad.cuenta (id, nombre, telefono, estado, creada_en) "
-                    + "values (?, '   ', ?, 'ACTIVA', now())", UUID.randomUUID(), telefono())).isEqualTo("23514");
+            assertThat(sesion.intentar(INSERTAR_CUENTA, UUID.randomUUID(), "Ana", "Prueba", telefono(), correo(), 1, "BORRADA"))
+                    .isEqualTo("23514");
+            assertThat(sesion.intentar(INSERTAR_CUENTA, UUID.randomUUID(), "   ", "Prueba", telefono(), correo(), 1, "ACTIVA"))
+                    .isEqualTo("23514");
         }
     }
 
@@ -85,15 +90,19 @@ class EsquemaIdentidadPostgresTest {
     @DisplayName("AS-01: del código solo se guarda el hash con sal, con formato válido, intentos no negativos y vencimiento posterior")
     void codigo_valoresInvalidos_seRechazan() throws Exception {
         try (var sesion = SesionSql.comoAplicacion()) {
-            var insertar = "insert into identidad.codigo_acceso (id, telefono, sal, hash, intentos, expira_en, creado_en) values (?, ?, ?, ?, ?, ";
-            assertThat(sesion.intentar(insertar + "now() + interval '5 minutes', now())", UUID.randomUUID(), telefono(), SAL_DE_32, "123456", 0))
+            var insertar = "insert into identidad.codigo_acceso (id, destino, sal, hash, intentos, expira_en, creado_en) values (?, ?, ?, ?, ?, ";
+            assertThat(sesion.intentar(insertar + "now() + interval '5 minutes', now())", UUID.randomUUID(), correo(), SAL_DE_32, "123456", 0))
                     .as("un código en claro no cabe como hash").isEqualTo("23514");
-            assertThat(sesion.intentar(insertar + "now() + interval '5 minutes', now())", UUID.randomUUID(), telefono(), "xyz", HASH_DE_64, 0))
+            assertThat(sesion.intentar(insertar + "now() + interval '5 minutes', now())", UUID.randomUUID(), correo(), "xyz", HASH_DE_64, 0))
                     .as("sal inválida").isEqualTo("23514");
-            assertThat(sesion.intentar(insertar + "now() + interval '5 minutes', now())", UUID.randomUUID(), telefono(), SAL_DE_32, HASH_DE_64, -1))
+            assertThat(sesion.intentar(insertar + "now() + interval '5 minutes', now())", UUID.randomUUID(), correo(), SAL_DE_32, HASH_DE_64, -1))
                     .as("intentos negativos").isEqualTo("23514");
-            assertThat(sesion.intentar(insertar + "now() - interval '1 minute', now())", UUID.randomUUID(), telefono(), SAL_DE_32, HASH_DE_64, 0))
+            assertThat(sesion.intentar(insertar + "now() - interval '1 minute', now())", UUID.randomUUID(), correo(), SAL_DE_32, HASH_DE_64, 0))
                     .as("vence antes de emitirse").isEqualTo("23514");
+            assertThat(sesion.intentar(insertar + "now() + interval '5 minutes', now())", UUID.randomUUID(), "ANA@EXAMPLE.COM", SAL_DE_32, HASH_DE_64, 0))
+                    .as("el destino va en minúsculas").isEqualTo("23514");
+            assertThat(sesion.intentar(insertar + "now() + interval '5 minutes', now())", UUID.randomUUID(), "+522221234567", SAL_DE_32, HASH_DE_64, 0))
+                    .as("el destino es un correo, no un teléfono (D-85)").isEqualTo("23514");
         }
     }
 
@@ -125,6 +134,58 @@ class EsquemaIdentidadPostgresTest {
             sesion.ejecutar(insertar, "d".repeat(64), cuenta);
 
             assertThat(sesion.intentar(insertar, "d".repeat(64), cuenta)).isEqualTo("23505");
+        }
+    }
+
+    // ---- V021: registro ampliado (D-76) ----
+
+    @Test
+    @DisplayName("D-76: dos cuentas no pueden tener el mismo correo")
+    void cuenta_correoDuplicado_seRechaza() throws Exception {
+        try (var sesion = SesionSql.comoAplicacion()) {
+            var correo = correo();
+            sesion.ejecutar(INSERTAR_CUENTA, UUID.randomUUID(), "Ana", "Prueba", telefono(), correo, 1, "ACTIVA");
+
+            assertThat(sesion.intentar(INSERTAR_CUENTA, UUID.randomUUID(), "Beto", "Ruiz", telefono(), correo, 1, "ACTIVA"))
+                    .isEqualTo("23505");
+        }
+    }
+
+    @Test
+    @DisplayName("D-76: el correo se guarda en minúsculas, con la forma y el largo permitidos")
+    void cuenta_correoFueraDeFormato_seRechaza() throws Exception {
+        try (var sesion = SesionSql.comoAplicacion()) {
+            for (var invalido : new String[] {"Ana@Example.com", "sin-arroba", "a@b", "a b@x.com", "", "ñ@x.com"}) {
+                assertThat(sesion.intentar(INSERTAR_CUENTA, UUID.randomUUID(), "Ana", "Prueba", telefono(), invalido, 1,
+                        "ACTIVA")).as("correo «%s»", invalido).isEqualTo("23514");
+            }
+            assertThat(sesion.intentar(INSERTAR_CUENTA, UUID.randomUUID(), "Ana", "Prueba", telefono(),
+                    "a".repeat(120) + "@x.com", 1, "ACTIVA")).as("más de 120 caracteres").isEqualTo("22001");
+        }
+    }
+
+    @Test
+    @DisplayName("D-76: los apellidos no pueden quedar vacíos y la versión del aviso es 1 o mayor")
+    void cuenta_apellidosOAvisoInvalidos_seRechazan() throws Exception {
+        try (var sesion = SesionSql.comoAplicacion()) {
+            assertThat(sesion.intentar(INSERTAR_CUENTA, UUID.randomUUID(), "Ana", "   ", telefono(), correo(), 1, "ACTIVA"))
+                    .isEqualTo("23514");
+            assertThat(sesion.intentar(INSERTAR_CUENTA, UUID.randomUUID(), "Ana", "Prueba", telefono(), correo(), 0, "ACTIVA"))
+                    .isEqualTo("23514");
+        }
+    }
+
+    @Test
+    @DisplayName("D-76: apellidos, correo y aviso aceptado son obligatorios; la verificación del correo es opcional")
+    void cuenta_sinCamposObligatorios_seRechaza() throws Exception {
+        try (var sesion = SesionSql.comoAplicacion()) {
+            assertThat(sesion.intentar("insert into identidad.cuenta (id, nombre, telefono, estado, creada_en) "
+                    + "values (?, 'Ana', ?, 'ACTIVA', now())", UUID.randomUUID(), telefono())).isEqualTo("23502");
+
+            var id = UUID.randomUUID();
+            insertarCuenta(sesion, id, telefono());
+            assertThat(sesion.consultar("select correo_verificado_en from identidad.cuenta where id = ?", java.sql.Timestamp.class, id))
+                    .isNull();
         }
     }
 }

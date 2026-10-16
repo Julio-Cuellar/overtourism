@@ -9,7 +9,7 @@ import mx.negocio360.identidad.dominio.CodigoAcceso;
 
 /**
  * Codigos en memoria. Solo para desarrollo, demo y pruebas. El orden de insercion decide cual es el ultimo de un
- * telefono; actualizar un codigo no cambia su lugar.
+ * destino; actualizar un codigo no cambia su lugar.
  */
 public final class RepositorioCodigosEnMemoria implements RepositorioCodigos {
 
@@ -21,10 +21,10 @@ public final class RepositorioCodigosEnMemoria implements RepositorioCodigos {
     }
 
     @Override
-    public synchronized Optional<CodigoAcceso> ultimoDe(String telefono) {
+    public synchronized Optional<CodigoAcceso> ultimoDe(String destino) {
         CodigoAcceso ultimo = null;
         for (var codigo : porId.values()) {
-            if (codigo.telefono().equals(telefono)) {
+            if (codigo.destino().equals(destino)) {
                 ultimo = codigo;
             }
         }

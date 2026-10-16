@@ -4,3 +4,15 @@
 identidad:
   canal-simulado:
     habilitado: true
+# Credenciales SOLO de desarrollo (base local en 127.0.0.1:5433). Fuera de este perfil no hay valor por omisión y la
+# aplicación no arranca. El dueño (postgres) corre Flyway; la aplicación entra con un rol sin superusuario para que
+# la seguridad por fila se aplique igual que en producción.
+spring:
+  datasource:
+    username: negocio360_app
+    password: root
+  flyway:
+    user: postgres
+    password: root
+    placeholders:
+      app_user: negocio360_app

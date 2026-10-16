@@ -7,23 +7,23 @@ import java.util.UUID;
 import mx.negocio360.compartido.seguridad.HashConSal;
 
 /**
- * Codigo de acceso enviado a un telefono (AS-01, AS-02): de un solo uso, vence a los 5 minutos y se agota a los 5
- * intentos. Solo guarda el hash con sal; el codigo en claro no se puede recuperar. Es inmutable.
+ * Codigo de acceso enviado a un destino, hoy el correo de la cuenta (AS-01, AS-02, D-85): de un solo uso, vence a los
+ * 5 minutos y se agota a los 5 intentos. Solo guarda el hash con sal; el codigo en claro no se puede recuperar. Es inmutable.
  *
  * @param id        identificador
- * @param telefono  E.164 al que se envio
+ * @param destino   correo (en minusculas) al que se envio
  * @param codigo    hash con sal del codigo
  * @param intentos  intentos fallidos
  * @param expiraEn  vencimiento
  * @param usadoEn   momento de uso, o nulo
  * @param creadoEn  emision
  */
-public record CodigoAcceso(UUID id, String telefono, HashConSal codigo, int intentos, Instant expiraEn,
+public record CodigoAcceso(UUID id, String destino, HashConSal codigo, int intentos, Instant expiraEn,
                            Instant usadoEn, Instant creadoEn) {
 
     public CodigoAcceso {
         Objects.requireNonNull(id, "id");
-        Objects.requireNonNull(telefono, "telefono");
+        Objects.requireNonNull(destino, "destino");
         Objects.requireNonNull(codigo, "codigo");
         Objects.requireNonNull(expiraEn, "expiraEn");
         Objects.requireNonNull(creadoEn, "creadoEn");
@@ -32,9 +32,9 @@ public record CodigoAcceso(UUID id, String telefono, HashConSal codigo, int inte
         }
     }
 
-    public static CodigoAcceso emitir(UUID id, String telefono, String codigoEnClaro, Instant ahora,
+    public static CodigoAcceso emitir(UUID id, String destino, String codigoEnClaro, Instant ahora,
                                       Duration vigencia) {
-        return new CodigoAcceso(id, telefono, HashConSal.de(codigoEnClaro), 0, ahora.plus(vigencia), null, ahora);
+        return new CodigoAcceso(id, destino, HashConSal.de(codigoEnClaro), 0, ahora.plus(vigencia), null, ahora);
     }
 
     public boolean coincide(String intento) {
@@ -50,11 +50,11 @@ public record CodigoAcceso(UUID id, String telefono, HashConSal codigo, int inte
     }
 
     public CodigoAcceso conIntentoFallido() {
-        return new CodigoAcceso(id, telefono, codigo, intentos + 1, expiraEn, usadoEn, creadoEn);
+        return new CodigoAcceso(id, destino, codigo, intentos + 1, expiraEn, usadoEn, creadoEn);
     }
 
     public CodigoAcceso usado(Instant ahora) {
-        return new CodigoAcceso(id, telefono, codigo, intentos, expiraEn, ahora, creadoEn);
+        return new CodigoAcceso(id, destino, codigo, intentos, expiraEn, ahora, creadoEn);
     }
 
     @Override

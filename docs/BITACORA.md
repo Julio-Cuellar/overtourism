@@ -167,6 +167,27 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-63 | El bot de chat no continúa por ahora. Se eliminan las vías REST del bot y el origen `BOT` | ACEPTADA | 2026-10-13 | Dicho por el usuario. Cierra la decisión abierta sobre el bot. Afecta también el REST del bot de Inventario (D-46) |
 | D-64 | Umbrales iniciales de Clientes: inactivo a los 60 días sin comprar; frecuente con 3 compras en 90 días. Son reglas versionadas | ACEPTADA (delegada) | 2026-10-13 | El usuario respondió «cómo veas conveniente» |
 | D-65 | El `total` de `venta.registrada` es neto del cupón cuando aplica, y el total completo cuando no hay cupón | ACEPTADA | 2026-10-13 | Dicho por el usuario («sí, solo cuando aplica»). Falta congelarlo con el dueño de Ventas |
+| D-66 | Identidad es un módulo horizontal solo para el personal de los negocios. Los turistas tienen una cuenta aparte en Visitantes, sin vínculo con la del personal | ACEPTADA | 2026-10-13 | Del Mapa de Identidad v0.1 (respuesta del usuario). Número anotado el 2026-10-15 |
+| D-67 | Acceso por código al teléfono, sin contraseñas, con token de sesión opaco (solo su hash en la base) y sin Spring Security completo en el MVP | ACEPTADA | 2026-10-13 | Ídem |
+| D-68 | Una cuenta puede tener membresías en varios negocios, un rol por membresía y un negocio activo en la sesión | ACEPTADA | 2026-10-13 | Ídem |
+| D-69 | Roles base fijos con plantilla por giro; los roles personalizados quedan en P2 | ACEPTADA | 2026-10-13 | Ídem |
+| D-70 | Cada módulo declara sus permisos como datos (`modulo.recurso.accion`); Identidad los recibe por una interfaz de `compartido` y no importa a los módulos | PROPUESTA | 2026-10-13 | Se implementa con IDN-2, autorizada el 2026-10-15 |
+| D-71 | El envío del código es simulado en desarrollo y demo; el canal real se decide aparte | ACEPTADA | 2026-10-13 | Precisada por D-77 |
+| D-72 | Identidad se expone por REST y por API Java, sin GraphQL ni WebSocket propios | ACEPTADA | 2026-10-13 | |
+| D-73 | Las acciones sensibles de Identidad usan **confirmación reforzada** (código nuevo ligado a la acción) en lugar de preparar → confirmar. Excepción a `CLAUDE.md` | ACEPTADA | 2026-10-15 | Dicho por el usuario: «sobre la D-73 si, ocuparemos confirmación reforzada». Se programa con IDN-3.2 (HTC-115) |
+| D-74 | PIN rápido, roles personalizados, titularidad, cuentas de gobierno y cambio de teléfono quedan en P2 | ACEPTADA | 2026-10-13 | |
+| D-75 | Identidad absorbe la autenticación de HTC-44 y reemplaza SG-04 con permisos por módulo | PROPUESTA | 2026-10-13 | |
+| D-76 | Registro de personal con nombre, apellidos, correo, celular y aviso de privacidad. El **id, el correo y el celular** identifican a la persona; los tres sirven para pedir el código | ACEPTADA | 2026-10-15 | Pedido del usuario. El conjunto exacto de campos (sin fecha de nacimiento ni otros) y el flujo `POST /registro` son propuesta del asistente en el plan del 2026-10-15, que el usuario mandó ejecutar; el correo queda sin verificar hasta que exista un canal |
+| D-77 | El código de verificación se escribe en la **consola** (registro del logger `identidad.canal.simulado`, solo en desarrollo y demo), detrás del puerto `CanalDeCodigos`, para conectar después el servicio de mensajería que se elija | ACEPTADA | 2026-10-15 | Pedido del usuario. Excepción acotada a SI-15: solo ese logger, con el teléfono enmascarado, y nunca con el perfil `produccion`. Precisada por D-85: el código llega al correo y la consola lo enmascara (`a***@example.com`) |
+| D-78 | **Identidad no registra negocios: publica un evento** (`negocio.registro_solicitado`) que consume el módulo de negocios. Cada negocio tiene un dueño o administrador, encargado del alta; el módulo de negocios responde con `negocio.registrado` y Identidad lo consume para crear el negocio de referencia y la membresía `DUENO` de quien lo solicitó | ACEPTADA | 2026-10-15 | Dicho por el usuario: «no vas a registrar un negocio, en su lugar vas a generar un evento que sea para el registro de un negocio, esto con la finalidad de que lo consuma el modulo correspondiente». Que Identidad consuma `negocio.registrado` es interpretación del asistente; el `negocio_id` lo asigna Identidad al solicitar (UUIDv7) para no cambiar el sobre común (D-37 sigue propuesta) |
+| D-79 | **Alta única de persona y negocio:** `POST /registro` acepta un bloque opcional `negocio {nombre, giro}`; en una llamada crea la persona, anota el pedido y publica `negocio.registro_solicitado`. `POST /registro/negocio` queda para quien ya tiene cuenta | ACEPTADA | 2026-10-15 | Plan presentado con `/ecc:plan` y confirmado por el usuario: «Sí, confirmo el plan con los valores por omisión: ejecuta la Etapa A con /ecc:tdd-workflow y deja Visitantes e invitaciones como diseño». **Sustituida en parte por D-84:** el alta de la persona ahora es en dos pasos (formulario y verificación del correo); el bloque `negocio` opcional y la activación implícita (D-80) siguen igual |
+| D-80 | **Activación implícita:** si la sesión no eligió negocio y la persona tiene una sola membresía activa, ese es su negocio activo, sin cambiar de token. El `negocio_id` sale del servidor, no del cliente. Con dos o más negocios se elige con `PUT /auth/negocio-activo`; si llega un segundo negocio, la sesión deja de tener negocio activo (falla cerrado) | ACEPTADA | 2026-10-15 | Ídem |
+| D-81 | **Turista (diseño, Visitantes no está autorizado):** sin cuenta por omisión; con cuenta, dos llamadas (pedir código y verificar, que crea la cuenta y recibe `aceptaAviso`), sin nombre, apellidos ni correo obligatorios; celular de cualquier país; rutas `/visitantes/auth/*` porque Identidad ocupa `/auth/*`; el cuestionario de intereses es opcional | ACEPTADA | 2026-10-15 | Ídem. Es diseño: no hay autorización para programar Visitantes |
+| D-82 | Cuando Visitantes se autorice, el acceso por código (código, sesión, tope de solicitudes, canal) se extrae a `compartido.acceso`; cada módulo conserva sus tablas y cuentas (D-66) | ACEPTADA | 2026-10-15 | Ídem. Diseño |
+| D-83 | **Personal invitado (diseño, IDN-3):** aceptar una invitación crea la cuenta y la membresía en un paso; el código de la invitación prueba el celular | ACEPTADA | 2026-10-15 | Ídem. Diseño |
+| D-84 | **Registro en dos pasos con pre-registro (modelo de Clinerya):** `POST /registro` guarda el formulario como **pre-registro** (sin cuenta, sin código en la petición) y manda un código al **correo**; `POST /registro/verificacion {correo, codigo}` crea la cuenta con el correo ya verificado, borra el pre-registro, abre la sesión y, si venía negocio, publica `negocio.registro_solicitado`; `POST /registro/reenvio {correo}` renueva el código con respuesta genérica. El pre-registro y su código viven **15 minutos** en la base y se borran al verificar, al vencer y al reenviar. Sustituye el flujo de D-79 en que el código se pedía antes de registrarse | ACEPTADA | 2026-10-15 | Pedido del usuario (ver la entrada de autorización). El diseño sale de `clinerya-users` del repositorio Julio-Cuellar/Clinerya; las mejoras sobre él (hash del código, 5 intentos, topes por correo y por IP) son propuesta del asistente |
+| D-85 | **Todos los códigos de acceso (registro e inicio de sesión) llegan al correo de la cuenta.** El celular queda como dato e identificador; con celular, correo o id se pide el código y siempre llega al correo. Ninguno de los tres revela si la cuenta existe (SI-02). Precisa D-76 y D-77 (la consola sigue siendo el canal hasta que se elija el servicio de mensajería) | ACEPTADA | 2026-10-15 | Valor por omisión del plan que el usuario mandó continuar; la alternativa (solo el registro por correo) se descartó por mantener dos canales y dos topes |
+| D-86 | El pre-registro se guarda en Postgres desde ya: tabla `identidad.preregistro` (migración V023) y primer repositorio JDBC de Identidad, con prueba contra Postgres real. El resto de los repositorios sigue en memoria hasta IDN-1.1 | ACEPTADA | 2026-10-15 | Pedido del usuario («los códigos se guardan en base de datos durante 15 min»); lo demás de Identidad en memoria es propuesta del asistente por alcance |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -899,3 +920,158 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 
 **Archivos creados:** `backend/docker-compose.yml`, `backend/docker/postgres/01-roles.sh`, `backend/.env.example`, `backend/.env` (local, ignorado), `.gitattributes`, `backend/src/main/resources/db/migration/V001, V002, V010, V020`, `backend/src/test/java/mx/negocio360/persistencia/*` (11 clases), `backend/src/test/resources/META-INF/spring.factories`, `docs/pruebas/postgres-flyway-outbox.tdd.md`.
 **Archivos modificados:** `backend/pom.xml`, `backend/src/main/resources/application.yml`, `backend/postman/*` (descripción), `docs/BITACORA.md` (esta entrada).
+
+### 2026-10-15 — Base de desarrollo levantada con credenciales `postgres` / `root` en el perfil `desarrollo`
+**Pedido del usuario:** «instala la imagen de postgres, y en el perfil de desarrollador que las claves sean, username: postgres contraseña: root. También crea la base en postgres para continuar».
+
+**Qué se hizo:**
+1. Se descargó `postgres:17-alpine` y se levantó `negocio360-postgres` con `docker compose up -d --wait` (127.0.0.1:5433). La base `negocio360` se creó sola (`POSTGRES_DB`). Se verificó: PostgreSQL 17.11, `postgres` superusuario y `negocio360_app` sin superusuario ni `BYPASSRLS`.
+2. `backend/.env` (local, ignorado por git) con dueño `postgres`/`root` y rol de la aplicación `negocio360_app`/`root`, para que lo lea `docker compose`.
+3. `application-desarrollo.yml` ahora trae las credenciales de desarrollo: Flyway con `postgres`/`root` y la aplicación con `negocio360_app`/`root`. Fuera de ese perfil siguen sin valor por omisión y la aplicación no arranca.
+4. Se arrancó con `-Dspring-boot.run.profiles=desarrollo`: Flyway aplicó las 4 migraciones (V001, V002, V010, V020) y la aplicación inició en 3.8 s.
+
+**Decisión mía a confirmar:** la aplicación **no** entra como `postgres` sino como `negocio360_app`, porque un superusuario se salta la seguridad por fila y las pruebas de aislamiento dejarían de representar a producción. Si el equipo prefiere que la aplicación use `postgres`, es cambiar `spring.datasource.username` en el perfil.
+
+**Cambia respecto a la regla anterior:** la entrada del 2026-10-14 decía «contraseñas solo en `.env`, nunca en el repositorio». Por pedido del usuario, las de **desarrollo** quedan en `application-desarrollo.yml`, que sí se sube a git. Son válidas solo contra la base local; nunca usarlas en un servidor.
+
+**No verificado:** `mvn verify` no se volvió a correr; los módulos siguen con repositorios en memoria, así que la aplicación aún no escribe en la base.
+
+**Archivos creados:** `backend/.env` (local, ignorado). **Modificados:** `backend/src/main/resources/application-desarrollo.yml`, `docs/BITACORA.md`.
+
+### 2026-10-15 — Autorización de IDN-2 y del registro ampliado de Identidad (compuerta de código)
+**Autorización escrita (citas textuales del usuario en la sesión):** «Si, construiremos IDN-2»; «sobre la D-73 si, ocuparemos confirmación reforzada»; y, tras ver el plan presentado con `/ecc:plan`: «ahora si /ecc:tdd-workflow ejecuta el plan que hiciste junto con la correción que te estoy anexando». La corrección es D-78: Identidad no registra negocios, publica un evento para que lo consuma el módulo correspondiente.
+
+**Antecedente que debe quedar escrito:** una vez avancé con el plan sin que el usuario lo hubiera confirmado (leí una invocación de `/ecc:tdd-workflow` como un «sí»). El usuario me detuvo y se revirtió todo ese trabajo antes de esta autorización.
+
+**Alcance que le doy (interpretación mía):**
+- **Etapa 1:** registro ampliado (`POST /registro`), acceso por id, correo o celular, código en la consola (D-76, D-77), migración `V021`, y la colección de Postman con los campos.
+- **Etapa 2:** IDN-2 (membresías, roles base y plantillas, catálogo de permisos, negocio activo, último dueño, anti escalada) y el flujo de eventos del alta de negocio (D-78).
+- **No incluye:** confirmación reforzada ni invitaciones y gestión del equipo por REST (IDN-3.2 a 3.5, etapa 3); repositorios JDBC de Identidad (IDN-1.1); `desafioId`; Inventario. Cada uno necesita su autorización escrita.
+
+**Cómo se trabaja:** rama `julio`, TDD (RED, GREEN, refactor, evidencia en `docs/pruebas/identidad-idn2.tdd.md`), sin commits ni pushes hasta que el usuario los pida, sin dependencias nuevas. Los cambios de esquema van en migraciones nuevas (`V021` en adelante, a continuación de `V020`: Flyway no aplica una migración con número menor que la última aplicada), porque `V010` ya está en un commit.
+
+**Decisiones registradas hoy:** D-66 a D-75 (antes provisionales) y D-76 a D-78.
+
+### 2026-10-15 — Identidad: registro ampliado, acceso por id, correo o celular, e IDN-2 con alta de negocio por eventos
+**Pedido del usuario:** el de la entrada de autorización de arriba: ejecutar con `/ecc:tdd-workflow` el plan de registro ampliado, código en la consola e IDN-2, con la corrección D-78 (Identidad publica un evento en lugar de registrar el negocio) y una colección de Postman que pida los campos del registro.
+
+**Qué se hizo** (detalle y evidencia en [`docs/pruebas/identidad-idn2.tdd.md`](pruebas/identidad-idn2.tdd.md)):
+1. **Registro (D-76):** `POST /registro` con nombre, apellidos, correo, celular y aceptación del aviso de privacidad. El id, el correo y el celular sirven para pedir el código (`POST /auth/codigo` y `POST /auth/sesion` reciben `identificador`). **`POST /auth/sesion` ya no crea cuentas**: un celular sin cuenta recibe `REGISTRO_REQUERIDO` y el código no se gasta. El correo queda sin verificar. Migración `V021`.
+2. **Código en la consola (D-77):** `[CANAL SIMULADO] Código de acceso para •••• 0001: 123456`, en el logger `identidad.canal.simulado`, solo con `identidad.canal-simulado.habilitado=true` y nunca con `produccion`. `GET /dev/canal/codigo` sigue existiendo. Cuando se elija la mensajería, es otra implementación de `CanalDeCodigos`.
+3. **IDN-2:** permisos como datos (`compartido.seguridad`, cada módulo declara los suyos: `PermisosDeIdentidad`, `PermisosDeClientes`), 8 roles base y plantilla por giro (`RolesBase`), membresías, negocio activo (`PUT /auth/negocio-activo` emite otro token y revoca el anterior), `GET /roles`, `GET /permisos`, `GET /auth/yo` con rol y permisos, y la administración del equipo a nivel de servicio (`EquipoApi`: cambiar rol, suspender, reactivar, revocar, salir). Migración `V022`.
+4. **Alta de negocio por eventos (D-78):** `POST /registro/negocio` responde 202 con el id que Identidad asigna y publica `negocio.registro_solicitado`; **no** crea el negocio. `EscuchaDeNegocios` consume `negocio.registrado` (lector tolerante `NegocioRegistradoV1`) y deja a quien lo pidió como DUENO; es idempotente. Mientras no exista el módulo de negocios, `POST /dev/negocios/{id}/registrado` (solo desarrollo) responde en su lugar.
+5. **Postman:** colección de 44 solicitudes en 5 carpetas y dos entornos. El entorno `identidad.local` trae los campos vacíos (celular, nombre, apellidos, correo, nombre y giro del negocio): si falta alguno, la carpeta no sale. `identidad.ejemplo` trae datos inventados.
+
+**Verificación hecha:** `mvn -B verify`: **1125 pruebas, 0 fallas**; cobertura de Identidad 99.5 % de líneas y 95.8 % de ramas. Se arrancó el backend con el perfil `desarrollo`, Flyway aplicó `V021` y `V022` a la base de Docker, y las 44 solicitudes de la colección respondieron lo esperado (estado y código de error) con un ejecutor en Python. Cinco mutaciones a mano comprobaron que las pruebas de las correcciones de las revisiones fallan si se deshacen.
+
+**Cambios que afectan a quien arranque la aplicación:**
+- La base de desarrollo ya está en la versión 22 de Flyway. Quien tenga una instancia en marcha con el código anterior debe reiniciarla.
+- Las migraciones nuevas se numeraron `V021` y `V022`, **no** `V011`/`V012` como decía la autorización: Flyway rechaza una migración con número menor que la última aplicada (`V020`).
+- El contrato de `/auth/codigo` y `/auth/sesion` cambió (`identificador` en lugar de `telefono`, sin `nombre`); `GET /auth/yo` y `SesionIniciada` traen más campos. La colección anterior de Postman quedó reemplazada.
+
+**Decisiones mías que el equipo debe confirmar o corregir** (propuestas, no aceptadas):
+- **P-7.** El `negocio_id` lo asigna Identidad al pedir el negocio y viaja en el sobre; así no se toca `SobreEvento` (D-37 sigue propuesta). Si el módulo de negocios quiere asignarlo él, cambia el contrato.
+- **P-8.** `negocio.registrado` v1 trae en `datos`: `solicitado_por` (cuenta), `nombre` y `giro`. Hay que congelarlo con quien haga el módulo de negocios.
+- **P-9.** Un `negocio.registrado` para un negocio que ya existe, o con una cuenta inexistente o inactiva, o con un giro o nombre que Identidad no reconoce, se **ignora sin error**.
+- **P-10.** Un mismo celular, correo o id puede pedir código; el código siempre llega al celular de la cuenta; el tope de 3 cada 15 minutos lo comparten los tres.
+- **P-13.** Para que `negocio.registrado` haga dueña a una cuenta, Identidad exige haberlo pedido: guarda el pedido (negocio y cuenta) y lo consume al aplicarlo. Si Identidad se reinicia entre el pedido y la respuesta, el pedido se pierde (hoy está en memoria; con Postgres hará falta una tabla, a agregar con IDN-1.1).
+- **P-14.** Con correo o id, un código vencido o agotado se responde como `CODIGO_INVALIDO` y agotar el tope del celular no da error (se omite el envío), para no delatar si la cuenta existe. Un rechazo de `POST /registro` por correo ocupado cuenta como intento fallido del código.
+- **P-15.** `POST /registro/negocio` tiene un tope de 3 pedidos por cuenta cada 15 minutos (reutiliza el valor de `solicitudes-por-telefono`).
+- **P-16.** Una cuenta puede tener varias membresías en un negocio si las anteriores están revocadas (se invita de nuevo); a lo más una no revocada. Un disparador de `V022` impide que una revocada vuelva.
+- **P-11.** Se cambió una prueba existente (`EsquemaClientesPostgresTest`) para que `identidad.negocio_ref` quede fuera de la regla «toda tabla con `negocio_id` tiene seguridad por fila».
+- **P-12.** `membresia` lleva una política de seguridad por fila que deja ver las filas del negocio de la transacción o las de la cuenta de la transacción (`app.cuenta_id`), para que cada persona pueda listar sus negocios. Esa variable aún no la fija nadie: la fijarán los repositorios JDBC.
+
+**No verificado / límites:** los `pm.test` de la colección no se ejecutaron (no hay Node ni Newman); los repositorios siguen en memoria; el escucha no se probó con el bus real porque no existe el módulo de negocios; no hay tope de solicitudes para `POST /registro/negocio`; el correo no se verifica; no se repitieron las pruebas de mutación a mano.
+
+**Revisiones:** `ecc:java-reviewer` y `ecc:security-reviewer` revisaron el código (solo lectura). Se corrigieron 11 hallazgos con pruebas primero; el detalle, lo que quedó documentado y lo que descartaron está en [`docs/pruebas/identidad-idn2.tdd.md`](pruebas/identidad-idn2.tdd.md), sección «Resultado de las revisiones». Lo más importante: sondear correos con un código, hacer dueña a una cuenta con un evento no pedido y delatar cuentas por el tipo de error del código **ya no se pueden**.
+
+**Lo que las revisiones dejaron para los repositorios JDBC (IDN-1.1), anotado también en el código:** bloquear la fila de `negocio_ref` (`FOR UPDATE`) en toda operación que quite o degrade a un dueño y repetir el conteo; renovar la sesión con un `UPDATE ... WHERE revocada_en IS NULL`; guardar el negocio y la membresía en una sola transacción; enviar el código fuera de la transacción; y una tabla para las solicitudes de negocio.
+
+**Para decidir con el equipo (vienen de la revisión de seguridad):** el `desafioId` del acceso (un atacante con el celular, el correo o el id de una persona puede agotar sus 3 códigos o sus 5 intentos), un tope global de mensajes del canal real, un resolvedor de IP de confianza detrás de un proxy, un `Idempotency-Key` en `POST /registro/negocio`, y no usar el correo para invitaciones hasta verificarlo.
+
+**Migraciones:** `V022` cambió después de aplicarse a la base de desarrollo; se deshizo solo ella ahí (tablas vacías) y Flyway la volvió a aplicar. Quien tenga una base propia con la `V022` anterior debe hacer lo mismo, o recrearla.
+
+**Pendiente:** autorización escrita para la confirmación reforzada y la gestión del equipo por REST (IDN-3.2 a 3.5), para los repositorios JDBC de Identidad (IDN-1.1, necesarios para que `app.cuenta_id` y `app.negocio_id` se fijen) y para IDN-4 (filtro de entrada); decidir A1 y A2 de la entrada del 2026-10-14; marcar en Jira las historias IDN-2 si el equipo lo aprueba (no se tocó Jira); reiniciar la instancia del puerto 8080.
+
+**Archivos creados:** `backend/src/main/java/mx/negocio360/{compartido/seguridad,clientes/seguridad,identidad/{contratos,eventos}}`, clases nuevas de `identidad` (`dominio`, `aplicacion`, `infraestructura`, `web`), `backend/src/main/resources/db/migration/V021…`, `V022…`, `backend/postman/identidad.ejemplo.postman_environment.json`, las pruebas correspondientes y `docs/pruebas/identidad-idn2.tdd.md`.
+**Archivos modificados:** `docs/BITACORA.md`, `backend/postman/identidad.postman_collection.json` y `identidad.local.postman_environment.json`, el código y las pruebas de Identidad que cambiaron de contrato, `EsquemaClientesPostgresTest` y `SesionSql`.
+
+### 2026-10-15 — Autorización de la Etapa A: alta única de persona y negocio, y activación implícita
+**Autorización escrita (cita textual del usuario):** «Sí, confirmo el plan con los valores por omisión: ejecuta la Etapa A con /ecc:tdd-workflow y deja Visitantes e invitaciones como diseño.» Responde al plan «registro de turistas y de personal de negocios» presentado con `/ecc:plan` tras la queja de que el flujo era ineficiente (5 llamadas y una espera para un dueño nuevo).
+
+**Alcance que le doy (interpretación mía):** solo Identidad: D-79 y D-80, la respuesta con `negociosPendientes`, y la colección de Postman. **No incluye** programar Visitantes (D-81, D-82) ni las invitaciones (D-83): quedan como diseño. Tampoco incluye el vencimiento de los pedidos pendientes ni el evento `negocio.registro_rechazado`, que son propuestas del plan para acordar con quien haga el módulo de negocios.
+
+**Cómo se trabaja:** rama `julio`, TDD (RED, GREEN, refactor, evidencia en `docs/pruebas/identidad-registro-unico.tdd.md`), sin commits ni pushes, sin dependencias nuevas ni migraciones nuevas.
+
+### 2026-10-15 — Etapa A: alta única de persona y negocio, y activación implícita (hecho)
+**Pedido del usuario:** el de la entrada de autorización de arriba (D-79 y D-80). Evidencia: [`docs/pruebas/identidad-registro-unico.tdd.md`](pruebas/identidad-registro-unico.tdd.md).
+
+**Qué se hizo:**
+1. **D-79:** `POST /registro` acepta `negocio {nombre, giro}`; en una llamada crea la persona, anota el pedido y publica `negocio.registro_solicitado`. El negocio se valida antes de tocar el código. Un dueño nuevo pasa de 5 llamadas y una espera a **2 llamadas** más `GET /auth/yo`.
+2. **`negociosPendientes`:** `GET /auth/yo` y las respuestas de registro, inicio de sesión y elegir negocio dicen qué negocios están pendientes (`PENDIENTE`) para que la app sepa «pendiente» o «listo» con una sola llamada.
+3. **D-80:** el único negocio con membresía activa es el activo sin elegir ni cambiar de token; con dos o más hay que elegir, y si llega un segundo la sesión pierde el activo implícito.
+4. **Postman:** 51 solicitudes en 6 carpetas, con el registro de persona y negocio en una llamada.
+
+**Verificación hecha:** `mvn -B verify`: **1150 pruebas, 0 fallas**; Identidad 99.3 % de líneas y 96.0 % de ramas. Cuatro mutaciones a mano detectadas. Corrida real en frío: las 51 solicitudes responden lo esperado.
+
+**Lo que la corrida real descubrió y se corrigió:** el simulador de desarrollo del módulo de negocios llamaba al escucha `@ApplicationModuleListener`, que corre en otro hilo (**Spring Modulith activa `@Async` por sí solo**), y respondía 204 antes de aplicar el aviso; la primera petición siguiente al arranque daba 404. Ahora aplica el aviso en el mismo hilo (prueba escrita antes, vista fallar). **Corrijo además una afirmación mía errónea** de la entrada de las revisiones: el proyecto sí tiene `@Async` activo vía Modulith.
+
+**Decisiones mías que el equipo debe confirmar o corregir** (propuestas, no aceptadas):
+- **P-17.** Los pedidos de negocio pendientes no vencen y no existe `negocio.registro_rechazado`. Propongo vencimiento de 7 días y un evento de rechazo, a acordar con quien haga el módulo de negocios.
+- **P-18.** `POST /registro` con negocio no aplica el tope de 3 pedidos por cuenta (la cuenta es nueva).
+- **P-19.** Cuando se construya Visitantes: rutas `/visitantes/auth/*`, celular de cualquier país y, con cuenta, dos llamadas sin nombre ni correo obligatorios (D-81). Es diseño, no hay autorización para programarlo.
+
+**No verificado / límites:** los `pm.test` de la colección no se ejecutaron; los pedidos pendientes viven en memoria; el escucha asincrónico no se probó con el bus real; **esta etapa no tuvo revisión de agentes** aunque toca la autenticación (`identificar`).
+
+**Archivos creados:** `docs/pruebas/identidad-registro-unico.tdd.md`, `NegocioPendienteVista`, `DevNegociosControllerTest`, `NegociosPendientesTest`.
+**Archivos modificados:** `SolicitudDeNegocio`, `SolicitudesDeNegocio` y su versión en memoria, `SolicitudDeRegistro`, `SesionIniciada`, `PerfilVista`, `EquipoServicio`, `IdentidadServicio`, `AuthController`, `DevNegociosController`, `IdentidadConfiguracion`, `EscuchaDeNegocios`, las pruebas que cambiaron de contrato, `backend/postman/*` y `docs/BITACORA.md`.
+**Pendiente:** autorización escrita para Visitantes (D-81, D-82), las invitaciones (D-83), los repositorios JDBC y el filtro de entrada; una revisión de agentes de esta etapa si el equipo la quiere.
+
+### 2026-10-15 — Postman: la persona simulada viene en la colección (hecho)
+**Pedido del usuario (cita textual):** «quiero que este tenga datos de un usuario simulado para solo dar click» (sobre `identidad.postman_collection.json`). Es un ajuste de la colección de la Etapa A, que ya estaba autorizada; no toca código del producto.
+
+**Qué se hizo:** la colección trae como variables la persona simulada (Ana María López Pérez, «Fonda Doña Chela», giro `RESTAURANTE`). El paso 1.1 inventa un celular y un correo nuevos en cada corrida (una cuenta no se registra dos veces), salvo que el entorno ya traiga `telefono` o `correo`. El entorno `identidad.local` queda solo con `baseUrl` y se **eliminó** `identidad.ejemplo` (ya no hace falta; las entradas de arriba que lo mencionan son históricas). La carpeta 1 ya no se detiene por campos vacíos salvo que alguien borre nombre, apellidos o los datos del negocio.
+
+**Verificación:** con mi ejecutor en Python, 51 de 51 en dos corridas seguidas sobre el mismo backend (el segundo registro no choca). Los `pm.test` siguen sin ejecutarse (no hay Node ni Newman).
+
+**Aviso:** el `POST /auth/codigo` por celular tiene tope de 3 por 15 minutos; con el tope de IP por omisión (20) conviene reiniciar el backend si se repite la colección muchas veces seguidas.
+
+
+### 2026-10-15 — Autorización: registro en dos pasos con pre-registro y código al correo
+**Autorización escrita (cita textual del usuario):** «continua con el plan estipulado» (con `/ecc:tdd-workflow`), respondiendo al plan que presenté tras leer `clinerya-users` y que dejaba tres decisiones con valor por omisión. El flujo que pidió está en su mensaje anterior: «El usuario que quiere usar la plataforma para su negocio entra, hace el formulario de registro, se envia un codigo de confirmación a su correo electronico, este codigo por el momento pasa como un log en la consola y lo colocamos en otro endpoint que sea el de verificación, los codigos de verificación se guardan en base de datos durante 15 min y si no se ingresa este se borra», y «No se porque colocas código y telefono si no está registrado el usuario».
+
+**Interpretación mía (no es una confirmación literal de cada punto):** tomo «continúa con el plan» como aceptar el plan completo **con los valores por omisión** de sus tres decisiones: D-85 (todos los códigos al correo), D-86 (tabla y JDBC del pre-registro ahora) y la verificación que abre sesión. Si el usuario quería otra opción, lo corrige y se ajusta.
+
+**Alcance:** solo Identidad: pre-registro, verificación, reenvío, código de acceso al correo, V023, repositorio JDBC del pre-registro, limpieza de vencidos, la colección de Postman y las pruebas. **No incluye** Visitantes, invitaciones, los demás repositorios JDBC ni el filtro de entrada.
+
+**Cómo se trabaja:** rama `julio`, TDD (RED, GREEN, refactor, evidencia en `docs/pruebas/identidad-preregistro.tdd.md`), sin commits ni pushes, sin dependencias nuevas.
+
+
+### 2026-10-15 — Registro en dos pasos con pre-registro y código al correo (hecho)
+**Pedido del usuario:** el de la entrada de autorización de arriba (D-84, D-85, D-86). Evidencia: [`docs/pruebas/identidad-preregistro.tdd.md`](pruebas/identidad-preregistro.tdd.md).
+
+**Qué se hizo:**
+1. **D-84, pre-registro (modelo de Clinerya):** `POST /registro` ya no pide código ni celular verificado: guarda el formulario como pre-registro y manda un código de 6 dígitos al correo (responde 202 con el correo y el vencimiento). `POST /registro/verificacion {correo, codigo}` crea la cuenta con el **correo ya verificado**, borra el pre-registro, abre la sesión y, si venía negocio, publica `negocio.registro_solicitado`. `POST /registro/reenvio {correo}` renueva el código con respuesta genérica. El pre-registro y su código valen **15 minutos**; se borran al verificar, al reenviar o al vencer (una limpieza programada corre cada minuto).
+2. **D-85, todo código al correo:** el código de acceso se pide con celular, correo o id y siempre llega al correo de la cuenta; los tres responden igual exista o no la cuenta. Un código usado, vencido, agotado o incorrecto responde siempre `CODIGO_INVALIDO`: dejaron de existir `CODIGO_EXPIRADO`, `CODIGO_AGOTADO` y `REGISTRO_REQUERIDO`. La política renombró `solicitudes-por-telefono` a `solicitudes-por-correo` y suma `preregistro-vigencia` (15 min).
+3. **D-86, Postgres:** migración **V023** (`identidad.preregistro`; `codigo_acceso.telefono` pasa a `destino`) y el primer repositorio JDBC de Identidad, `RepositorioPreregistrosJdbc`. El resto sigue en memoria.
+4. **Postman:** 62 solicitudes en 6 carpetas. La carpeta 1 es el formulario, leer el código de la consola, verificar y el negocio; la persona simulada sigue en la colección y el celular y el correo se inventan nuevos en cada corrida.
+5. **Pruebas:** se reemplazó `RegistrarCuentaTest` por `RegistroEnDosPasosTest` y se adaptaron las de acceso, canal, web y Postgres.
+
+**Verificación hecha:** `mvn -B verify`: **1222 pruebas, 0 fallas**; Identidad 99.4 % de líneas y 96.2 % de ramas. 18 mutaciones a mano, todas detectadas. Colección de Postman: **62 de 62**, dos veces seguidas. Con la base real: el pre-registro quedó en `identidad.preregistro` con 15 minutos de vigencia y la limpieza lo borró solo, vencido, en unos 45 segundos. V023 quedó aplicada en la base de desarrollo.
+
+**Honestidad sobre el orden:** el repositorio JDBC, V023 y la limpieza se escribieron **antes** que sus pruebas; se compensó con mutaciones que las apuntan, pero no nacieron en rojo.
+
+**Decisiones mías que el equipo debe confirmar o corregir** (propuestas, no aceptadas):
+- **P-20.** El celular **ya no se verifica**: es un dato y un identificador. Alguien podría registrar el celular de otra persona y ella no podría registrarse hasta que se resuelva (aviso `CUENTA_YA_EXISTE`). Propongo verificarlo cuando haya canal de SMS, o permitir una recuperación.
+- **P-21.** `/registro` dice si el correo o el celular ya tienen cuenta **sin probar nada antes** (como Clinerya), lo que permite sondear. Lo acotan 3 formularios por correo y 20 pedidos por IP cada 15 minutos. Alternativa: responder igual y avisar solo por correo.
+- **P-22.** Quien llena el formulario con un correo ajeno reemplaza el pre-registro de ese correo (hasta 3 veces cada 15 minutos): el código que la persona recibió deja de servir. Alternativa: no reemplazar uno vigente.
+- **P-23.** Cuentas, códigos de acceso y sesiones siguen en memoria, y los códigos de acceso vencidos no tienen limpieza hasta IDN-1.1. V023 ya dejó `destino` listo para ese repositorio.
+- **P-24.** El servicio es `synchronized` y ahora llama a Postgres dentro del bloqueo; sirve con un solo nodo y poco tráfico. IDN-1.1 lo resuelve con transacciones y `DELETE` condicional.
+- **P-25.** `@EnableScheduling` quedó en la configuración de Identidad y vale para toda la aplicación.
+
+**No verificado / límites:** los `pm.test` de la colección (no hay Node ni Newman); dos instancias de la aplicación corriendo la limpieza a la vez; el canal real de correo (hoy es la consola); esta etapa **no tuvo revisión de agentes**.
+
+**Archivos creados:** `Preregistro`, `RepositorioPreregistros`, `RepositorioPreregistrosEnMemoria`, `RepositorioPreregistrosJdbc`, `LimpiezaDePreregistros`, `PreregistroCreado`, `V023__identidad_preregistro.sql`, las pruebas `PreregistroTest`, `RegistroEnDosPasosTest`, `RepositorioPreregistrosEnMemoriaTest`, `LimpiezaDePreregistrosTest`, `LimpiezaProgramadaTest`, `EsquemaPreregistroPostgresTest`, `RepositorioPreregistrosJdbcPostgresTest`, `FlujoHttp`, y `docs/pruebas/identidad-preregistro.tdd.md`.
+**Archivos eliminados:** `RegistrarCuentaTest` (lo reemplaza `RegistroEnDosPasosTest`) y el entorno `identidad.ejemplo` de Postman.
+**Archivos modificados:** `IdentidadServicio`, `IdentidadApi`, `SolicitudDeRegistro`, `Cuenta`, `Correo`, `CodigoAcceso`, `CodigoError`, `PlantillasIdentidad`, `PoliticaDeAcceso`, `PropiedadesDePolitica`, `CanalDeCodigos`, `CanalSimulado`, `RepositorioCodigos` y su versión en memoria, `AuthController`, `DevCanalController`, `ErroresIdentidadAdvice`, `IdentidadConfiguracion`, la colección y el entorno de Postman, y las pruebas de acceso, web y Postgres que tocaban el flujo.
+**Pendiente:** decidir P-20 a P-25; autorización escrita para Visitantes (D-81, D-82), las invitaciones (D-83), los demás repositorios JDBC (IDN-1.1) y el filtro de entrada; el canal de correo real; una revisión de agentes del acceso.

@@ -61,6 +61,17 @@ public record Sesion(String tokenHash, UUID cuentaId, UUID negocioId, String dis
                 expiraAbsolutaEn, ahora);
     }
 
+    /**
+     * La misma sesion con otro token y otro negocio activo (SI-07): conserva la cuenta, el dispositivo, la IP y el tope
+     * absoluto, asi que cambiar de negocio no alarga la sesion.
+     */
+    public Sesion paraNegocio(String nuevoTokenHash, UUID negocio, Instant ahora, Duration inactividad) {
+        var nuevoFin = ahora.plus(inactividad);
+        var fin = nuevoFin.isBefore(expiraAbsolutaEn) ? nuevoFin : expiraAbsolutaEn;
+        return new Sesion(nuevoTokenHash, cuentaId, negocio, dispositivo, ipTruncada, ahora, ahora, fin,
+                expiraAbsolutaEn, null);
+    }
+
     public Sesion conNegocio(UUID negocio) {
         return new Sesion(tokenHash, cuentaId, negocio, dispositivo, ipTruncada, creadaEn, ultimoUsoEn, expiraEn,
                 expiraAbsolutaEn, revocadaEn);

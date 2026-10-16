@@ -6,6 +6,7 @@ import static mx.negocio360.identidad.aplicacion.Escenario.IP;
 import static mx.negocio360.identidad.aplicacion.Escenario.TEL_A;
 import static mx.negocio360.identidad.aplicacion.Escenario.TEL_A_E164;
 import static mx.negocio360.identidad.aplicacion.Escenario.fallaCon;
+import static mx.negocio360.identidad.aplicacion.Escenario.correoDe;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
@@ -27,13 +28,25 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** IDN-1.2, IDN-1.3 y IDN-1.5 · AC-01, AC-04, AS-01, AS-02, AS-04, AS-05, AS-09: verificar el codigo e iniciar sesion. */
+/**
+ * IDN-1.2, IDN-1.3 y IDN-1.5 · AC-01, AS-01, AS-02, AS-05, AS-09, D-85: verificar el codigo que llego al correo e
+ * iniciar sesion. Crear una cuenta nueva (y la validacion de sus campos) se prueba en {@link RegistroEnDosPasosTest}.
+ * Ningun fallo del codigo (incorrecto, vencido, agotado, sin cuenta) se distingue de otro: todos son CODIGO_INVALIDO.
+ */
 class IniciarSesionTest {
+
+    private static final String CORREO_A = correoDe(TEL_A);
 
     private final Escenario e = new Escenario();
 
+    /** Una cuenta ya registrada y la ventana de topes limpia, para probar el inicio de sesion desde cero. */
+    private void cuentaDeAna() {
+        e.registrar(TEL_A, "Ana López");
+        e.reloj.avanzar(Duration.ofMinutes(20));
+    }
+
     @Test
-    @DisplayName("una cuenta nueva se registra con su nombre y recibe token, cuenta y ningun negocio todavia")
+    @DisplayName("una cuenta recien registrada recibe token, cuenta y ningun negocio todavia")
     void iniciar_cuentaNueva_devuelveTokenYCuenta() {
         var sesion = e.entrar(TEL_A, "Ana López");
 
@@ -78,9 +91,9 @@ class IniciarSesionTest {
         "NULO|NULO"})
     @DisplayName("la IP se trunca antes de guardarla; si no es una IP no se guarda")
     void iniciar_ip_seTruncaAntesDeGuardarse(String ip, String esperada) {
-        var codigo = e.pedirCodigo(TEL_A);
+        var creado = e.preRegistrar(TEL_A, "Ana López");
 
-        var sesion = e.api.iniciarSesion(TEL_A, codigo, "Ana López", DISPOSITIVO, ip);
+        var sesion = e.api.verificarRegistro(creado.correo(), e.canal.ultimoCodigo(), DISPOSITIVO, ip);
 
         var guardada = e.sesiones.porHash(TokenOpaco.hash(sesion.token())).orElseThrow();
         assertThat(guardada.ipTruncada()).isEqualTo(esperada);
@@ -89,23 +102,22 @@ class IniciarSesionTest {
     @Test
     @DisplayName("el dispositivo se limpia de caracteres de control y se corta a 80 caracteres")
     void iniciar_dispositivoLargoOConControl_seLimpia() {
-        var codigo = e.pedirCodigo(TEL_A);
+        var creado = e.preRegistrar(TEL_A, "Ana López");
         var sucio = "Chrome\nen\tWindows" + "x".repeat(100);
 
-        var sesion = e.api.iniciarSesion(TEL_A, codigo, "Ana López", sucio, IP);
+        var sesion = e.api.verificarRegistro(creado.correo(), e.canal.ultimoCodigo(), sucio, IP);
 
         var dispositivo = e.sesiones.porHash(TokenOpaco.hash(sesion.token())).orElseThrow().dispositivo();
         assertThat(dispositivo).hasSize(80).doesNotContain("\n").doesNotContain("\t");
     }
 
     @Test
-    @DisplayName("AC-01: el mismo telefono escrito de dos formas es la misma cuenta, y se ignora el nombre del segundo inicio")
+    @DisplayName("AC-01: el mismo telefono escrito de dos formas es la misma cuenta")
     void iniciar_cuentaExistente_reutilizaLaCuenta() {
         var primera = e.entrar(TEL_A, "Ana López");
         e.reloj.avanzar(Duration.ofMinutes(20));
 
-        var segunda = e.api.iniciarSesion("+52 (222) 111-0001", e.pedirCodigo("+52 (222) 111-0001"), "Otro Nombre",
-                DISPOSITIVO, IP);
+        var segunda = e.api.iniciarSesion("+52 (222) 111-0001", e.pedirCodigo("+52 (222) 111-0001"), DISPOSITIVO, IP);
 
         assertThat(segunda.cuenta().id()).isEqualTo(primera.cuenta().id());
         assertThat(segunda.cuenta().nombre()).isEqualTo("Ana López");
@@ -113,92 +125,91 @@ class IniciarSesionTest {
         assertThat(e.cuentas.porTelefono(TEL_A_E164).orElseThrow().ultimoAccesoEn()).isEqualTo(e.reloj.instant());
     }
 
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {"   "})
-    @DisplayName("AS-04: a una cuenta nueva sin nombre se le pide NOMBRE_REQUERIDO y el codigo no se gasta")
-    void iniciar_cuentaNuevaSinNombre_pideElNombreSinConsumirElCodigo(String nombre) {
-        var codigo = e.pedirCodigo(TEL_A);
-
-        fallaCon(() -> e.api.iniciarSesion(TEL_A, codigo, nombre, DISPOSITIVO, IP), CodigoError.NOMBRE_REQUERIDO);
-
-        var guardado = e.codigos.ultimoDe(TEL_A_E164).orElseThrow();
-        assertThat(guardado.usadoEn()).isNull();
-        assertThat(guardado.intentos()).isZero();
-        assertThat(e.api.iniciarSesion(TEL_A, codigo, "Ana López", DISPOSITIVO, IP).token()).isNotBlank();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"A", "Ana\u0000López", Escenario.NOMBRE_DE_81})
-    @DisplayName("un nombre invalido falla con NOMBRE_INVALIDO y tampoco gasta el codigo")
-    void iniciar_nombreInvalido_fallaSinConsumirElCodigo(String nombre) {
-        var codigo = e.pedirCodigo(TEL_A);
-
-        fallaCon(() -> e.api.iniciarSesion(TEL_A, codigo, nombre, DISPOSITIVO, IP), CodigoError.NOMBRE_INVALIDO);
-
-        assertThat(e.codigos.ultimoDe(TEL_A_E164).orElseThrow().usadoEn()).isNull();
-        assertThat(e.cuentas.todas()).isEmpty();
-    }
-
     @Test
-    @DisplayName("un codigo incorrecto falla con CODIGO_INVALIDO y suma un intento")
-    void iniciar_codigoIncorrecto_fallaYSumaUnIntento() {
-        var correcto = e.pedirCodigo(TEL_A);
-        var incorrecto = "000000".equals(correcto) ? "000001" : "000000";
+    @DisplayName("un celular sin cuenta no puede iniciar sesion: recibe CODIGO_INVALIDO, igual que con un codigo incorrecto, y no se crea nada")
+    void iniciar_telefonoSinCuenta_fallaConCodigoInvalido() {
+        e.api.solicitarCodigo(TEL_A, IP);
 
-        fallaCon(() -> e.api.iniciarSesion(TEL_A, incorrecto, "Ana", DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+        fallaCon(() -> e.api.iniciarSesion(TEL_A, "123456", DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
 
-        assertThat(e.codigos.ultimoDe(TEL_A_E164).orElseThrow().intentos()).isEqualTo(1);
-        assertThat(e.cuentas.todas()).isEmpty();
-    }
-
-    @Test
-    @DisplayName("AS-01: un codigo usado no sirve una segunda vez")
-    void iniciar_codigoUsado_noSirveDeNuevo() {
-        var codigo = e.pedirCodigo(TEL_A);
-        e.api.iniciarSesion(TEL_A, codigo, "Ana López", DISPOSITIVO, IP);
-
-        fallaCon(() -> e.api.iniciarSesion(TEL_A, codigo, "Ana López", DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
-        assertThat(e.sesiones.todas()).hasSize(1);
-    }
-
-    @Test
-    @DisplayName("AS-01: el codigo vence exactamente a los 5 minutos y falla con CODIGO_EXPIRADO")
-    void iniciar_codigoVencido_fallaConCodigoExpirado() {
-        var codigo = e.pedirCodigo(TEL_A);
-        e.reloj.avanzar(Duration.ofMinutes(5));
-
-        fallaCon(() -> e.api.iniciarSesion(TEL_A, codigo, "Ana López", DISPOSITIVO, IP), CodigoError.CODIGO_EXPIRADO);
-    }
-
-    @Test
-    @DisplayName("un segundo antes de vencer el codigo todavia sirve")
-    void iniciar_unSegundoAntesDeVencer_sirve() {
-        var codigo = e.pedirCodigo(TEL_A);
-        e.reloj.avanzar(Duration.ofMinutes(5).minusSeconds(1));
-
-        assertThat(e.api.iniciarSesion(TEL_A, codigo, "Ana López", DISPOSITIVO, IP).token()).isNotBlank();
-    }
-
-    @Test
-    @DisplayName("AS-02: tras 5 intentos fallidos el codigo se agota, aunque despues se escriba el correcto")
-    void iniciar_cincoFallos_agotanElCodigo() {
-        var correcto = e.pedirCodigo(TEL_A);
-        var incorrecto = "000000".equals(correcto) ? "000001" : "000000";
-        for (var i = 0; i < 5; i++) {
-            fallaCon(() -> e.api.iniciarSesion(TEL_A, incorrecto, "Ana", DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
-        }
-
-        fallaCon(() -> e.api.iniciarSesion(TEL_A, correcto, "Ana López", DISPOSITIVO, IP), CodigoError.CODIGO_AGOTADO);
-
+        assertThat(e.canal.envios()).as("a un celular sin cuenta no se le manda nada").isEmpty();
         assertThat(e.cuentas.todas()).isEmpty();
         assertThat(e.sesiones.todas()).isEmpty();
     }
 
     @Test
+    @DisplayName("un codigo incorrecto falla con CODIGO_INVALIDO y suma un intento")
+    void iniciar_codigoIncorrecto_fallaYSumaUnIntento() {
+        cuentaDeAna();
+        var correcto = e.pedirCodigo(TEL_A);
+        var incorrecto = "000000".equals(correcto) ? "000001" : "000000";
+
+        fallaCon(() -> e.api.iniciarSesion(TEL_A, incorrecto, DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+
+        assertThat(e.codigos.ultimoDe(CORREO_A).orElseThrow().intentos()).isEqualTo(1);
+        assertThat(e.cuentas.todas()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("AS-01: un codigo usado no sirve una segunda vez")
+    void iniciar_codigoUsado_noSirveDeNuevo() {
+        cuentaDeAna();
+        var codigo = e.pedirCodigo(TEL_A);
+        e.api.iniciarSesion(TEL_A, codigo, DISPOSITIVO, IP);
+
+        fallaCon(() -> e.api.iniciarSesion(TEL_A, codigo, DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+        assertThat(e.sesiones.todas()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("AS-01: el codigo vence exactamente a los 5 minutos y falla con CODIGO_INVALIDO, sin decir que vencio")
+    void iniciar_codigoVencido_fallaConCodigoInvalido() {
+        cuentaDeAna();
+        var codigo = e.pedirCodigo(TEL_A);
+        e.reloj.avanzar(Duration.ofMinutes(5));
+
+        fallaCon(() -> e.api.iniciarSesion(TEL_A, codigo, DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+    }
+
+    @Test
+    @DisplayName("un segundo antes de vencer el codigo todavia sirve")
+    void iniciar_unSegundoAntesDeVencer_sirve() {
+        cuentaDeAna();
+        var codigo = e.pedirCodigo(TEL_A);
+        e.reloj.avanzar(Duration.ofMinutes(5).minusSeconds(1));
+
+        assertThat(e.api.iniciarSesion(TEL_A, codigo, DISPOSITIVO, IP).token()).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("AS-02: tras 5 intentos fallidos el codigo se agota, aunque despues se escriba el correcto")
+    void iniciar_cincoFallos_agotanElCodigo() {
+        cuentaDeAna();
+        var correcto = e.pedirCodigo(TEL_A);
+        var incorrecto = "000000".equals(correcto) ? "000001" : "000000";
+        for (var i = 0; i < 5; i++) {
+            fallaCon(() -> e.api.iniciarSesion(TEL_A, incorrecto, DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+        }
+
+        fallaCon(() -> e.api.iniciarSesion(TEL_A, correcto, DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+
+        assertThat(e.sesiones.todas()).as("solo la sesion del registro").hasSize(1);
+    }
+
+    @Test
+    @DisplayName("una cuenta que nunca pidio un codigo recibe CODIGO_INVALIDO, igual que con uno incorrecto")
+    void iniciar_cuentaSinCodigoPedido_fallaConCodigoInvalido() {
+        cuentaDeAna();
+
+        fallaCon(() -> e.api.iniciarSesion(TEL_A, "123456", DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+
+        assertThat(e.sesiones.todas()).as("solo la sesion del registro").hasSize(1);
+    }
+
+    @Test
     @DisplayName("sin codigo solicitado el error es el mismo que con un codigo incorrecto")
     void iniciar_sinCodigoSolicitado_fallaConCodigoInvalido() {
-        fallaCon(() -> e.api.iniciarSesion(TEL_A, "123456", "Ana López", DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+        fallaCon(() -> e.api.iniciarSesion(TEL_A, "123456", DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
     }
 
     @ParameterizedTest
@@ -206,40 +217,41 @@ class IniciarSesionTest {
     @ValueSource(strings = {"abc123", "12345", "1234567", " 123456", "12 456"})
     @DisplayName("un codigo mal escrito falla con CODIGO_INVALIDO")
     void iniciar_codigoMalEscrito_fallaConCodigoInvalido(String intento) {
+        cuentaDeAna();
         e.pedirCodigo(TEL_A);
 
-        fallaCon(() -> e.api.iniciarSesion(TEL_A, intento, "Ana López", DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+        fallaCon(() -> e.api.iniciarSesion(TEL_A, intento, DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
     }
 
     @Test
     @DisplayName("un codigo nuevo reemplaza al anterior: el primero ya no sirve")
     void iniciar_codigoReemplazado_elAnteriorNoSirve() {
+        cuentaDeAna();
         var primero = e.pedirCodigo(TEL_A);
         var segundo = e.pedirCodigo(TEL_A);
         assumeThat(primero).isNotEqualTo(segundo);
 
-        fallaCon(() -> e.api.iniciarSesion(TEL_A, primero, "Ana López", DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
-        assertThat(e.api.iniciarSesion(TEL_A, segundo, "Ana López", DISPOSITIVO, IP).token()).isNotBlank();
+        fallaCon(() -> e.api.iniciarSesion(TEL_A, primero, DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+        assertThat(e.api.iniciarSesion(TEL_A, segundo, DISPOSITIVO, IP).token()).isNotBlank();
     }
 
     @Test
     @DisplayName("un telefono invalido falla con TELEFONO_INVALIDO")
     void iniciar_telefonoInvalido_fallaConTelefonoInvalido() {
-        fallaCon(() -> e.api.iniciarSesion("123", "123456", "Ana López", DISPOSITIVO, IP), CodigoError.TELEFONO_INVALIDO);
+        fallaCon(() -> e.api.iniciarSesion("123", "123456", DISPOSITIVO, IP), CodigoError.TELEFONO_INVALIDO);
     }
 
     @Test
     @DisplayName("una cuenta suspendida no inicia sesion y recibe el mismo error que un codigo incorrecto")
     void iniciar_cuentaSuspendida_fallaConCodigoInvalido() {
-        e.entrar(TEL_A, "Ana López");
+        cuentaDeAna();
         var cuenta = e.cuentas.porTelefono(TEL_A_E164).orElseThrow();
         e.cuentas.guardar(cuenta.conEstado(EstadoCuenta.SUSPENDIDA));
-        e.reloj.avanzar(Duration.ofMinutes(20));
         var codigo = e.pedirCodigo(TEL_A);
 
-        fallaCon(() -> e.api.iniciarSesion(TEL_A, codigo, null, DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
+        fallaCon(() -> e.api.iniciarSesion(TEL_A, codigo, DISPOSITIVO, IP), CodigoError.CODIGO_INVALIDO);
 
-        assertThat(e.codigos.ultimoDe(TEL_A_E164).orElseThrow().usadoEn()).isNotNull();
+        assertThat(e.codigos.ultimoDe(CORREO_A).orElseThrow().usadoEn()).isNotNull();
     }
 
     @Test
@@ -260,12 +272,13 @@ class IniciarSesionTest {
     @Test
     @DisplayName("un codigo de un solo uso, aun con ocho intentos simultaneos: una sola sesion y una sola cuenta")
     void iniciar_ocho_intentosSimultaneos_soloUnoGana() throws Exception {
+        cuentaDeAna();
         var codigo = e.pedirCodigo(TEL_A);
         var exitos = new AtomicInteger();
         var rechazos = new AtomicInteger();
         List<Callable<Void>> tareas = IntStream.range(0, 8).mapToObj(i -> (Callable<Void>) () -> {
             try {
-                e.api.iniciarSesion(TEL_A, codigo, "Ana López", DISPOSITIVO, IP);
+                e.api.iniciarSesion(TEL_A, codigo, DISPOSITIVO, IP);
                 exitos.incrementAndGet();
             } catch (IdentidadException ex) {
                 rechazos.incrementAndGet();
@@ -279,7 +292,7 @@ class IniciarSesionTest {
 
         assertThat(exitos.get()).isEqualTo(1);
         assertThat(rechazos.get()).isEqualTo(7);
-        assertThat(e.sesiones.todas()).hasSize(1);
+        assertThat(e.sesiones.todas()).as("la del registro y la que gano").hasSize(2);
         assertThat(e.cuentas.todas()).hasSize(1);
     }
 

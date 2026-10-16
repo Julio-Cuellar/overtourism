@@ -54,7 +54,7 @@ class PlantillasYPoliticaTest {
 
         assertThat(p.codigoVigencia()).isEqualTo(Duration.ofMinutes(5));
         assertThat(p.intentosMaximos()).isEqualTo(5);
-        assertThat(p.solicitudesPorTelefono()).isEqualTo(3);
+        assertThat(p.solicitudesPorCorreo()).isEqualTo(3);
         assertThat(p.solicitudesPorIp()).isEqualTo(20);
         assertThat(p.ventanaDeSolicitudes()).isEqualTo(Duration.ofMinutes(15));
         assertThat(p.inactividad()).isEqualTo(Duration.ofHours(8));
@@ -85,13 +85,13 @@ class PlantillasYPoliticaTest {
     @DisplayName("la cuenta es inmutable: cada cambio devuelve otra cuenta")
     void cuenta_cambios_devuelvenOtraCuenta() {
         var ahora = Instant.parse("2026-10-14T16:00:00Z");
-        var original = Cuenta.nueva(UUID.randomUUID(), "Ana López", "+522221110001", ahora);
+        var original = Cuenta.nueva(UUID.randomUUID(), "Ana", "López Pérez", "+522221110001", "ana@example.com", 1, ahora);
 
         var renombrada = original.conNombre("Ana Nueva");
         var suspendida = original.conEstado(EstadoCuenta.SUSPENDIDA);
         var conAcceso = original.conUltimoAcceso(ahora.plusSeconds(60));
 
-        assertThat(original.nombre()).isEqualTo("Ana López");
+        assertThat(original.nombre()).isEqualTo("Ana");
         assertThat(original.estado()).isEqualTo(EstadoCuenta.ACTIVA);
         assertThat(original.ultimoAccesoEn()).isEqualTo(ahora);
         assertThat(renombrada.nombre()).isEqualTo("Ana Nueva");
@@ -102,7 +102,7 @@ class PlantillasYPoliticaTest {
     @Test
     @DisplayName("toString de la cuenta no revela nombre ni telefono")
     void cuenta_toString_noRevelaDatosPersonales() {
-        var cuenta = Cuenta.nueva(UUID.randomUUID(), "Ana López", "+522221110001", Instant.now());
+        var cuenta = Cuenta.nueva(UUID.randomUUID(), "Ana", "López Pérez", "+522221110001", "ana@example.com", 1, Instant.now());
 
         assertThat(cuenta.toString()).doesNotContain("Ana").doesNotContain("2221110001");
     }

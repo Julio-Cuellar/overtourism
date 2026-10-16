@@ -14,15 +14,16 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 public record PropiedadesDePolitica(
         @DefaultValue("5m") Duration codigoVigencia,
         @DefaultValue("5") int intentosMaximos,
-        @DefaultValue("3") int solicitudesPorTelefono,
+        @DefaultValue("3") int solicitudesPorCorreo,
         @DefaultValue("20") int solicitudesPorIp,
         @DefaultValue("15m") Duration ventanaDeSolicitudes,
         @DefaultValue("8h") Duration inactividad,
         @DefaultValue("30d") Duration topeAbsoluto,
-        @DefaultValue("5") int sesionesMaximas) {
+        @DefaultValue("5") int sesionesMaximas,
+        @DefaultValue("15m") Duration preregistroVigencia) {
 
     public PoliticaDeAcceso comoPolitica() {
-        return new PoliticaDeAcceso(codigoVigencia, intentosMaximos, solicitudesPorTelefono, solicitudesPorIp,
-                ventanaDeSolicitudes, inactividad, topeAbsoluto, sesionesMaximas);
+        return new PoliticaDeAcceso(codigoVigencia, intentosMaximos, solicitudesPorCorreo, solicitudesPorIp,
+                ventanaDeSolicitudes, inactividad, topeAbsoluto, sesionesMaximas, preregistroVigencia);
     }
 }

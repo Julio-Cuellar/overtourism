@@ -8,6 +8,6 @@ public interface RepositorioCodigos {
 
     void guardar(CodigoAcceso codigo);
 
-    /** El codigo emitido mas recientemente para ese telefono: un codigo nuevo reemplaza a los anteriores. */
-    Optional<CodigoAcceso> ultimoDe(String telefono);
+    /** El codigo emitido mas recientemente para ese destino (correo): un codigo nuevo reemplaza a los anteriores. */
+    Optional<CodigoAcceso> ultimoDe(String destino);
 }

@@ -13,10 +13,10 @@ class CodigoAccesoTest {
 
     private static final Instant AHORA = Instant.parse("2026-10-14T16:00:00Z");
     private static final Duration VIGENCIA = Duration.ofMinutes(5);
-    private static final String TELEFONO = "+522221234567";
+    private static final String CORREO = "ana@example.com";
 
     private CodigoAcceso nuevo() {
-        return CodigoAcceso.emitir(UUID.randomUUID(), TELEFONO, "482913", AHORA, VIGENCIA);
+        return CodigoAcceso.emitir(UUID.randomUUID(), CORREO, "482913", AHORA, VIGENCIA);
     }
 
     @Test
@@ -27,7 +27,7 @@ class CodigoAccesoTest {
         assertThat(codigo.expiraEn()).isEqualTo(AHORA.plus(VIGENCIA));
         assertThat(codigo.intentos()).isZero();
         assertThat(codigo.usadoEn()).isNull();
-        assertThat(codigo.telefono()).isEqualTo(TELEFONO);
+        assertThat(codigo.destino()).isEqualTo(CORREO);
         assertThat(codigo.creadoEn()).isEqualTo(AHORA);
     }
 
@@ -85,10 +85,10 @@ class CodigoAccesoTest {
     }
 
     @Test
-    @DisplayName("toString no revela el telefono ni el hash del codigo")
-    void toString_nuncaRevelaTelefonoNiHash() {
+    @DisplayName("toString no revela el correo ni el hash del codigo")
+    void toString_nuncaRevelaCorreoNiHash() {
         var codigo = nuevo();
 
-        assertThat(codigo.toString()).doesNotContain("2221234567").doesNotContain("482913");
+        assertThat(codigo.toString()).doesNotContain("ana@example.com").doesNotContain("482913");
     }
 }

@@ -42,6 +42,17 @@ final class SesionSql implements AutoCloseable {
         return this;
     }
 
+    /** Fija la cuenta de esta transacción: así la aplicación lee sus propias membresías en todos sus negocios. */
+    SesionSql enCuenta(UUID cuenta) throws SQLException {
+        consultar("select set_config('app.cuenta_id', ?, true)", String.class, cuenta.toString());
+        return this;
+    }
+
+    SesionSql sinCuenta() throws SQLException {
+        consultar("select set_config('app.cuenta_id', '', true)", String.class);
+        return this;
+    }
+
     int ejecutar(String sql, Object... parametros) throws SQLException {
         try (var sentencia = conexion.prepareStatement(sql)) {
             enlazar(sentencia, parametros);

@@ -15,9 +15,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
-import java.util.concurrent.atomic.AtomicInteger;
 import mx.negocio360.identidad.aplicacion.PlantillasIdentidad;
 import mx.negocio360.identidad.dominio.CodigoError;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,57 +30,67 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
- * IDN-1 · API REST de acceso (D-72): codigo, sesion, perfil, cierre y nombre. Corre con la aplicacion completa y
- * los adaptadores en memoria. Cada prueba usa su propio telefono y su propia IP para no compartir topes.
+ * IDN-1 · API REST de acceso (D-72): codigo, registro, sesion, perfil, cierre y nombre. Corre con la aplicacion
+ * completa. Cada prueba usa su propio telefono y su propia IP para no compartir topes. El registro en dos pasos tiene sus
+ * propias pruebas en {@link RegistroControllerTest}.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 class AuthControllerTest {
 
-    private static final AtomicInteger SECUENCIA = new AtomicInteger(1000);
-
     @Autowired
     private MockMvc mvc;
 
+    private FlujoHttp flujo;
+
+    @BeforeEach
+    void preparar() {
+        flujo = new FlujoHttp(mvc);
+    }
+
     private static String telefono() {
-        return String.format("22244%05d", SECUENCIA.incrementAndGet());
+        return FlujoHttp.telefono();
     }
 
     private static String ipNueva() {
-        var n = SECUENCIA.incrementAndGet();
-        return "10.1." + (n / 250) + "." + (n % 250 + 1);
+        return FlujoHttp.ipNueva();
     }
 
     private static RequestPostProcessor desde(String ip) {
-        return peticion -> {
-            peticion.setRemoteAddr(ip);
-            return peticion;
-        };
+        return FlujoHttp.desde(ip);
     }
 
-    private ResultActions pedirCodigo(String telefono, String ip) throws Exception {
-        return mvc.perform(post("/auth/codigo").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"telefono\":\"" + telefono + "\"}").with(desde(ip)));
+    private ResultActions pedirCodigo(String identificador, String ip) throws Exception {
+        return flujo.pedirCodigo(identificador, ip);
     }
 
+    private static String correoDe(String telefono) {
+        return FlujoHttp.correoDe(telefono);
+    }
+
+    /** El codigo que llego al correo de ese celular. */
     private String codigoDe(String telefono) throws Exception {
-        var cuerpo = mvc.perform(get("/dev/canal/codigo").param("telefono", telefono)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(cuerpo, "$.codigo");
+        return flujo.codigoDe(correoDe(telefono));
     }
 
-    private ResultActions iniciar(String telefono, String codigo, String nombre, String ip) throws Exception {
-        var extra = nombre == null ? "" : ",\"nombre\":\"" + nombre + "\"";
-        return mvc.perform(post("/auth/sesion").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"telefono\":\"" + telefono + "\",\"codigo\":\"" + codigo + "\"" + extra + "}")
-                .with(desde(ip)));
+    private ResultActions iniciar(String identificador, String codigo, String ip) throws Exception {
+        return flujo.iniciar(identificador, codigo, ip);
     }
 
-    private String tokenDe(String telefono, String nombre, String ip) throws Exception {
-        pedirCodigo(telefono, ip).andExpect(status().isAccepted());
-        var cuerpo = iniciar(telefono, codigoDe(telefono), nombre, ip).andExpect(status().isOk()).andReturn()
+    /** Los dos pasos del registro con el nombre dado; devuelve el cuerpo de la sesion. */
+    private String registrar(String telefono, String nombre, String ip) throws Exception {
+        flujo.registrar(FlujoHttp.formulario(nombre, "Pérez Gómez", correoDe(telefono), telefono, "true"), ip)
+                .andExpect(status().isAccepted());
+        return flujo.verificar(correoDe(telefono), codigoDe(telefono), ip).andExpect(status().isCreated()).andReturn()
                 .getResponse().getContentAsString();
-        return JsonPath.read(cuerpo, "$.token");
+    }
+
+    /** Con nombre registra una cuenta nueva; sin nombre entra a una que ya existe. */
+    private String tokenDe(String telefono, String nombre, String ip) throws Exception {
+        if (nombre != null) {
+            return JsonPath.read(registrar(telefono, nombre, ip), "$.token");
+        }
+        return flujo.tokenDeAcceso(telefono, correoDe(telefono), ip);
     }
 
     private static MockHttpServletRequestBuilder conToken(MockHttpServletRequestBuilder peticion, String token) {
@@ -123,16 +133,19 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("flujo completo: codigo, sesion, perfil, cambio de nombre, cierre y token ya invalido")
+    @DisplayName("flujo completo: formulario, verificacion, perfil, cambio de nombre, cierre y token ya invalido")
     void flujoCompleto_registroPerfilNombreYCierre() throws Exception {
         var tel = telefono();
         var ip = ipNueva();
-        pedirCodigo(tel, ip).andExpect(status().isAccepted());
+        flujo.registrar(FlujoHttp.formulario("Ana López", "Pérez Gómez", correoDe(tel), tel, "true"), ip)
+                .andExpect(status().isAccepted());
 
-        var cuerpo = iniciar(tel, codigoDe(tel), "Ana López", ip).andExpect(status().isOk())
+        var cuerpo = flujo.verificar(correoDe(tel), codigoDe(tel), ip).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").value(matchesPattern("[A-Za-z0-9_-]{43}")))
                 .andExpect(jsonPath("$.expiraEn").value(matchesPattern("\\d{4}-\\d{2}-\\d{2}T.*Z")))
                 .andExpect(jsonPath("$.cuenta.nombre").value("Ana López"))
+                .andExpect(jsonPath("$.cuenta.apellidos").value("Pérez Gómez"))
+                .andExpect(jsonPath("$.cuenta.correo").value(correoDe(tel)))
                 .andExpect(jsonPath("$.cuenta.telefono").value("+52" + tel))
                 .andExpect(jsonPath("$.negocios").isEmpty())
                 .andExpect(jsonPath("$.negocioActivo").value(nullValue()))
@@ -153,17 +166,16 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("AS-04: una cuenta nueva sin nombre recibe 422 y el mismo codigo sirve despues con el nombre")
-    void sesion_cuentaNuevaSinNombre_responde422YElCodigoSigueSirviendo() throws Exception {
+    @DisplayName("un celular sin cuenta responde 401 CODIGO_INVALIDO, igual que con un codigo incorrecto, y no se le manda nada")
+    void sesion_celularSinCuenta_responde401() throws Exception {
         var tel = telefono();
         var ip = ipNueva();
         pedirCodigo(tel, ip).andExpect(status().isAccepted());
-        var codigo = codigoDe(tel);
 
-        iniciar(tel, codigo, null, ip).andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.codigo").value("NOMBRE_REQUERIDO"));
+        iniciar(tel, "123456", ip).andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.codigo").value("CODIGO_INVALIDO"));
 
-        iniciar(tel, codigo, "Beto Ruiz", ip).andExpect(status().isOk());
+        mvc.perform(get("/dev/canal/codigo").param("correo", correoDe(tel))).andExpect(status().isNotFound());
     }
 
     @Test
@@ -171,29 +183,31 @@ class AuthControllerTest {
     void sesion_codigoIncorrecto_responde401() throws Exception {
         var tel = telefono();
         var ip = ipNueva();
+        tokenDe(tel, "Ana López", ip);
         pedirCodigo(tel, ip).andExpect(status().isAccepted());
         var correcto = codigoDe(tel);
         var incorrecto = "000000".equals(correcto) ? "000001" : "000000";
 
-        iniciar(tel, incorrecto, "Ana López", ip).andExpect(status().isUnauthorized())
+        iniciar(tel, incorrecto, ip).andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.codigo").value("CODIGO_INVALIDO"))
                 .andExpect(jsonPath("$.mensaje").value(PlantillasIdentidad.texto(CodigoError.CODIGO_INVALIDO)));
     }
 
     @Test
-    @DisplayName("AS-02: tras cinco fallos el codigo responde 401 CODIGO_AGOTADO, aunque ahora sea el correcto")
+    @DisplayName("AS-02: tras cinco fallos el codigo responde 401 CODIGO_INVALIDO, igual que antes, aunque ahora sea el correcto")
     void sesion_cincoFallos_agotanElCodigo() throws Exception {
         var tel = telefono();
         var ip = ipNueva();
+        tokenDe(tel, "Ana López", ip);
         pedirCodigo(tel, ip).andExpect(status().isAccepted());
         var correcto = codigoDe(tel);
         var incorrecto = "000000".equals(correcto) ? "000001" : "000000";
         for (var i = 0; i < 5; i++) {
-            iniciar(tel, incorrecto, "Ana López", ip).andExpect(status().isUnauthorized());
+            iniciar(tel, incorrecto, ip).andExpect(status().isUnauthorized());
         }
 
-        iniciar(tel, correcto, "Ana López", ip).andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.codigo").value("CODIGO_AGOTADO"));
+        iniciar(tel, correcto, ip).andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.codigo").value("CODIGO_INVALIDO"));
     }
 
     @Test
@@ -201,12 +215,12 @@ class AuthControllerTest {
     void sesion_cuerpoConNegocioId_seIgnora() throws Exception {
         var tel = telefono();
         var ip = ipNueva();
-        pedirCodigo(tel, ip).andExpect(status().isAccepted());
 
-        mvc.perform(post("/auth/sesion").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"telefono\":\"" + tel + "\",\"codigo\":\"" + codigoDe(tel)
-                        + "\",\"nombre\":\"Ana López\",\"negocioId\":\"0192f39f-1111-7000-8000-00000000a001\"}")
-                .with(desde(ip))).andExpect(status().isOk())
+        mvc.perform(post("/registro").contentType(MediaType.APPLICATION_JSON)
+                .content(FlujoHttp.formularioDe(tel, null).replace("{", "{\"negocioId\":\"0192f39f-1111-7000-8000-00000000a001\","))
+                .with(desde(ip))).andExpect(status().isAccepted());
+
+        flujo.verificar(correoDe(tel), codigoDe(tel), ip).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.negocioActivo").value(nullValue()));
     }
 
@@ -215,13 +229,11 @@ class AuthControllerTest {
     void sesion_dosFormatosDelMismoTelefono_esLaMismaCuenta() throws Exception {
         var tel = telefono();
         var ip = ipNueva();
-        pedirCodigo(tel, ip).andExpect(status().isAccepted());
-        var primero = iniciar(tel, codigoDe(tel), "Ana López", ip).andExpect(status().isOk()).andReturn()
-                .getResponse().getContentAsString();
+        var primero = registrar(tel, "Ana López", ip);
         var otraForma = "+52 " + tel.substring(0, 3) + " " + tel.substring(3, 6) + " " + tel.substring(6);
         pedirCodigo(otraForma, ip).andExpect(status().isAccepted());
 
-        var segundo = iniciar(otraForma, codigoDe(otraForma), null, ip).andExpect(status().isOk()).andReturn()
+        var segundo = iniciar(otraForma, codigoDe(tel), ip).andExpect(status().isOk()).andReturn()
                 .getResponse().getContentAsString();
 
         assertThat((String) JsonPath.read(segundo, "$.cuenta.id")).isEqualTo(JsonPath.read(primero, "$.cuenta.id"));
@@ -282,14 +294,14 @@ class AuthControllerTest {
     @Test
     @DisplayName("un formulario en lugar de JSON responde 415 con el error de solicitud")
     void contentType_formulario_responde415() throws Exception {
-        mvc.perform(post("/auth/codigo").contentType(MediaType.APPLICATION_FORM_URLENCODED).content("telefono=2225550000"))
+        mvc.perform(post("/auth/codigo").contentType(MediaType.APPLICATION_FORM_URLENCODED).content("identificador=2225550000"))
                 .andExpect(status().isUnsupportedMediaType()).andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
     }
 
     @Test
     @DisplayName("un JSON mal formado responde 400 y no repite lo que se envio")
     void cuerpoMalFormado_responde400SinEcoDelCuerpo() throws Exception {
-        mvc.perform(post("/auth/sesion").contentType(MediaType.APPLICATION_JSON).content("{\"telefono\": \"222 11"))
+        mvc.perform(post("/auth/sesion").contentType(MediaType.APPLICATION_JSON).content("{\"identificador\": \"222 11"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"))
                 .andExpect(content().string(not(containsString("222"))));
     }
@@ -313,29 +325,36 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("el codigo de desarrollo no existe para un telefono que nunca pidio uno")
-    void dev_telefonoSinCodigo_responde404() throws Exception {
-        mvc.perform(get("/dev/canal/codigo").param("telefono", telefono())).andExpect(status().isNotFound());
+    @DisplayName("el codigo de desarrollo no existe para un correo al que nunca se mando uno")
+    void dev_correoSinCodigo_responde404() throws Exception {
+        mvc.perform(get("/dev/canal/codigo").param("correo", correoDe(telefono()))).andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("el codigo de desarrollo sin telefono responde 400 SOLICITUD_INVALIDA, no 500")
-    void dev_sinTelefono_responde400() throws Exception {
+    @DisplayName("el codigo de desarrollo con un correo mal escrito responde 400 CORREO_INVALIDO")
+    void dev_correoInvalido_responde400() throws Exception {
+        mvc.perform(get("/dev/canal/codigo").param("correo", "sin-arroba")).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("CORREO_INVALIDO"));
+    }
+
+    @Test
+    @DisplayName("el codigo de desarrollo sin correo responde 400 SOLICITUD_INVALIDA, no 500")
+    void dev_sinCorreo_responde400() throws Exception {
         mvc.perform(get("/dev/canal/codigo")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
     }
 
     @Test
-    @DisplayName("SI-02: pedir un codigo para un telefono con cuenta y para uno sin cuenta da la misma respuesta")
+    @DisplayName("SI-02: pedir un codigo para un celular con cuenta y para uno sin cuenta da la misma respuesta")
     void codigo_conYSinCuenta_dalaMismaRespuesta() throws Exception {
         var conCuenta = telefono();
         tokenDe(conCuenta, "Ana López", ipNueva());
         var sinCuenta = telefono();
 
         var a = mvc.perform(post("/auth/codigo").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"telefono\":\"" + conCuenta + "\"}").with(desde(ipNueva()))).andReturn().getResponse();
+                .content("{\"identificador\":\"" + conCuenta + "\"}").with(desde(ipNueva()))).andReturn().getResponse();
         var b = mvc.perform(post("/auth/codigo").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"telefono\":\"" + sinCuenta + "\"}").with(desde(ipNueva()))).andReturn().getResponse();
+                .content("{\"identificador\":\"" + sinCuenta + "\"}").with(desde(ipNueva()))).andReturn().getResponse();
 
         assertThat(a.getStatus()).isEqualTo(b.getStatus()).isEqualTo(202);
         assertThat(a.getContentAsString()).isEqualTo(b.getContentAsString()).isEmpty();
@@ -348,9 +367,10 @@ class AuthControllerTest {
         var ip = ipNueva();
         var respuestas = new org.springframework.mock.web.MockHttpServletResponse[] {
             pedirCodigo(tel, ip).andReturn().getResponse(),
-            iniciar(tel, codigoDe(tel), "Ana López", ip).andReturn().getResponse(),
+            flujo.registrar(FlujoHttp.formularioDe(tel, null), ip).andReturn().getResponse(),
+            flujo.verificar(correoDe(tel), codigoDe(tel), ip).andReturn().getResponse(),
             mvc.perform(get("/auth/yo")).andReturn().getResponse(),
-            mvc.perform(get("/dev/canal/codigo").param("telefono", tel)).andReturn().getResponse(),
+            mvc.perform(get("/dev/canal/codigo").param("correo", correoDe(tel))).andReturn().getResponse(),
             pedirCodigo("123", ip).andReturn().getResponse()};
 
         for (var respuesta : respuestas) {
@@ -364,8 +384,8 @@ class AuthControllerTest {
     void cuerpo_cadenasEnormes_seRechazanConSolicitudInvalida() throws Exception {
         var enorme = "x".repeat(11_000);
 
-        var enNombre = mvc.perform(post("/auth/sesion").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"telefono\":\"" + telefono() + "\",\"codigo\":\"123456\",\"nombre\":\"" + enorme + "\"}")
+        var enNombre = mvc.perform(post("/registro").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"telefono\":\"" + telefono() + "\",\"nombre\":\"" + enorme + "\"}")
                 .with(desde(ipNueva()))).andReturn().getResponse();
         var enTelefono = pedirCodigo(enorme, ipNueva()).andReturn().getResponse();
 

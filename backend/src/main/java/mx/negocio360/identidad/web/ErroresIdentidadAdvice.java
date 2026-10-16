@@ -19,7 +19,7 @@ import mx.negocio360.identidad.dominio.IdentidadException;
  * trazas, nombres de clase ni lo que envio la persona. Solo aplica a los controladores de Identidad, para no cambiar
  * las respuestas de otros modulos (por ejemplo el 404 de las rutas cerradas).
  */
-@RestControllerAdvice(assignableTypes = {AuthController.class, DevCanalController.class})
+@RestControllerAdvice(assignableTypes = {AuthController.class, DevCanalController.class, DevNegociosController.class})
 public class ErroresIdentidadAdvice {
 
     private static final Logger REGISTRO = LoggerFactory.getLogger(ErroresIdentidadAdvice.class);
@@ -65,9 +65,14 @@ public class ErroresIdentidadAdvice {
 
     private static HttpStatus estadoDe(CodigoError codigo) {
         return switch (codigo) {
-            case TELEFONO_INVALIDO, NOMBRE_INVALIDO, SOLICITUD_INVALIDA -> HttpStatus.BAD_REQUEST;
-            case NOMBRE_REQUERIDO -> HttpStatus.UNPROCESSABLE_ENTITY;
-            case CODIGO_INVALIDO, CODIGO_EXPIRADO, CODIGO_AGOTADO, NO_AUTENTICADO -> HttpStatus.UNAUTHORIZED;
+            case TELEFONO_INVALIDO, NOMBRE_INVALIDO, APELLIDOS_INVALIDOS, CORREO_INVALIDO, SOLICITUD_INVALIDA ->
+                    HttpStatus.BAD_REQUEST;
+            case NOMBRE_REQUERIDO, AVISO_REQUERIDO -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case CORREO_NO_DISPONIBLE, CUENTA_YA_EXISTE, ULTIMO_DUENO, OPERACION_SOBRE_SI_MISMO -> HttpStatus.CONFLICT;
+            case PERMISO_DENEGADO, ROL_NO_PERMITIDO -> HttpStatus.FORBIDDEN;
+            case NEGOCIO_NO_DISPONIBLE, NO_ES_MIEMBRO -> HttpStatus.NOT_FOUND;
+            case GIRO_INVALIDO -> HttpStatus.BAD_REQUEST;
+            case CODIGO_INVALIDO, NO_AUTENTICADO -> HttpStatus.UNAUTHORIZED;
             case TASA_EXCEDIDA -> HttpStatus.TOO_MANY_REQUESTS;
             case ERROR_TEMPORAL -> HttpStatus.SERVICE_UNAVAILABLE;
             case ERROR_INTERNO -> HttpStatus.INTERNAL_SERVER_ERROR;
