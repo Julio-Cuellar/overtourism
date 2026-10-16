@@ -1,4 +1,4 @@
-[[[[[[[[[]()]()]()]()]()]()]()]()]()# Diseño del módulo de Inventario
+# Diseño del módulo de Inventario
 
 **Versión:** 0.1 (borrador para revisión del equipo)
 **Fecha:** 2026-10-08
