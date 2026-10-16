@@ -75,7 +75,7 @@ final class Mayor {
                 .toList();
         var cargos = filas.stream().map(Balanza.Fila::cargos).reduce(cero, BigDecimal::add);
         var abonos = filas.stream().map(Balanza.Fila::abonos).reduce(cero, BigDecimal::add);
-        return new Balanza(mes, filas, cargos, abonos);
+        return new Balanza(mes, filas, cargos, abonos, AvisoFiscal.TEXTO);
     }
 
     /** Saldo final del ultimo periodo anterior a {@code mes} en que la cuenta tuvo saldo, o cero. */

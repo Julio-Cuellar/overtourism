@@ -13,8 +13,10 @@ import java.util.UUID;
  * @param filas       filas por cuenta, ordenadas por codigo
  * @param totalCargos suma de cargos del mes
  * @param totalAbonos suma de abonos del mes
+ * @param aviso       aviso de que el reporte no es fiscal (F-03)
  */
-public record Balanza(YearMonth periodo, List<Fila> filas, BigDecimal totalCargos, BigDecimal totalAbonos) {
+public record Balanza(YearMonth periodo, List<Fila> filas, BigDecimal totalCargos, BigDecimal totalAbonos,
+                      String aviso) {
 
     /**
      * Fila de una cuenta.
