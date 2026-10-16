@@ -4,6 +4,7 @@ import java.time.Clock;
 import mx.negocio360.compartido.eventos.PublicadorEnBus;
 import mx.negocio360.restaurantes.aplicacion.AutorizacionDeRestaurantes;
 import mx.negocio360.restaurantes.aplicacion.ConsumidorDeVentas;
+import mx.negocio360.inventario.InventarioApi;
 import mx.negocio360.restaurantes.aplicacion.ConsumosServicio;
 import mx.negocio360.restaurantes.aplicacion.PublicadorEventos;
 import mx.negocio360.restaurantes.aplicacion.RepositorioConsumos;
@@ -19,6 +20,7 @@ import mx.negocio360.restaurantes.aplicacion.RepositorioMenu;
 import mx.negocio360.restaurantes.aplicacion.RepositorioRestaurantes;
 import mx.negocio360.restaurantes.aplicacion.SeguimientoDeNegocios;
 import mx.negocio360.restaurantes.aplicacion.UsoDeLosPlatillos;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
@@ -50,11 +52,15 @@ public class RestaurantesConfiguracion {
         return new RecetasEnMemoria();
     }
 
-    /** Inventario todavia no esta conectado (R-I1, R-I2, R-I4): se falla con un error claro en lugar de inventar articulos. */
+    /**
+     * Con {@code InventarioApi} en el contexto (R-I1 a R-I4) se usa el adaptador real. Sin el, Inventario no esta conectado
+     * y se falla con un error claro en lugar de inventar articulos.
+     */
     @Bean
     @ConditionalOnMissingBean(InventarioPuerto.class)
-    InventarioPuerto inventarioPuerto() {
-        return new InventarioNoDisponible();
+    InventarioPuerto inventarioPuerto(ObjectProvider<InventarioApi> inventario) {
+        var api = inventario.getIfAvailable();
+        return api != null ? new InventarioApiComoPuerto(api) : new InventarioNoDisponible();
     }
 
     @Bean

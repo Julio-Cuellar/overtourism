@@ -35,6 +35,11 @@ public final class RepositorioPreparacionesEnMemoria implements RepositorioPrepa
         return true;
     }
 
+    /** Cuantas preparaciones se han guardado. */
+    public int cuantas() {
+        return filas.size();
+    }
+
     /** La unica fila guardada; falla si hay cero o varias. */
     public Preparacion unica() {
         if (filas.size() != 1) {

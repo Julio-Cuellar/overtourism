@@ -1,10 +1,14 @@
 package mx.negocio360.inventario.aplicacion;
 
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.inventario.InventarioApi;
@@ -26,13 +30,17 @@ public final class InventarioServicio implements InventarioApi {
     private final RepositorioArticulos articulos;
     private final RepositorioSaldos saldos;
     private final RepositorioMovimientos movimientos;
+    private final ConsumosServicio consumo;
 
+    /** Arma el servicio; {@code consumo} debe compartir la secuencia de ids con los manejadores de {@code preparacion}. */
     public InventarioServicio(ServicioPreparacion preparacion, RepositorioArticulos articulos,
-                              RepositorioSaldos saldos, RepositorioMovimientos movimientos) {
+                              RepositorioSaldos saldos, RepositorioMovimientos movimientos,
+                              ConsumosServicio consumo) {
         this.preparacion = Objects.requireNonNull(preparacion, "preparacion");
         this.articulos = Objects.requireNonNull(articulos, "articulos");
         this.saldos = Objects.requireNonNull(saldos, "saldos");
         this.movimientos = Objects.requireNonNull(movimientos, "movimientos");
+        this.consumo = Objects.requireNonNull(consumo, "consumo");
     }
 
     @Override
@@ -80,6 +88,23 @@ public final class InventarioServicio implements InventarioApi {
     }
 
     @Override
+    public Map<UUID, ArticuloBase> articulosPorId(ContextoNegocio contexto, Set<UUID> ids) {
+        if (ids.size() > MAX_LINEAS_A_BASE) {
+            throw new IllegalArgumentException("Se pueden pedir como maximo " + MAX_LINEAS_A_BASE + " articulos");
+        }
+        var respuesta = new LinkedHashMap<UUID, ArticuloBase>();
+        for (var id : ids) {
+            articulos.porId(contexto.negocioId(), id).ifPresent(articulo -> {
+                var cpp = saldos.porArticulo(contexto.negocioId(), articulo.id()).map(s -> s.cpp())
+                        .orElse(java.math.BigDecimal.ZERO);
+                respuesta.put(id, new ArticuloBase(articulo.id(), articulo.nombre(), articulo.unidadBase().codigo(),
+                        cpp, articulo.activo(), articulo.rastreo()));
+            });
+        }
+        return Map.copyOf(respuesta);
+    }
+
+    @Override
     public List<CantidadEnBase> aBase(ContextoNegocio contexto, List<CantidadPedida> lineas) {
         if (lineas.size() > MAX_LINEAS_A_BASE) {
             throw new IllegalArgumentException("Se pueden convertir como maximo " + MAX_LINEAS_A_BASE + " cantidades");
@@ -96,6 +121,17 @@ public final class InventarioServicio implements InventarioApi {
                     articulo.unidadBase().codigo(), conversion.factorAplicado()));
         }
         return List.copyOf(resultado);
+    }
+
+    @Override
+    public ConsumoResultado registrarConsumo(ContextoNegocio contexto, String consumidor, UUID causaId,
+                                             Instant ocurridoEn, List<LineaDeConsumo> lineas) {
+        return consumo.registrar(contexto, consumidor, causaId, ocurridoEn, lineas);
+    }
+
+    @Override
+    public ConsumoResultado revertirConsumo(ContextoNegocio contexto, String consumidor, UUID causaId) {
+        return consumo.revertir(contexto, consumidor, causaId);
     }
 
     private static ArticuloVista vista(ArticuloConSaldo fila) {

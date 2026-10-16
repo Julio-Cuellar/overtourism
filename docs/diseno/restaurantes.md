@@ -20,10 +20,10 @@ P1a (R0 a R3) está programada con TDD el 2026-10-16: 205 pruebas en verde (185 
 |---|---|---|
 | R0 Módulo, permisos y rol | Hecha | `MESERO_CAJA` aún sin los permisos de Ventas y Caja (migración posterior, propuesta `V039`) |
 | R1 Menú | Hecha: platillos, categorías, etiquetas, temporada, agotado, publicar, baja, menú público, fuente de productos y seguimiento de Negocios | Variante `darDeBajaPlatillo` en el despachador de comandos (D-125, Pista A) |
-| R2 Recetas | Hecha: versiones, costo teórico y margen, comando `guardarReceta`, `desactivarReceta` | Variante `guardarReceta` en el despachador. Conectar `InventarioPuerto` con `InventarioApi` (R-I1, R-I2, R-I4) |
-| R3 Consumo | Hecha: descuento por receta con la versión del momento de la venta, reversa, fallos y aviso | Suscripción `alertasRestaurante` y el reintento manual (P2). El consumo real espera `registrarConsumo` de Inventario (R-I2) |
+| R2 Recetas | Hecha: versiones, costo teórico y margen, comando `guardarReceta`, `desactivarReceta` | Variante `guardarReceta` en el despachador. Hecho: `InventarioPuerto` conectado con `InventarioApi` por `InventarioApiComoPuerto` (R-I1 a R-I4, 2026-10-16) |
+| R3 Consumo | Hecha: descuento por receta con la versión del momento de la venta, reversa, fallos y aviso | Suscripción `alertasRestaurante` y el reintento manual (P2). El consumo real ya descuenta contra Inventario en memoria (R-I2, 2026-10-16) |
 
-**Desviaciones respecto del diseño**, todas con prueba: (1) el `rendimiento` vive en cada **versión** de la receta y no en la receta, para que una venta vieja conserve las porciones de su versión (RC-04, RC-07); (2) la regla nueva **MN-14**: agotado y fuera de temporada no hacen «no vendible» un platillo para Ventas, porque una cuenta ordenada antes de agotarse se cobra igual; (3) se agregaron `cambiarModoDeInventario` y `desactivarReceta` al esquema GraphQL; (4) `negocio.actualizado` de Negocios **ya trae** `giro` y `publicado`, así que R-N2 y R-N3 están cumplidos; lo que falta es que Negocios publique `negocio.estado_cambiado`, que hoy no se emite; (5) Inventario se usa por un puerto propio (`InventarioPuerto`) con un adaptador que responde «no disponible» hasta que existan R-I1, R-I2 y R-I4; (6) los repositorios son en memoria (`restaurantes.almacen=memoria` en el perfil de desarrollo) hasta R7.
+**Desviaciones respecto del diseño**, todas con prueba: (1) el `rendimiento` vive en cada **versión** de la receta y no en la receta, para que una venta vieja conserve las porciones de su versión (RC-04, RC-07); (2) la regla nueva **MN-14**: agotado y fuera de temporada no hacen «no vendible» un platillo para Ventas, porque una cuenta ordenada antes de agotarse se cobra igual; (3) se agregaron `cambiarModoDeInventario` y `desactivarReceta` al esquema GraphQL; (4) `negocio.actualizado` de Negocios **ya trae** `giro` y `publicado`, así que R-N2 y R-N3 están cumplidos; lo que falta es que Negocios publique `negocio.estado_cambiado`, que hoy no se emite; (5) Inventario se usa por un puerto propio (`InventarioPuerto`); con `inventario.almacen=memoria` lo atiende `InventarioApiComoPuerto` y sin ese bean responde «no disponible» (R-I1 a R-I4 cumplidos el 2026-10-16); (6) los repositorios son en memoria (`restaurantes.almacen=memoria` en el perfil de desarrollo) hasta R7.
 
 ---
 
@@ -118,7 +118,7 @@ Restaurantes convierte la operación diaria de una fonda, un restaurante o una c
 package mx.negocio360.restaurantes;
 ```
 
-Hoy `ApplicationModules.verify()` fallaría con `inventario` porque `InventarioApi` no expone sus tipos con `@NamedInterface` (pendiente M6 de la Bitácora). Se pide a Inventario (R-I4, sección 10).
+Antes `ApplicationModules.verify()` fallaba con `inventario` porque `InventarioApi` no exponía sus tipos. Inventario los expone con `@NamedInterface("api")` (R-I4, D-193) y el módulo declara `allowedDependencies = {"compartido", "inventario", "inventario::api"}`.
 
 ### 2.2 Submódulos internos
 
@@ -762,10 +762,10 @@ Reglas para quien consume (plan de integración §10.4): lector propio sin impor
 
 | # | De quién | Qué | Estado | Pedido |
 |---|---|---|---|---|
-| R-I1 | Inventario | `aBase` devuelve también `rastreo` y `activo` (D-27) | **Falta**: `CantidadEnBase` hoy trae solo `articuloId`, `cantidadBase`, `unidadBase`, `factorAplicado` | Sin esto no se cumple RC-03 |
-| R-I2 | Inventario | `registrarConsumo` y `revertirConsumo` (inventario.md §6.4) | **Falta** (fase 4 de Inventario) | Mientras tanto, doble en pruebas |
-| R-I3 | Inventario | CPP de varios artículos en una llamada | **Falta**: `ArticuloVista` trae `cpp` por artículo | Interino: `articulo(id)` por insumo (máx. 30) |
-| R-I4 | Inventario | `@NamedInterface` para los tipos de `InventarioApi` (M6) | **Falta** | `verify()` lo exige |
+| R-I1 | Inventario | `aBase` devuelve también `rastreo` y `activo` (D-27) | **Hecho (2026-10-16)**: `InventarioApi.articulosPorId` devuelve `id`, `nombre`, `unidadBase`, `cpp`, `activo` y `rastreo`; `aBase` no cambió (D-190) | RC-03 se cumple |
+| R-I2 | Inventario | `registrarConsumo` y `revertirConsumo` (inventario.md §6.4) | **Hecho (2026-10-16)**: `registrarConsumo` y `revertirConsumo` en `InventarioApi`, sin lotes ni series | La atomicidad real (K-02) llega con la transacción de PostgreSQL |
+| R-I3 | Inventario | CPP de varios artículos en una llamada | **Hecho (2026-10-16)**: `articulosPorId` trae el CPP de hasta 100 artículos por llamada | El adaptador pide por tandas de 100 |
+| R-I4 | Inventario | `@NamedInterface` para los tipos de `InventarioApi` (M6) | **Hecho (2026-10-16)**: `@NamedInterface("api")` en los tipos expuestos (D-193) | `verify()` pasa |
 | R-I5 | Inventario | Evento o consulta cuando se da de baja un artículo usado en recetas | No existe | Opcional (H-R12) |
 | R-V1 | Ventas (Pista A) | Campo opcional `referencia` (texto de hasta 80) en `registrarVenta`, guardado y devuelto en `venta.registrada` v1 | Aceptado (respuesta 3). **Falta** pedirlo y congelarlo con la Pista A antes del hito H-0 | **Bloqueante** de P1b (H-R1) |
 | R-V2 | Plataforma (Pista A) | `FuenteDeProductos` con método opcional `modoInventario(negocioId, productoId)` (por omisión `NINGUNO`) para que Inventario valide K-05 sin conocer verticales | **Falta** | H-R5 |

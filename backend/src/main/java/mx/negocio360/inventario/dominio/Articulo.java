@@ -17,14 +17,15 @@ import mx.negocio360.compartido.dinero.Redondeo;
  * <p>La unidad base no se puede cambiar (U-01): no hay ningun metodo que lo haga. Todo saldo y movimiento se guarda en
  * ella.
  *
+ * @param rastreo         como se rastrea (L-01); hoy los articulos nuevos solo pueden ser {@code NINGUNO}
  * @param unidadesPropias nombre canonico de la unidad propia y su factor a la unidad base (U-03)
  * @param minimoBase      minimo en unidad base; las alertas comparan contra el (A-02)
  * @param activo          falso tras la baja logica (A-04)
  * @param version         contador de bloqueo optimista, desde 1
  */
 public record Articulo(UUID id, UUID negocioId, String nombre, String categoria, UnidadEstandar unidadBase,
-                       Map<String, BigDecimal> unidadesPropias, BigDecimal minimoBase, boolean activo, long version,
-                       Instant creadoEn, Instant actualizadoEn, String creadoPor) {
+                       Rastreo rastreo, Map<String, BigDecimal> unidadesPropias, BigDecimal minimoBase, boolean activo,
+                       long version, Instant creadoEn, Instant actualizadoEn, String creadoPor) {
 
     public static final long VERSION_INICIAL = 1L;
     public static final int MAX_NOMBRE = 80;
@@ -37,6 +38,7 @@ public record Articulo(UUID id, UUID negocioId, String nombre, String categoria,
         Objects.requireNonNull(negocioId, "negocioId");
         Objects.requireNonNull(nombre, "nombre");
         Objects.requireNonNull(unidadBase, "unidadBase");
+        Objects.requireNonNull(rastreo, "rastreo");
         Objects.requireNonNull(minimoBase, "minimoBase");
         Objects.requireNonNull(creadoEn, "creadoEn");
         Objects.requireNonNull(actualizadoEn, "actualizadoEn");
@@ -48,16 +50,25 @@ public record Articulo(UUID id, UUID negocioId, String nombre, String categoria,
         minimoBase = Redondeo.cantidad(minimoBase);
     }
 
+    /** Articulo nuevo sin rastreo. */
     public static Articulo nuevo(UUID id, UUID negocioId, String nombre, String categoria, UnidadEstandar unidadBase,
                                  Map<String, BigDecimal> unidadesPropias, BigDecimal minimoBase, String creadoPor,
                                  Instant ahora) {
-        return new Articulo(id, negocioId, nombre, categoria, unidadBase, unidadesPropias, minimoBase, true,
+        return nuevo(id, negocioId, nombre, categoria, unidadBase, unidadesPropias, minimoBase, creadoPor, ahora,
+                Rastreo.NINGUNO);
+    }
+
+    /** Articulo nuevo con el rastreo indicado. */
+    public static Articulo nuevo(UUID id, UUID negocioId, String nombre, String categoria, UnidadEstandar unidadBase,
+                                 Map<String, BigDecimal> unidadesPropias, BigDecimal minimoBase, String creadoPor,
+                                 Instant ahora, Rastreo rastreo) {
+        return new Articulo(id, negocioId, nombre, categoria, unidadBase, rastreo, unidadesPropias, minimoBase, true,
                 VERSION_INICIAL, ahora, ahora, creadoPor);
     }
 
     /** El mismo articulo con otro nombre, categoria y minimo, y la version siguiente. */
     public Articulo conDatos(String nuevoNombre, String nuevaCategoria, BigDecimal nuevoMinimo, Instant ahora) {
-        return new Articulo(id, negocioId, nuevoNombre, nuevaCategoria, unidadBase, unidadesPropias, nuevoMinimo,
+        return new Articulo(id, negocioId, nuevoNombre, nuevaCategoria, unidadBase, rastreo, unidadesPropias, nuevoMinimo,
                 activo, version + 1, creadoEn, ahora, creadoPor);
     }
 
@@ -69,13 +80,13 @@ public record Articulo(UUID id, UUID negocioId, String nombre, String categoria,
         }
         var nuevas = new TreeMap<>(unidadesPropias);
         nuevas.put(clave, factor);
-        return new Articulo(id, negocioId, nombre, categoria, unidadBase, nuevas, minimoBase, activo, version + 1,
+        return new Articulo(id, negocioId, nombre, categoria, unidadBase, rastreo, nuevas, minimoBase, activo, version + 1,
                 creadoEn, ahora, creadoPor);
     }
 
     /** Baja logica (A-04). Quien llama verifica antes que el saldo sea cero. */
     public Articulo dadoDeBaja(Instant ahora) {
-        return new Articulo(id, negocioId, nombre, categoria, unidadBase, unidadesPropias, minimoBase, false,
+        return new Articulo(id, negocioId, nombre, categoria, unidadBase, rastreo, unidadesPropias, minimoBase, false,
                 version + 1, creadoEn, ahora, creadoPor);
     }
 

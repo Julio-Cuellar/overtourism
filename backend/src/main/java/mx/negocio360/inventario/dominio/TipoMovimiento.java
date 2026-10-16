@@ -1,6 +1,9 @@
 package mx.negocio360.inventario.dominio;
 
+import org.springframework.modulith.NamedInterface;
+
 /** Tipo de movimiento (columna {@code movimiento.tipo}). */
+@NamedInterface("api")
 public enum TipoMovimiento {
     ENTRADA,
     SALIDA,

@@ -35,3 +35,7 @@ negocio360:
 # Restaurantes (R1): menu y seguimiento de Negocios en memoria hasta que llegue la persistencia (R7). Se pierde al reiniciar.
 restaurantes:
   almacen: memoria
+
+# Inventario: articulos, saldos y consumo por venta en memoria (R-I1 a R-I4, lo usa Restaurantes). Se pierde al reiniciar.
+inventario:
+  almacen: memoria

@@ -8,10 +8,10 @@ import java.util.UUID;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
 
 /**
- * Lo que Restaurantes necesita de Inventario (docs/diseno/inventario.md §6 y restaurantes.md §10). Es un puerto propio
- * mientras {@code InventarioApi} no ofrezca todo: faltan {@code rastreo} y {@code activo} en {@code aBase} (R-I1), los
- * consumos por venta (R-I2) y {@code @NamedInterface} para usar sus tipos (R-I4). Cuando existan, el adaptador real se escribe
- * contra esta interfaz sin tocar el resto.
+ * Lo que Restaurantes necesita de Inventario (docs/diseno/inventario.md &sect;6 y restaurantes.md &sect;10). Es un puerto propio
+ * para que el resto de Restaurantes no conozca los tipos de Inventario: el unico adaptador real es
+ * {@code InventarioApiComoPuerto} (R-I1 a R-I4), y {@code InventarioNoDisponible} responde cuando Inventario no esta
+ * encendido.
  */
 public interface InventarioPuerto {
 

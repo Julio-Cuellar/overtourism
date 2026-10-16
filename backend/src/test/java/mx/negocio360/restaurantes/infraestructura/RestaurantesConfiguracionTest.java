@@ -3,6 +3,7 @@ package mx.negocio360.restaurantes.infraestructura;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Clock;
+import mx.negocio360.inventario.InventarioApi;
 import mx.negocio360.restaurantes.aplicacion.ConsultaDeRecetas;
 import mx.negocio360.restaurantes.aplicacion.ConsumidorDeVentas;
 import mx.negocio360.restaurantes.aplicacion.ConsumosServicio;
@@ -62,5 +63,15 @@ class RestaurantesConfiguracionTest {
     @DisplayName("un almacen que no es memoria tampoco enciende nada (la base llega con R7)")
     void otroAlmacen() {
         contexto.withPropertyValues("restaurantes.almacen=postgres").run(c -> assertThat(c).doesNotHaveBean(MenuServicio.class));
+    }
+
+    @Test
+    @DisplayName("con InventarioApi en el contexto, Restaurantes usa el adaptador real en lugar de InventarioNoDisponible")
+    void conInventarioApi_usaElAdaptador() {
+        contexto.withPropertyValues("restaurantes.almacen=memoria")
+                .withBean(InventarioApi.class, () -> org.mockito.Mockito.mock(InventarioApi.class)).run(c -> {
+                    assertThat(c.getBean(InventarioPuerto.class)).isInstanceOf(InventarioApiComoPuerto.class);
+                    assertThat(c).hasSingleBean(ConsumidorDeVentas.class);
+                });
     }
 }

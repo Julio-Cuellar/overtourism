@@ -15,9 +15,9 @@ import mx.negocio360.restaurantes.aplicacion.LineaDeInsumo;
 import mx.negocio360.restaurantes.aplicacion.ResultadoDeConsumo;
 
 /**
- * Inventario todavia no esta conectado: todo responde un fallo reintentable. Es honesto en lugar de inventar articulos; el
- * adaptador real llega cuando Inventario ofrezca {@code rastreo} y {@code activo} en {@code aBase}, los consumos por venta y
- * {@code @NamedInterface} (R-I1, R-I2, R-I4).
+ * Respaldo cuando no hay {@code InventarioApi} en el contexto (por ejemplo, sin {@code inventario.almacen}): todo responde un
+ * fallo reintentable. Es honesto en lugar de inventar articulos. Con Inventario encendido se usa
+ * {@link InventarioApiComoPuerto}.
  */
 public final class InventarioNoDisponible implements InventarioPuerto {
 

@@ -13,6 +13,7 @@ import mx.negocio360.inventario.aplicacion.puertos.RepositorioSaldos;
 import mx.negocio360.inventario.dominio.Articulo;
 import mx.negocio360.inventario.dominio.CodigoError;
 import mx.negocio360.inventario.dominio.InventarioException;
+import mx.negocio360.inventario.dominio.Rastreo;
 import mx.negocio360.inventario.dominio.Saldo;
 import mx.negocio360.inventario.dominio.UnidadEstandar;
 
@@ -72,14 +73,18 @@ final class ManejadoresDeArticulo {
             var base = UnidadEstandar.deCodigo(comando.unidadBase())
                     .orElseThrow(() -> new InventarioException(CodigoError.UNIDAD_NO_CONVERTIBLE));
             var propias = unidadesPropias(comando.unidadesPropias());
+            var rastreo = comando.rastreo() == null ? Rastreo.NINGUNO : comando.rastreo();
+            if (rastreo != Rastreo.NINGUNO) {
+                throw new InventarioException(CodigoError.RASTREO_NO_SOPORTADO);
+            }
             var id = UuidV7.generar(ahora);
             var sinMinimo = Articulo.nuevo(id, contexto.negocioId(), nombre, categoria, base, propias,
-                    BigDecimal.ZERO, contexto.actor(), ahora);
+                    BigDecimal.ZERO, contexto.actor(), ahora, rastreo);
             var minimo = comando.minimo() == null ? BigDecimal.ZERO
                     : Operaciones.minimoEnBase(sinMinimo, comando.minimo(), comando.unidadMinimo());
             Operaciones.exigirNombreLibre(articulos, contexto.negocioId(), nombre, id);
             return Articulo.nuevo(id, contexto.negocioId(), nombre, categoria, base, propias, minimo,
-                    contexto.actor(), ahora);
+                    contexto.actor(), ahora, rastreo);
         }
 
         private static Map<String, BigDecimal> unidadesPropias(List<UnidadPropiaPedida> pedidas) {

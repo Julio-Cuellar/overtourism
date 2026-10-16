@@ -8,12 +8,14 @@ import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.inventario.InventarioApi;
 import mx.negocio360.inventario.aplicacion.ArticuloVista;
 import mx.negocio360.inventario.aplicacion.Comando;
+import mx.negocio360.inventario.aplicacion.ConsumosServicio;
 import mx.negocio360.inventario.aplicacion.CrearArticuloComando;
 import mx.negocio360.inventario.aplicacion.InventarioServicio;
 import mx.negocio360.inventario.aplicacion.Manejadores;
 import mx.negocio360.inventario.aplicacion.RegistrarEntradaComando;
 import mx.negocio360.inventario.aplicacion.RegistrarSalidaComando;
 import mx.negocio360.inventario.aplicacion.ResultadoComando;
+import mx.negocio360.inventario.aplicacion.SecuenciaDeIds;
 import mx.negocio360.inventario.aplicacion.ServicioPreparacion;
 import mx.negocio360.inventario.aplicacion.UnidadPropiaPedida;
 
@@ -31,13 +33,16 @@ public final class Escenario {
     public final AlmacenInventarioEnMemoria almacen = new AlmacenInventarioEnMemoria();
     public final RepositorioPreparacionesEnMemoria preparaciones = new RepositorioPreparacionesEnMemoria();
     public final PublicadorEventosEnMemoria eventos = new PublicadorEventosEnMemoria();
+    public final RepositorioConsumosEnMemoria consumos = new RepositorioConsumosEnMemoria();
 
     public final InventarioApi api;
 
     public Escenario() {
-        var manejadores = Manejadores.todos(almacen, almacen, almacen, eventos, reloj);
+        var ids = new SecuenciaDeIds();
+        var manejadores = Manejadores.todos(almacen, almacen, almacen, eventos, reloj, ids);
+        var consumo = new ConsumosServicio(almacen, almacen, almacen, consumos, eventos, reloj, ids);
         api = new InventarioServicio(new ServicioPreparacion(preparaciones, manejadores, reloj), almacen, almacen,
-                almacen);
+                almacen, consumo);
     }
 
     public static BigDecimal d(String valor) {

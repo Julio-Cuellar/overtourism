@@ -9,10 +9,15 @@ import mx.negocio360.compartido.identidad.UuidV7;
  * cursores), y dos UUIDv7 del mismo milisegundo salen en orden arbitrario; aqui cada id usa al menos un milisegundo
  * mas que el anterior. En varias instancias el orden entre ellas sigue siendo el del reloj.
  */
-final class SecuenciaDeIds {
+public final class SecuenciaDeIds {
 
     private Instant ultimo = Instant.EPOCH;
 
+    /** Una secuencia nueva; todo lo que mueve el saldo de un mismo servicio debe compartir la misma. */
+    public SecuenciaDeIds() {
+    }
+
+    /** Un UUIDv7 mayor que todos los que entrego antes. */
     synchronized UUID siguiente(Instant ahora) {
         var instante = ahora.toEpochMilli() > ultimo.toEpochMilli() ? ahora : ultimo.plusMillis(1);
         ultimo = instante;

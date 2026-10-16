@@ -13,10 +13,17 @@ public final class Manejadores {
     private Manejadores() {
     }
 
+    /** Los ocho manejadores, con su propia secuencia de ids. */
     public static List<ManejadorComando<?>> todos(RepositorioArticulos articulos, RepositorioSaldos saldos,
                                                   RepositorioMovimientos movimientos, PublicadorEventos eventos,
                                                   Clock reloj) {
-        var ids = new SecuenciaDeIds();
+        return todos(articulos, saldos, movimientos, eventos, reloj, new SecuenciaDeIds());
+    }
+
+    /** Igual que {@link #todos(RepositorioArticulos, RepositorioSaldos, RepositorioMovimientos, PublicadorEventos, Clock)}, con la secuencia de ids que comparte con el consumo por venta. */
+    public static List<ManejadorComando<?>> todos(RepositorioArticulos articulos, RepositorioSaldos saldos,
+                                                  RepositorioMovimientos movimientos, PublicadorEventos eventos,
+                                                  Clock reloj, SecuenciaDeIds ids) {
         return List.of(
                 new ManejadoresDeArticulo.Crear(articulos, saldos, reloj),
                 new ManejadoresDeArticulo.Editar(articulos, reloj),

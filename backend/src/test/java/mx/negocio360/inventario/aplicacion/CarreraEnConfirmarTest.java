@@ -51,9 +51,11 @@ class CarreraEnConfirmarTest {
     void confirmar_saldoSeMueveTrasLeerlo_concurrencia() {
         var e = new Escenario();
         var espia = new SaldosConCarrera(e.almacen);
-        var manejadores = Manejadores.todos(e.almacen, espia, e.almacen, e.eventos, e.reloj);
+        var ids = new SecuenciaDeIds();
+        var manejadores = Manejadores.todos(e.almacen, espia, e.almacen, e.eventos, e.reloj, ids);
+        var consumo = new ConsumosServicio(e.almacen, espia, e.almacen, e.consumos, e.eventos, e.reloj, ids);
         var api = new InventarioServicio(new ServicioPreparacion(e.preparaciones, manejadores, e.reloj), e.almacen,
-                espia, e.almacen);
+                espia, e.almacen, consumo);
         var harina = api.confirmar(e.ctxA, api.preparar(e.ctxA, new CrearArticuloComando("Harina", null, "g", null,
                 null, null)).token()).recursoId();
         var token = api.preparar(e.ctxA, new RegistrarEntradaComando(harina, d("1"), "kg", d("20"), null)).token();

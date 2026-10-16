@@ -56,4 +56,17 @@ class EstructuraModulosTest {
 
         assertThat(dependencias).isSubsetOf("compartido", "inventario");
     }
+
+    /** R-I4: Restaurantes usa la API de Inventario (su adaptador), y los tipos que ella expone son accesibles. */
+    @Test
+    @DisplayName("R-I4: restaurantes usa los tipos de InventarioApi y verify lo permite")
+    void restaurantes_usaLaApiDeInventario() {
+        var restaurantes = MODULOS.getModuleByName("restaurantes").orElseThrow();
+
+        var dependencias = restaurantes.getDirectDependencies(MODULOS).uniqueModules().map(ApplicationModule::getName)
+                .collect(Collectors.toSet());
+
+        assertThat(dependencias).contains("inventario");
+        MODULOS.verify();
+    }
 }
