@@ -65,6 +65,8 @@ public final class Contabilizador {
     public static final String DATOS_INVALIDOS = "DATOS_INVALIDOS";
     /** Pendiente: el evento trae una version de contrato que Contabilidad no conoce (E-06). */
     public static final String VERSION_NO_SOPORTADA = "VERSION_NO_SOPORTADA";
+    /** Omitido: un cupon canjeado sin venta no tiene efecto contable (U-03). */
+    public static final String SIN_VENTA = "SIN_VENTA";
 
     private final RepositorioEventosProcesados procesados;
     private final RepositorioPendientes pendientes;
@@ -122,8 +124,8 @@ public final class Contabilizador {
      * base sin IVA, con la regla CUPON del financiador (U-01). Las ventas quedan en bruto y el neto no cambia.
      *
      * @param evento sobre de {@code cupon.canjeado} v1
-     * @return APLICADO; OMITIDO con {@value #YA_PROCESADO} o {@value #DUPLICADO_NATURAL}; o PENDIENTE como en
-     *         {@link #contabilizarVenta}
+     * @return APLICADO; OMITIDO con {@value #YA_PROCESADO}, {@value #DUPLICADO_NATURAL} o {@value #SIN_VENTA}
+     *         (U-03); o PENDIENTE como en {@link #contabilizarVenta}
      */
     public ResultadoEvento contabilizarCanje(SobreEvento evento) {
         return procesar(evento, CuponCanjeadoV1.VERSION, CuponCanjeadoV1.CAMPOS, this::aplicarCanje);
@@ -137,6 +139,9 @@ public final class Contabilizador {
         }
         if (canje.montoDescuento() == null) {
             throw new DatosInvalidosException("descuento.monto");
+        }
+        if (canje.ventaId() == null) {
+            return sinEfecto(negocioId, canje, SIN_VENTA);
         }
         var regla = reglaVigente(negocioId, Disparador.CUPON, canje.financiador());
         if (regla.isEmpty()) {
@@ -153,6 +158,14 @@ public final class Contabilizador {
         canjes.guardar(new CanjeContable(UuidV7.generar(reloj.instant()), negocioId, canje.cuponId(),
                 canje.ventaId(), monto, base, canje.financiador(), true, null, poliza.id()));
         return ResultadoEvento.aplicado(poliza.id());
+    }
+
+    /** Guarda la huella de un canje que no genera poliza y lo da por omitido con su motivo (U-03). */
+    private ResultadoEvento sinEfecto(UUID negocioId, CuponCanjeadoV1 canje, String motivo) {
+        var monto = Montos.exacto(canje.montoDescuento());
+        canjes.guardar(new CanjeContable(UuidV7.generar(reloj.instant()), negocioId, canje.cuponId(), canje.ventaId(),
+                monto, monto, canje.financiador(), false, motivo, null));
+        return ResultadoEvento.omitido(motivo);
     }
 
     /**
