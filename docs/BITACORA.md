@@ -34,6 +34,11 @@ Este archivo existe para que **cualquier agente o persona que entre al proyecto 
 | App del turista (página publicada, privada) | https://claude.ai/artifact/2cTvdAS5Y5pTaSbiS29f67 — copia de `docs/mockups/app-turista.html` al 2026-10-08. Privada: solo la ve quien tenga acceso. Si el archivo del repositorio cambia, hay que volver a publicarla. |
 | Rutas del turista (página publicada, privada) | https://claude.ai/artifact/9iQfz3q8Zu77AkKcrRDTgE — copia de `docs/mockups/rutas.html` al 2026-10-08. Privada: solo la ve quien tenga acceso. |
 | Mockup original (página publicada) | https://claude.ai/artifact/SgG3tYJ4SVua6qagM6QVM1 — bot, panel de gestión y tablero de gobierno del alcance anterior. |
+| `docs/diseno/ventas.md` | Diseño del módulo de Ventas (borrador v0.1, 2026-10-14): reglas VT-01 a VT-13, modelo de datos, `VentasApi`, contrato de `venta.registrada` y `venta.anulada` (D-77), comunicación con la API, flujos y criterios de aceptación. |
+| `docs/diseno/caja.md` | Diseño del módulo de Caja (borrador v0.1, 2026-10-14): reglas CJ-01 a CJ-12, turnos, movimientos, corte, `CajaApi`, eventos `caja.*`, flujos y criterios de aceptación. |
+| `docs/pruebas/ventas-caja-f2-f3.tdd.md` | Evidencia TDD de Ventas y Caja en memoria (F2 y F3, 2026-10-15): RED y GREEN, qué garantiza cada prueba, cobertura, JavaDoc y pendientes. |
+| `docs/planes/ventas-caja-v1.md` | Plan mayor de Ventas y Caja (2026-10-14): requisitos, fases F0 a F6, estimación (≈ 9.9 días-persona), calendario (no cabe antes del evento) y preguntas. Esperando confirmación. |
+| Ventas y Caja (página publicada, compartida con cualquiera que tenga el enlace) | https://claude.ai/artifact/FVtCcUoJHC8A48rUcJ17xE — **versión 2** (2026-10-14), alineada con `ventas.md`, `caja.md` y el plan: qué se corrigió de la versión 1, decisiones, mapa de módulos y eventos, entidad-relación, entidades, reglas VT y CJ, funciones, códigos de error, eventos con JSON, tres secuencias, estados, tabla de comunicación con la API con filtros, contratos con otros módulos, criterios de aceptación, JavaDoc (D-83), plan y preguntas. La versión 1 (hecha sin leer el repositorio) quedó reemplazada. Copia local: `docs/mockups/ventas-caja.html`. Si cambian los documentos, hay que volver a publicarla. |
 
 ---
 
@@ -214,6 +219,21 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-110 | **Sin moderación de reseñas por ahora.** La ruta para ocultar existe; en el futuro la usarán un modelo de IA y moderadores desde el servicio de administración | ACEPTADA | 2026-10-15 | Respuesta 8 de la v0.2: «por el momento nadie, en el futuro un modelo de IA y moderadores desde el servicio de administración». Riesgo: comentarios libres de desconocidos en el stand |
 | D-111 | **El texto legal y la retención de la ficha del ex-empleado se ven después.** Ahora solo importa la funcionalidad: el texto de la responsabilidad del patrón es provisional y la retención es P2 | ACEPTADA | 2026-10-15 | Respuestas 6 y 7 de la v0.2: «esto posteriormente lo colocaremos, ahora solo importa funcionalidad» y «esto se ve en P2». Sigue siendo necesario antes de un piloto con personal real |
 | D-112 | **El puerto de preparaciones lleva el negocio y el token se quema al vaciar.** `porHash`, `marcarUsada` y `vaciar` reciben `negocioId`; el hash del comando es canónico (ordena claves, ignora espacios); `marcarUsada` vacía el comando en la misma sentencia y `vaciar` de una preparación sin usar la marca como usada | ACEPTADA | 2026-10-15 | Confirmada por el usuario (la llamó D-104 al confirmar; se renumeró a D-112 porque otra sesión ya usó D-104 a D-111 para Negocios). La seguridad por fila no muestra la fila sin negocio; `jsonb` reordena el comando y rompía el hash; la base exige comando o uso. Efecto visible: una segunda confirmación de un token vencido o alterado da `TOKEN_USADO` y no `TOKEN_EXPIRADO` ni `COMANDO_CAMBIO` |
+| D-76 | Ventas y Caja son dos módulos horizontales separados (`ventas`, `caja`). Ventas no conoce a Caja: el canal obtiene el turno con `CajaApi.turnoActivo` y pasa el `turno_id`. Caja escucha `venta.*` y llama a `VentasApi.resumenTurno` en el corte | PROPUESTA | 2026-10-14 | Evita un ciclo. `docs/diseno/ventas.md` y `caja.md`. La separación la pidió el usuario; el reparto de dependencias es mío |
+| D-77 | Contrato de `venta.registrada` v1 (`venta_id`, `folio`, `serie`, `turno_id`, `cliente_id?`, `cupon_id?`, `subtotal`, `descuento`, `total`, `lineas[]`, `pagos[]`) y `venta.anulada` v1 (`venta_id`, `turno_id`, `motivo?`, `lineas[]`, `pagos[]`) | PROPUESTA | 2026-10-14 | Une lo que piden Inventario (§7.2, D-25), Clientes (D-48, D-65) y Caja. Compatible con `VentaRegistradaV1` y `VentaAnuladaV1` de Clientes (lector tolerante). Falta acordarlo con quien programa Inventario y Clientes |
+| D-78 | Cupón: Ventas lo cotiza con `PasaporteApi.cotizarCupon` (nuevo, solo lectura) al preparar y lo canjea con `canjearCupon` al confirmar, en la misma transacción | PROPUESTA | 2026-10-14 | Precisa D-34. Revertir el canje al anular está abierto (VT-10) |
+| D-79 | El folio de venta es consecutivo por negocio y serie y se asigna al confirmar | PROPUESTA | 2026-10-14 | Sin huecos por preparaciones que expiran |
+| D-80 | Ventas no conoce boletos ni venta a granel: la unidad y si un producto admite fracción vienen de Catálogo; lo propio del museo vive en Museos | PROPUESTA | 2026-10-14 | Cumple R4 |
+| D-81 | Preparar el corte de caja pone el turno `EN_CORTE` (única preparación que cambia un estado); descartar o expirar lo regresa a `ABIERTO` | PROPUESTA | 2026-10-14 | Excepción a «preparar no escribe» de Inventario §6.2, para que no entren ventas entre el conteo y la confirmación |
+| D-82 | Anular una venta usa preparar → confirmar, con motivo y permiso de Identidad; una venta registrada no se edita | PROPUESTA | 2026-10-14 | Quién puede anular y hasta cuándo está abierto |
+| D-83 | Todo el código se documenta con **JavaDoc**: cada tipo y método público, con `@param`, `@return`, fallos (`@throws` o código de error), el ID de función y las reglas que aplica (`VT-04`, `CJ-07`), y escala y redondeo en todo monto. `mvn javadoc:javadoc` sin advertencias entra en la verificación | ACEPTADA | 2026-10-14 | Dicho por el usuario: «el codigo debe de ser documentado con JavaDoc para no batallar a la hora de encontrar errores». Falta reflejarlo en la skill `negocio360-reglas` (§7) si el equipo lo pide |
+| D-84 | El patrón preparar → confirmar genérico vive en `compartido.comandos` (`ServicioPreparacion`, `ManejadorComando`, `ResultadoComando` con `datos`); lo usan Ventas y Caja. Clientes conserva el suyo hasta que se migre | PROPUESTA | 2026-10-15 | Evita copiar 180 líneas por módulo. Agrega el ámbito de la preparación para contar ventas preparadas por turno (CJ-07) |
+| D-85 | Al confirmar, si el cálculo deja de cuadrar porque el mundo cambió entre los dos pasos (precio, cupón, ventas del turno), la respuesta es `COMANDO_CAMBIO` y no el error de validación | PROPUESTA | 2026-10-15 | Encontrado al programar: sin esto salían `PAGOS_NO_CUADRAN` o `CORTE_REQUIERE_AUTORIZACION`, que confunden a la persona |
+| D-86 | Ventas verifica que el turno siga abierto al preparar y al confirmar, preguntando por la interfaz `VerificadorDeTurno` de su propia API pública; Caja la implementa (`VerificadorDeTurnoDesdeCaja`, estado efectivo de D-81). Ventas sigue sin depender de Caja | PROPUESTA | 2026-10-15 | Revisión de seguridad A1: antes Ventas confiaba solo en el canal y una venta en un turno cerrado o en corte se registraba igual |
+| D-87 | `canjearCupon` recibe el descuento que vio el cajero; si Pasaporte calcula otro, rechaza con `COMANDO_CAMBIO` sin canjear | PROPUESTA | 2026-10-15 | Revisión de calidad (medio 2): evita que un cupón quede gastado en una venta que no se registra. Cambia el contrato J3 que hay que acordar con el dueño de Pasaporte |
+| D-88 | El consumidor de Caja marca un evento como procesado solo si lo aplicó. Si el turno no existe o cerró responde `SIN_TURNO_ABIERTO`, y si el evento no cumple el contrato o no viene de Ventas responde `DATOS_INVALIDOS`; en los dos casos el evento no se pierde. La anulación revierte lo que Caja registró, no los montos del evento | PROPUESTA | 2026-10-15 | Revisión de seguridad y calidad (A1, M3, M4): antes la venta se descartaba y quedaba marcada, y un método desconocido lanzaba excepción en cada reintento |
+| D-89 | El frontend se hace en **Dart y Flutter**, pensado sobre todo como app móvil, en la carpeta `frontend/` junto a `backend/`. Habla con el servidor por GraphQL (y REST para el inicio de sesión) | ACEPTADA | 2026-10-15 | Lo pidió el usuario: «comienza a maquetar el front con dart y flutter ya que mayormente sera app movil». Reemplaza la opción Next.js de `CLAUDE.md` |
+| D-90 | Mientras no exista el módulo de negocios, en la demo las sesiones sin negocio usan un **negocio de demostración** fijado en la configuración del servidor (`negocio360.demo.negocio-id`). El cliente nunca elige el negocio. Solo con `negocio360.demo.habilitada=true` y nunca con el perfil `produccion` | PROPUESTA | 2026-10-15 | F4: Identidad todavía no asigna negocio a la sesión, y sin negocio no hay contexto para Ventas ni Caja |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -222,7 +242,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | Bot de chat (Telegram o WhatsApp) para locatarios | Se mantiene o se descarta | DESCARTADO por ahora (D-63, 2026-10-13) |
 | Verticales reales en la demo | Solo Restaurantes real, Museos y Misceláneos como mockup (recomendado) | ABIERTA |
 | Aplicación del turista y del locatario | Una PWA con dos modos, o dos aplicaciones | ABIERTA |
-| Frontend y orquestación del bot | Next.js y n8n según `CLAUDE.md`, sin confirmar con el nuevo backend | ABIERTA |
+| Frontend y orquestación del bot | Next.js y n8n según `CLAUDE.md`, sin confirmar con el nuevo backend | Frontend: **Dart y Flutter, móvil primero** (D-89, ACEPTADA, 2026-10-15). Bot: descartado (D-63) |
 
 ---
 
@@ -1386,3 +1406,429 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 **Archivos creados:** seis clases en `clientes/infraestructura/` (repositorios, `EjecutorEnNegocio`, `MomentosJdbc`), `RepositoriosClientesJdbcPostgresTest`, `ClientesDePuntaAPuntaPostgresTest`, `docs/pruebas/clientes-jdbc.tdd.md`.
 **Archivos modificados:** `ClientesConfiguracion`, `RepositorioPreparaciones`, `ServicioPreparacion`, `RepositorioPreparacionesEnMemoria` (doble de pruebas), `PreparacionTest`, `docs/BITACORA.md`.
 **Pendiente:** resolvedores GraphQL de Clientes (CLI-I6); purga de preparaciones (HTC-38); listeners de Ventas (CLI-I3); repositorios JDBC de Identidad (IDN-1.1), que necesitan su propia autorización.
+### 2026-10-14 — Diseño y plan de Ventas y Caja (propuesta)
+**Pedido del usuario:** diseñar Ventas y Caja para el comerciante (museo y misceláneo), separados, con entidades, funciones, reglas con ID, eventos y comunicación con la API; los planes en Markdown y el código documentado con JavaDoc. Al clonar el repositorio respondió «si» a rehacer el plan dentro de él.
+
+**Qué se vio:**
+1. Un primer borrador se hizo antes de clonar el repositorio (página publicada, ver «Documentos relacionados»). Al leer la Bitácora y los diseños se encontraron choques y se corrigieron en los documentos nuevos: los eventos se llaman `venta.registrada` y `venta.anulada` (Clientes ya los consume); el cupón va por D-34 (Ventas llama a Pasaporte, no al revés); `C-xx` ya lo usa Inventario y `V-xx` Clientes, así que Ventas usa `VT-xx` y Caja `CJ-xx`; las mutaciones van por `prepararComando` / `confirmarComando` (D-55); redondeo HALF_UP (D-20); sin REST de bot (D-63).
+2. `preparar` no escribe en las tablas de negocio, como en Inventario: no existen ventas «preparadas». La única excepción propuesta es el corte de caja (D-81).
+3. Ventas no conoce a Caja para no crear un ciclo: el canal pasa el `turno_id` (D-76).
+4. El plan da ≈ 9.9 días-persona contra un día disponible: **no cabe** antes del evento. Recomendación: mostrar Ventas y Caja como mockup en la demo y programar después.
+
+**Decisiones:** D-76 a D-82 (PROPUESTA). D-83, JavaDoc obligatorio (ACEPTADA, dicho por el usuario).
+
+**Pendiente:**
+- Que el equipo responda §13 de `ventas.md`, §12 de `caja.md` y §13 del plan (programar o mockup, dueños de Catálogo y Pasaporte, quién anula, umbral del corte).
+- Acordar D-77 con quien programa Clientes e Inventario, y `cotizarCupon` / `canjearCupon` con el dueño de Pasaporte.
+- Si se acepta D-83 para todo el proyecto, agregarlo a la skill `negocio360-reglas` y a `.agent/rules/negocio360.md` (no se tocaron).
+- **No hay autorización para programar Ventas ni Caja.**
+
+**No verificado:** los diagramas Mermaid no se renderizaron. No se hizo commit ni se cambió de rama (los archivos quedan sin confirmar en `main`; el flujo de D-32 pide trabajar en la rama personal).
+
+**Archivos creados:** `docs/diseno/ventas.md`, `docs/diseno/caja.md`, `docs/planes/ventas-caja-v1.md`.
+**Archivos modificados:** `docs/BITACORA.md` (decisiones D-76 a D-83, documentos relacionados y esta entrada).
+
+### 2026-10-14 — Página de Ventas y Caja, versión 2
+**Pedido del usuario:** «Crea el artefacto como te lo pedi anteriormente, con la diferencia que corrigas y agreges lo que falto basandote en el repositorio y su contenido».
+
+**Qué se hizo:**
+1. Se republicó la página https://claude.ai/artifact/FVtCcUoJHC8A48rUcJ17xE (misma URL, versión 2) con el contenido de `docs/diseno/ventas.md`, `docs/diseno/caja.md` y `docs/planes/ventas-caja-v1.md`. Sigue la skill `generar-mockup-html`: chips de borrador y datos inventados, identidad talavera y cempasúchil, azul punteado = síncrono y dorado continuo = asíncrono, «Qué mirar» en cada figura y fuentes al pie.
+2. Lo pedido originalmente (entidad-relación, diagrama de eventos, secuencias, tablas de entidades, funciones, reglas y eventos con JSON, y tabla de comunicación con la API) más lo que faltaba: tabla de qué se corrigió de la versión 1, decisiones con su estado, códigos de error, contratos con otros módulos, estados, criterios de aceptación, convención JavaDoc (D-83), plan con veredicto de calendario y preguntas.
+3. Copia local en `docs/mockups/ventas-caja.html`, con Mermaid 11.4.1 desde jsDelivr (se comprobó que la URL responde 200).
+4. Al publicar se vio que la página ya está **compartida con cualquiera que tenga el enlace** (lo cambió el usuario). La versión 2 se publicó en esa misma URL, así que quien tenga el enlace ve los cambios.
+
+**Decisiones:** ninguna nueva. Se mantienen D-76 a D-82 (PROPUESTA) y D-83 (ACEPTADA).
+
+**No verificado:** no se abrió la página ni la copia local en un navegador, así que no se revisó a 400 y 1280 px, en tema claro y oscuro, ni que los 8 diagramas Mermaid se dibujen sin error. Solo se comprobó que el JavaScript de la página no tiene errores de sintaxis (`node --check`). No se hizo commit.
+
+**Archivos creados:** `docs/mockups/ventas-caja.html`.
+**Archivos modificados:** `docs/BITACORA.md` (fila de «Documentos relacionados» y esta entrada).
+
+### 2026-10-14 — Autorización para programar Ventas y Caja
+**Autorización escrita (cita textual del usuario):** «Autorizo programar Ventas y Caja en la rama uriel».
+
+**Alcance que le doy (interpretación mía):**
+- Código de los módulos `ventas` y `caja` según `docs/diseno/ventas.md`, `docs/diseno/caja.md` y `docs/planes/ventas-caja-v1.md`, empezando por las fases F2 (Ventas) y F3 (Caja) **en memoria**, como Clientes I2: dominio, comandos con preparar → confirmar, eventos y listeners, con pruebas primero (TDD) y JavaDoc (D-83).
+- Catálogo y Pasaporte no existen: Ventas los usa por puertos propios con dobles en las pruebas. No se crean esos módulos.
+- **No incluye** migraciones de Flyway ni repositorios JDBC (F5), ni el esquema GraphQL (F4), salvo que el usuario lo pida. Tampoco cambia los contratos ya programados de Clientes.
+- D-76 a D-82 siguen como PROPUESTA: se programan tal cual están en el diseño y, si el equipo cambia alguna, se ajusta el código.
+- Trabajo en la rama local `uriel`, creada desde `main` (la remota `origin/uriel` estaba 4 commits atrás y sin nada propio). No se hace `git push` sin confirmar.
+
+### 2026-10-15 — Ventas y Caja programados en memoria (F2 y F3)
+**Pedido del usuario:** «Autorizo programar Ventas y Caja en la rama uriel» (entrada del 2026-10-14), con el flujo TDD.
+
+**Qué se hizo:**
+1. **`compartido.comandos`** (nuevo, D-84): preparar → confirmar genérico para Ventas y Caja. **`compartido.dinero.Redondeo`** (nuevo): la utilidad única de D-20.
+2. **Módulo `ventas`**: `VentasApi`, `RegistrarVenta` y `AnularVenta` con preparar → confirmar, folios por negocio y serie, cupón cotizado y canjeado en la misma confirmación (D-78), eventos `venta.registrada` v1 y `venta.anulada` v1 con el contrato de D-77, y `resumenTurno`. Catálogo, Pasaporte y permisos son puertos con dobles en las pruebas. Solo depende de `compartido`.
+3. **Módulo `caja`**: `CajaApi`, crear caja, abrir turno con fondo, entradas y retiros, corte con EN_CORTE al preparar (D-81) y conciliación contra Ventas (CJ-07), descartar corte, y `ConsumidorVentas` idempotente por evento y por venta, con marca de anulación previa. Depende de `compartido` y `ventas` en un solo sentido (D-76).
+4. Todo el código nuevo lleva JavaDoc que cita funciones, reglas y códigos (D-83). `mvn javadoc:javadoc -Ddoclint=all` da 0 advertencias en el código nuevo.
+5. `caja.md`: tres códigos nuevos (`CAJA_DUPLICADA`, `NOMBRE_CAJA_INVALIDO`, `TURNO_NO_ENCONTRADO`) y la precisión de CJ-02 (fondo 0.00 sin movimiento).
+
+**Verificación hecha:** RED real dos veces (no compilaba por las clases faltantes). GREEN: Ventas 54/54, Caja 41/41 y compartido 32 nuevas. `mvn -B verify` sin las 10 clases que necesitan Docker: **805/805, BUILD SUCCESS, cobertura cumplida** (Ventas 87.8 %, Caja 92.8 %, `compartido.comandos` 94.0 % de líneas). Detalle en `docs/pruebas/ventas-caja-f2-f3.tdd.md`.
+
+**No verificado:**
+- `mvn -B verify` completo: 146 errores en las 10 clases de persistencia y de arranque porque **Docker Desktop está apagado**. Ningún error viene de Ventas ni de Caja, pero hay que repetirlo con Docker encendido.
+- No hubo revisión de agentes de Java ni de seguridad, ni ronda de mutaciones.
+- **No hay commits**: la máquina no tiene identidad de Git (`user.name` y `user.email`). Todo está sin confirmar en la rama local `uriel`.
+
+**Decisiones:** D-84 y D-85 (PROPUESTA).
+
+**Pendiente:** identidad de Git y commits; verify completo con Docker; revisión de agentes; JavaDoc de `DecimalPlano` (4 advertencias, anterior a esta etapa); adaptadores reales y JDBC (F5) y GraphQL (F4), ambos sin autorización; VT-10 y CJ-11 (P2).
+
+**Archivos creados:** `backend/src/main/java/mx/negocio360/compartido/comandos/*` (8), `compartido/dinero/Redondeo.java`, `ventas/**` (30), `caja/**` (48); pruebas en `backend/src/test/java/mx/negocio360/{compartido/comandos,compartido/dinero,compartido/pruebas,ventas,caja}/**`; `docs/pruebas/ventas-caja-f2-f3.tdd.md`.
+**Archivos modificados:** `backend/src/test/java/mx/negocio360/EstructuraModulosTest.java` (módulos `ventas` y `caja`), `docs/diseno/caja.md`, `docs/BITACORA.md`.
+
+### 2026-10-15 — Correcciones de la revisión de seguridad y calidad de Ventas y Caja
+**Pedido del usuario:** «realiza los 6 puntos como dices» (los seis puntos propuestos tras las revisiones de `ecc:security-reviewer` y `ecc:code-reviewer`). Dentro de la autorización del 2026-10-14; sin base de datos, GraphQL ni push.
+
+**Qué se hizo (con pruebas primero):**
+1. **Caja no pierde eventos** (D-88): un evento solo se marca como procesado si se aplicó. `SIN_TURNO_ABIERTO` y `DATOS_INVALIDOS` dejan el evento pendiente (`ResultadoAplicacion.completado()`). Exige origen `ventas`, método conocido y montos positivos, acotados y con 2 decimales. La anulación revierte los movimientos que Caja registró, no los montos del evento. Ya no lanza excepción en cada reintento.
+2. **Ventas verifica el turno** (D-86): interfaz `ventas.VerificadorDeTurno` que Caja implementa con `VerificadorDeTurnoDesdeCaja` (estado efectivo de D-81). Ventas sigue sin depender de Caja (`EstructuraModulosTest` en verde).
+3. **`turnoActivo` devuelve el estado efectivo** (`Turno.vigenteEn`): un corte vencido sale ABIERTO.
+4. **Límites con código propio:** `DEMASIADAS_LINEAS`, `DEMASIADOS_PAGOS`, `TEXTO_DEMASIADO_LARGO`; cupón de más de 40 caracteres es `CUPON_INVALIDO` sin llamar a Pasaporte; `Redondeo.dineroValido` (tope `NUMERIC(14, 2)`) rechaza `1E+999999999` sin calcular, en Ventas y en Caja. Los límites se revisan antes de consultar a Caja, Catálogo o Pasaporte.
+5. **El cupón no se gasta si la venta falla** (D-87): `canjear` recibe el descuento esperado y el puerto rechaza sin canjear.
+6. **Detalles:** el resumen de la venta lleva cada línea con su precio (detecta cambios que se compensan); copias defensivas en `RegistrarVentaComando` y `CerrarTurnoComando`; `toString` sin cupón, cliente, actores, motivo ni nota; los textos de `CONCURRENCIA`, `ERROR_TEMPORAL` y `CORTE_EVENTOS_PENDIENTES` piden volver a empezar porque el token ya se gastó; pruebas renombradas (`folios_preparacionVencida_noConsumeFolio` ahora sí deja vencer el token; `eventoMalFormado_falla` pasó a `metodoDesconocido_datosInvalidos`).
+
+**Verificación hecha:** RED en compilación (faltaban `VerificadorDeTurno` y su implementación) y luego RED en ejecución con firmas vacías: 37 fallas por la razón esperada. GREEN: `mvn -B verify` sin las 10 clases que necesitan Docker: **848/848, BUILD SUCCESS, cobertura cumplida** (Ventas 96.6 %, Caja 97.6 %, `compartido.comandos` 94.0 %, `compartido.dinero` 100 %). JavaDoc con `-Ddoclint=all`: 0 advertencias en los paquetes tocados.
+
+**No verificado:** `verify` completo con Docker (sigue apagado). No se repitió la revisión de agentes sobre estas correcciones.
+
+**Decisiones:** D-86, D-87 y D-88 (PROPUESTA). Siguen abiertas para el equipo: venta con total 0.00 (cupón del 100 %), quién puede retirar efectivo y preparar el corte, si quien autoriza una diferencia debe ser otra persona, y quitar el texto libre (`motivo`, `serie`) de los eventos (cambia D-77).
+
+**Pendiente para F5 (base de datos):** bloqueos del turno al cerrar y retirar, una sola transacción para marcar el evento y aplicarlo, limpieza de preparaciones viejas, firma del comando guardado y cola de revisión para `DATOS_INVALIDOS`.
+
+**Además:** documento para el equipo en lenguaje simple (qué se hizo, qué falta, dónde va el frontend y qué será funcional, demo o simulación en el concurso): https://claude.ai/code/artifact/b1efa956-2b71-48d5-b553-e81d2a9c6a67 (privado hasta que se comparta).
+
+**Archivos creados:** `ventas/VerificadorDeTurno.java`, `caja/aplicacion/VerificadorDeTurnoDesdeCaja.java`; pruebas `RevisionVentasTest`, `RevisionCajaTest` y `ventas/fakes/TurnosEnMemoria`.
+**Archivos modificados:** Ventas (manejador de venta, calculadora, plantillas, códigos, comandos, `Venta`, servicio, puerto de cupones), Caja (consumidor, resultado, servicio, API, `Turno`, validaciones, plantillas, códigos, comandos), `compartido/dinero/Redondeo`, dobles y pruebas existentes, `docs/diseno/ventas.md`, `docs/diseno/caja.md`, `docs/pruebas/ventas-caja-f2-f3.tdd.md` y esta Bitácora (D-86 a D-88).
+
+### 2026-10-15 — Rama `uriel` unida a `main`; autorización de F4 y del frontend en Flutter
+**Pedido del usuario (cita textual):** «los cambios qu ya hayas realizado y se encuentren bien y correctos [ ] Subir la rama uriel a GitHub y unirla a main, para que el equipo trabaje sobre Ventas y Caja. Dame opciones de datos publicos del gobierno del estado de puebla que se pueden colocar en la app, abrir las puertas de Ventas y Caja (fase F4) y crear la carpeta frontend/. que quede anotado en la Bitácora. Finalmente una vez creada la carpeta del front, comienza a maquetar el front con dart y flutter ya que mayormente sera app movil».
+
+**Hecho:** `git push` de `uriel` y avance directo (fast-forward) de `main` en GitHub hasta `407124c`, sin conflictos porque `uriel` contenía a `main`. Se hizo sin pull request porque la máquina no tiene `gh`.
+
+**Autorización escrita y alcance que le doy (interpretación mía):**
+- **F4 de Ventas y Caja:** exponer sus comandos y consultas por GraphQL (D-55: `prepararComando` y `confirmarComando`, más consultas propias), encender los módulos al arrancar con Spring y permitir CORS para el frontend. Catálogo y Pasaporte siguen sin existir: se cargan productos y cupones de demostración **rotulados como simulados**. Los repositorios siguen en memoria (F5, JDBC, **no** está autorizada).
+- **Carpeta `frontend/`** en la raíz, junto a `backend/`.
+- **Frontend en Dart y Flutter**, pensado sobre todo para móvil. Esto cierra la decisión abierta «Frontend» de la sección 4 (antes Next.js sin confirmar): **D-89 ACEPTADA**.
+
+### 2026-10-15 — F4 de Ventas y Caja por GraphQL y maqueta de la app en Flutter
+**Pedido del usuario:** la entrada anterior (autorización de F4, carpeta `frontend/` y Flutter).
+
+**Qué se hizo:**
+1. **F4 (commit `3c9419f`, sin push):** módulo nuevo `canal` con `prepararComando` y `confirmarComando` (D-55) para Ventas y Caja; el token lleva al frente su módulo (`ventas.` o `caja.`). Consultas `venta`, `ventasDelTurno`, `cajas`, `turnoActivo`, `saldoTurno` y `cortes`. Los errores de dominio salen con `codigo`, `regla` y el texto fijo. El negocio sale de la sesión de Identidad (D-90 para la demo).
+2. Ventas y Caja se encienden al arrancar con repositorios **en memoria** y el bus de Spring (sin outbox: F5). `canal.demo` simula Catálogo (6 productos), Pasaporte (cupones `PASAPORTE-20` y `PASAPORTE-50`, reutilizables en la demo) y permisos (toda cuenta puede anular y autorizar); todo va rotulado como simulado.
+3. Todo detrás de `negocio360.demo.habilitada=true`, encendido en `application-desarrollo.yml` con CORS para `localhost`. Nunca con el perfil `produccion`.
+4. Spring Modulith: interfaces con nombre `puertos`, `dominio`, `comandos` y `textos` en Ventas y Caja para que `canal` use solo lo expuesto.
+5. **Frontend:** proyecto Flutter en `frontend/` (Flutter 3.44.6, Dart 3.12.2; Android, iOS y web), sin dependencias extra. Una app con dos modos: turista (explorar por intereses, ficha, Pasaporte y ruta del día) y negocio (abrir turno, cobrar con cupón y forma de pago, ventas y corte). Funciona con datos de ejemplo rotulados; aún no llama al servidor. Instrucciones en `frontend/README.md`.
+
+**Verificación hecha:**
+- Backend: RED en compilación (faltaban las clases de `canal`). GREEN: `CanalGraphQlTest` 7/7 (camino dorado por GraphQL sin base de datos) y `ContextoDeSesionTest` 3/3. `mvn -B verify` sin las 10 clases de Docker: **858/858, BUILD SUCCESS, cobertura cumplida**. `EstructuraModulosTest` acepta el módulo `canal`.
+- Se ajustaron tres pruebas de `EsquemaGraphqlClientesTest` que suponían que todo el esquema era de Clientes. Siguen siendo listas exactas, así que una consulta o lista plana nueva sin anotar sigue haciéndolas fallar.
+- `PostgresDePruebasInicializador` ahora se puede apagar con `negocio360.pruebas.sin-base=true`; las demás pruebas no cambian.
+- Frontend: RED (no existían los archivos) y GREEN: `flutter analyze` sin avisos y `flutter test` **14/14** (carrito en centavos, caja simulada y cuatro recorridos de pantalla).
+
+**No verificado:** el arranque real con `mvn spring-boot:run -Dspring-boot.run.profiles=desarrollo` y una llamada HTTP a `/graphql` (Docker apagado: la aplicación no arranca sin PostgreSQL). La app no se abrió en un emulador ni en el navegador; solo pruebas de widgets.
+
+**Pendiente:** conectar la app al servidor (sesión REST + cliente GraphQL); paginar `cortes` antes de producción; outbox, JDBC y bloqueos (F5); reemplazar los negocios ficticios por datos reales.
+
+**Fuentes de datos públicas de Puebla investigadas (para elegir hoy):**
+- Gobierno del Estado: boletines trimestrales de turismo del CEIGEP/SEI (`sei.puebla.gob.mx/docs/boletines/turismo-*.pdf`; ocupación hotelera, llegada de turistas, derrama), indicadores del Observatorio Turístico de la Secretaría de Turismo (`sectur.puebla.gob.mx/observatorioturistico`), «Información estadística general» por municipio del SEI (CSV, replicada en datamx.io; última actualización 2019) y la Estrategia Estatal de Pueblos Mágicos (12 Pueblos Mágicos). El portal `datos.puebla.gob.mx` no respondió (DNS) el 2026-10-15.
+- Federales con detalle de Puebla: DENUE de INEGI (negocios con ubicación y giro) y DataTur (monitoreo hotelero por destino).
+
+**Decisiones:** D-89 (ACEPTADA), D-90 (PROPUESTA).
+
+**Archivos creados:** `backend/src/main/java/mx/negocio360/canal/**`, `ventas/infraestructura/*`, `caja/infraestructura/*`, `compartido/comandos/PreparacionesEnMemoria.java`, `package-info` de puertos y dominio, `graphql/{ventas,caja,canal}.graphqls`, pruebas de `canal`; `frontend/**`.
+**Archivos modificados:** comandos y plantillas de Ventas y Caja (anotaciones), `compartido.graphqls` (`Resultado.datos`), `application-desarrollo.yml`, `EstructuraModulosTest`, `EsquemaGraphqlClientesTest`, `PostgresDePruebasInicializador` y esta Bitácora.
+### 2026-10-15 — Núcleo de Inventario a partir del análisis de Clinerya (plan, autorización y TDD)
+**Pedido del usuario:** analizar `Julio-Cuellar/Clinerya` (sin clonarlo ni copiar código) y crear bajo nuestra arquitectura algunas de sus funciones.
+
+**Lo que pasó, en orden (corrige un error mío):**
+1. Analicé Clinerya por la API de GitHub (módulos de inventario, caja, contabilidad y núcleo). Le pregunté al usuario con qué función empezar y eligió «Núcleo de Inventario».
+2. **Error mío:** tomé esa elección como autorización y empecé a escribir pruebas y código. El usuario me interrumpió: solo había pedido un plan. Una primera versión de esta entrada decía que su elección era la autorización; **no lo era**.
+3. Se hizo el plan con `/ecc:plan`. El usuario respondió **«continua ejecuta la skill /ecc:tdd-workflow y continua»**. Esa es la autorización escrita, y cubre solo el alcance del plan: artículos, unidades, movimientos, saldo y CPP (U-01 a U-05, C-01 a C-08, A-01 a A-04).
+
+**Qué se tomó de Clinerya (ideas, no código):** la fórmula del CPP al recibir mercancía, guardar el costo y la presentación usados en cada movimiento, y los tipos de movimiento. Se cambió: Clinerya bloquea el stock negativo (aquí se permite, A-01), no maneja saldo ≤ 0 al promediar (aquí C-03), usa `UUID.randomUUID`, `LocalDateTime.now`, setters y RabbitMQ (aquí UUIDv7, `Clock`, records inmutables y outbox).
+
+**Resultado, con TDD:**
+- **RED:** 11 clases de prueba sin código de producción: `test-compile` falló con 146 errores, todos por clases que faltaban.
+- **GREEN:** `mvn -B verify` con JDK 21: **931 pruebas, 0 fallas** (824 antes + 107 nuevas), cobertura cumplida. Una prueba falló en la primera corrida por un error de mi doble de pruebas (`unica()` exigía una sola preparación y el `@BeforeEach` dejaba dos); se corrigió el doble, no el código de producción.
+- Cobertura del módulo nuevo: `inventario.aplicacion` 95.7 % de instrucciones y 80.4 % de ramas, `inventario.dominio` 96.8 % y 89.3 %, `inventario.eventos` y `compartido.dinero` 100 %.
+- Archivos: `inventario/` (dominio, aplicación, puertos, eventos e `InventarioApi`), `compartido/dinero/Redondeo.java`, pruebas en `src/test/.../inventario/` y `RedondeoTest`, y `EstructuraModulosTest` ahora exige el módulo `inventario`.
+
+**Decisiones nuevas (propuestas, a confirmar por el equipo):**
+- **D-76:** códigos de error que el diseño no trae: `NOMBRE_INVALIDO`, `NOMBRE_DUPLICADO`, `CATEGORIA_INVALIDA`, `UNIDAD_PROPIA_INVALIDA`, `FECHA_FUTURA`, `MOTIVO_REQUERIDO` y `CONTEO_SIN_DIFERENCIA`.
+- **D-77:** un mínimo de cero significa «sin mínimo»: no dispara `bajo_minimo` ni `repuesto` (sí `saldo_negativo`). El diseño (A-02) no distingue ese caso.
+- **D-78:** al confirmar se recalcula el resumen y, si cambió (por ejemplo, el saldo), falla con `COMANDO_CAMBIO`. Es el comportamiento que pide el diseño en 6.2, pero obliga a volver a preparar.
+- **D-79:** los movimientos reciben UUIDv7 estrictamente crecientes dentro del proceso (`SecuenciaDeIds`) porque el kardex se ordena por id y dos UUIDv7 del mismo milisegundo salen en orden arbitrario.
+
+**Límites / no verificado:**
+- Repositorios solo en memoria: no hay migraciones, JDBC, seguridad por fila ni outbox real para Inventario. Nada de esto se verificó contra PostgreSQL.
+- No hay GraphQL ni resolvedores; la demo no usa Inventario todavía.
+- `ServicioPreparacion` es una copia del de Clientes (R1 impide compartirlo); mover a `compartido` es HTC-89.
+- Fuera de alcance, sin autorización: lotes y FEFO, series, consumo por venta (K-01 a K-05).
+- Sin commits ni pushes (convención del repo). No se tocó Jira.
+
+**Revisión de código (`ecc:java-reviewer`, solo lectura) y qué se hizo:**
+- **Corregido con TDD (RED real, 9 de 10 pruebas fallaron; luego 941 en verde):** A1 (el costo por gramo redondeado a 4 decimales falseaba el total: 25 kg a $18.55/kg daban $465.00 en lugar de $463.75; ahora el total sale de lo capturado), A2 (un decimal como `1E+3000000` tardaba más de 500 ms o agotaba memoria: ahora se compara el rango antes de operar), A3 (saldo, costo total y valor ya no pueden desbordar `NUMERIC(14,4)` ni `NUMERIC(14,2)`), M2 (se comparaba el resumen con una lectura y se escribía con otra; ahora es una sola) y M3 (los ids no quedaban ordenados con un reloj de microsegundos).
+- **Decisión pendiente D-80:** para que el CPP y `valor` también sean exactos hacen falta más decimales en costos y CPP (el revisor propone 8, `NUMERIC(18,8)`). Contradice D-20 y el esquema de 5.1, así que no se cambió. Mientras tanto el total de cada entrada es exacto, pero el CPP puede diferir hasta media diezmilésima por gramo.
+- **Pendiente para la fase de base de datos (no se hizo):** M1 (`marcarUsada` en una transacción aparte quema el token ante un error reintentable; el revisor propone una sola transacción por `confirmar` con reintento acotado de `CONCURRENCIA`); M4 (baja concurrente con una entrada puede dejar un artículo inactivo con saldo: bloquear la fila de saldo); M5 (`preparacion.comando` y `resumen` deben ser `TEXT`, no `jsonb`; traducir la violación del índice único de nombre a `NOMBRE_DUPLICADO`; escapar `%` y `_` en la búsqueda; persistir `unidad_articulo` en la misma transacción; filtrar por `negocio_id` en cada `UPDATE`; las `IllegalArgumentException` de paginación saldrían como 500); M6 (los tipos de `aplicacion` que usa `InventarioApi` hay que exponerlos con `@NamedInterface` antes de que Restaurantes lo use; Clientes tiene el mismo problema); M7 (la unidad base permite `kg` y `l`, lo que pierde precisión: ¿limitarla a `g`, `ml` y `pieza`?).
+- **Bajos:** `ocurridoEn` sin cota inferior, sin purga de preparaciones vencidas, nombres de unidad con acentos descompuestos (NFD) y el mensaje de `COMANDO_CAMBIO` dice «El saldo cambió» aun cuando el JSON es ilegible.
+- **Evidencia:** [`docs/pruebas/inventario-nucleo.tdd.md`](pruebas/inventario-nucleo.tdd.md). La verificación hecha es `mvn -B verify` con JDK 21; **no** se volvió a pasar el revisor sobre las correcciones.
+
+### 2026-10-16 — Autorización: cerrar `/graphql` con Spring Security (IDN-4, SG-01 a SG-21)
+**Autorización escrita (citas textuales del usuario, tras ver el plan v2 hecho con `/ecc:plan`):** «1. acepto / 2. no, debes agregar Spring Security desde ya / 3. No / 4. si las 3 nombradas», y luego «sí, acepto tus recomendaciones, empieza por la Fase 0».
+
+**Qué cubre:** el filtro de entrada de `/graphql` (es IDN-4 / HTC-96, HTC-120 y HTC-121 de Identidad, que estaba sin autorización escrita): SG-01, 02, 03, 04, 06, 08, 09, 10, 11, 13, 14, 15, 16, 18, 19, 20 y 21. Valores iniciales aceptados: profundidad 7, complejidad 100, 10 alias, 5 campos raíz, cuerpo de 64 KB, 10 s, 60 por minuto por cuenta y 20 por minuto por IP sin autenticar. Decisiones aceptadas con las recomendaciones: WebSocket activado y protegido (el usuario no quiso dejarlo apagado); SG-19 con las operaciones sensibles **negadas por omisión** hasta que IDN-3.2 (confirmación reforzada, D-73) aporte la comprobación; SG-11 con lista de operaciones permitidas por hash, exigida solo en producción; SG-18 con enforcer, perfil de escaneo y Dependabot, sin workflow de CI.
+
+**Dependencias autorizadas:** `spring-boot-starter-security`, `spring-security-test` (pruebas), `spring-boot-starter-websocket`, `maven-enforcer-plugin` y `dependency-check-maven` (perfil aparte).
+
+**Fuera de alcance:** IDN-3.2 (la confirmación reforzada en sí), los repositorios JDBC de Identidad, resolvedores de Clientes o Inventario y cualquier cambio en Jira. Se trabaja en la rama `julio`, con TDD y sin commits ni pushes.
+
+### 2026-10-16 — IDN-4, Fase 0: base de Spring Security (hecho)
+**Qué se hizo, con TDD:**
+- **RED:** `SeguridadHttpTest` (13 pruebas) falló como debía: `/graphql` respondía **200 a una petición anónima** y las rutas desconocidas respondían 404, sin cabeceras de seguridad.
+- **GREEN:** dependencias `spring-boot-starter-security` y `spring-security-test` (pruebas); `SeguridadHttpConfiguracion` con una cadena sin estado, sin cookies, sin formulario ni autenticación básica, con CSRF desactivado (el token va en `Authorization: Bearer`, no hay credencial que el navegador adjunte solo) y **falla cerrado**: lo que ningún módulo declare público exige autenticación. Respuestas fijas `{"codigo":"NO_AUTENTICADO"}` (401, con `WWW-Authenticate: Bearer`) y `{"codigo":"PERMISO_DENEGADO"}` (403). La interfaz `RutasPublicas` (en `compartido`) hace que cada módulo declare las suyas, como `CatalogoDePermisos`; Identidad declara `/auth/**`, `/registro/**`, `/roles`, `/permisos` y `/cuenta`, y la configuración de desarrollo agrega `/dev/**` (que no existe en producción). Un `UserDetailsService` vacío evita que Spring cree un usuario con contraseña generada.
+- **Resultado:** `mvn -B verify` con JDK 21: **1352 pruebas, 0 fallas** (1339 + 13), cobertura cumplida, sin contraseña generada en el registro.
+
+**Cambio en una prueba existente:** `ArranqueYSeguridadTest` esperaba 404 en `/graphiql` y `/graphql/schema`; ahora esperan 401 (fallar cerrado). Siguen sin publicarse.
+
+**Todavía no hay autenticación real:** hoy `/graphql` rechaza a todos con 401, incluso con un token válido, porque el filtro de Bearer es la Fase 1. Las rutas de Identidad siguen validando su propio token en `AuthController`.
+
+**Límites / no verificado:** no se corrió contra un servidor real (solo MockMvc); el despacho de error está permitido para que un 404 o 405 no salgan como 401, y eso solo se ejercita con un servidor real. Sin commits ni pushes. Falta el resto de las fases (1 a 10); la Fase 1 es la autenticación (SG-01, SG-02).
+
+### 2026-10-16 — IDN-4, Fase 1: autenticación de `/graphql` con la sesión de Identidad (hecho; SG-01 y SG-02)
+**Qué se hizo, con TDD:**
+- **RED:** 4 clases de prueba (29 pruebas) sin código de producción: 22 errores de compilación, todos por las clases que faltaban.
+- **GREEN:** en `compartido.seguridad`: `Autenticador` (interfaz que implementa Identidad), `SesionDePeticion` (cuenta, negocio activo y permisos; sin negocio activo no hay contexto ni permisos, AZ-04), `SesionAuthentication`, `SesionActual` (lo que usarán los resolvedores) y `BearerTokenFilter`. En Identidad: `autenticadorDeIdentidad`, que traduce `SesionAutenticada` a la sesión neutral. `/graphql` exige sesión **con negocio activo**: sin token, 401; sesión válida sin negocio, 403.
+- **El filtro:** lee `Authorization: Bearer` (sin importar mayúsculas), rechaza con el mismo 401 fijo una cabecera mal formada, repetida o con un token de más de 256 caracteres **sin consultar a Identidad**, y el mismo 401 para un token falso, vencido o revocado (AS-08). No toca las rutas públicas (validan su propio token). Guarda la sesión también en el atributo de la petición, o el despacho asíncrono de GraphQL llegaría sin sesión.
+- **SG-02:** el resolvedor de prueba recibe el negocio y el actor de la sesión; una cabecera `X-Negocio-Id` o una variable `negocioId` del cliente se ignoran; pedir un argumento `negocioId` es un error de validación; una prueba recorre **todo** el esquema y exige que no exista `negocioId` en ningún tipo, campo ni argumento.
+- **Integración con Identidad real:** se prueba con el flujo HTTP completo (registro, negocio, elección de negocio, cierre de sesión), no con dobles.
+- **Mutación:** quitar la condición del negocio activo hace fallar `sesionSinNegocioActivo_responde403`; se restauró.
+- **Resultado:** `mvn -B clean verify` con JDK 21: **1381 pruebas, 0 fallas** (1352 + 29), cobertura cumplida.
+
+**Dos detalles de entorno de pruebas:** (1) Spring GraphQL busca los esquemas con `classpath:graphql/**`, que toma solo la primera raíz del classpath: en pruebas perdía los esquemas de los módulos. `src/test/resources/config/application.yml` ahora usa `classpath*:` (en producción no cambia nada). (2) El esquema de prueba (`contextoDePrueba`) vive en `src/test/resources/graphql-prueba/` y no en `graphql/`, porque `EsquemaGraphqlClientesTest` exige que `Query` tenga exactamente los campos de Clientes (SG-21) y no debía ver el de prueba. Si se mueve un recurso de prueba hay que correr `mvn clean`, o `target/` conserva el viejo.
+
+**Límites / no verificado:** solo con MockMvc, no con un servidor real. Cada petición con un token válido renueva la expiración por inactividad de la sesión (es lo que hace `autenticar`). Si Identidad lanza una excepción inesperada al autenticar, hoy se propaga como error 500 con el manejo por omisión de Spring: se enmascara en la Fase 5 (SG-13). Todavía sin límite de tasa (Fase 4), por lo que un cliente puede probar tokens sin freno hasta entonces. Sin commits ni pushes.
+
+**Siguiente:** Fase 2 (HTTP estricto y tamaño, SG-14 y SG-09).
+
+### 2026-10-16 — IDN-4, Fase 2: puerta HTTP de `/graphql` — HTTP estricto y tamaño (hecho; SG-14 y SG-09)
+**Qué se hizo, con TDD:**
+- **RED:** 3 clases de prueba (50 pruebas) sin código de producción; el RED fue de compilación (`PeticionGraphqlEstrictaFilter` y `PropiedadesHttp` no existían).
+- **GREEN:** `PeticionGraphqlEstrictaFilter`, que corre **antes** de autenticar (un cuerpo enorme no llega ni a Identidad) y rechaza con respuestas fijas: `Origin` que no esté permitido, 403; método distinto de POST, 405 con `Allow: POST`; tipo distinto de `application/json` en UTF-8, 415; cuerpo de más de 64 KB, 413; cuerpo que no sea un solo objeto JSON (lotes, arreglos, texto, vacío), 400. `PropiedadesHttp` (`seguridad.http.cuerpo-maximo-bytes`, por omisión 64 KB y como mucho 1 MiB; `seguridad.http.origenes-permitidos`) falla al arrancar con comodines, rutas o valores mal escritos. `CuerpoYaLeidoRequest` entrega el cuerpo ya acotado al resto de la cadena, que lo lee igual que antes.
+- **Cuerpo acotado de verdad:** si el cliente anuncia más del tope, ni se lee; si no anuncia longitud (chunked), se lee a lo más tope + 1 bytes y se corta (una prueba comprueba que no se leen 2.6 MB).
+- **Mutaciones:** leer `tope` en vez de `tope + 1` hace fallar la prueba del cuerpo sin longitud; dejar pasar cualquier origen hace fallar 3 pruebas. Se restauró el archivo.
+- **Resultado:** `mvn -B clean verify` con JDK 21: **1431 pruebas, 0 fallas** (1381 + 50), cobertura cumplida.
+
+**Decisiones de diseño que tomé (a confirmar):** los orígenes permitidos van por configuración y **por omisión no hay ninguno**: toda petición con `Origin` se rechaza (las apps nativas no lo envían). Solo se acepta el tipo `application/json`, no `application/graphql` ni `application/graphql+json`. Se rechaza también `Origin: null`.
+
+**Limitación importante — CORS no está configurado:** un navegador que llame a la API desde **otro origen** (por ejemplo un panel web en otro dominio) primero manda un `OPTIONS` de verificación, y hoy responde 405: no funcionaría aunque su origen esté en la lista. La lista sirve para un panel servido desde el mismo origen que la API. Si el panel va en otro dominio hay que decidir y configurar CORS (SG-14); lo dejé cerrado a propósito. Pendiente: dónde se aloja el panel (PWA única o dos apps, decisión abierta).
+
+**Otros límites / no verificado:** la puerta solo cubre `/graphql`; las rutas REST de Identidad (`/auth/**`, `/registro/**`) **no tienen tope de cuerpo** propio. La subida a WebSocket (un GET con `Upgrade` a `/graphql`) hoy recibiría 405 y se ajusta en la Fase 7 (SG-15). Solo MockMvc, no un servidor real: los límites propios de Tomcat no se ejercitaron. Sin commits ni pushes.
+
+**Siguiente:** Fase 3 (profundidad, complejidad, alias, tamaño de la consulta y tiempo máximo; SG-06, SG-08 y SG-09).
+
+### 2026-10-16 — IDN-4, Fase 3: límites de consulta de `/graphql` (hecho; SG-06, SG-08 y SG-09)
+**Qué se hizo, con TDD:**
+- **RED:** 4 clases de prueba nuevas sin código de producción (de compilación: faltaban `MedidorDeConsulta`, `MedidaDeConsulta` y `PropiedadesGraphql`) y una quinta de punta a punta por HTTP.
+- **GREEN, en `compartido.graphql`:** `MedidorDeConsulta` (profundidad, complejidad, alias y campos de la raíz), `LimitesDeConsultaInstrumentation` (rechaza **antes de ejecutar** cualquier resolvedor con un error fijo: `DEMASIADOS_CAMPOS_RAIZ`, `DEMASIADOS_ALIAS`, `CONSULTA_MUY_PROFUNDA` o `CONSULTA_MUY_COSTOSA`, con `extensions.codigo`, sin decir cuánto vale el límite ni qué parte de la consulta lo causó), `LimitesDeSolicitudInterceptor` (`CONSULTA_MUY_LARGA` medida antes de analizar el texto, y `TIEMPO_AGOTADO` si el motor no termina; aplica también a WebSocket cuando exista) y `PropiedadesGraphql` (`seguridad.graphql.*`, falla al arrancar con valores fuera de rango). Valores iniciales aceptados: profundidad 7, complejidad 100, 10 alias, 5 campos raíz, 10 s; **consulta de 10 000 caracteres** (ver hallazgo).
+- **Medidor propio, no los instrumentos de `graphql-java`:** estos expanden cada fragmento cada vez que se cita; una «bomba» de fragmentos (cada nivel cita dos veces al anterior) cuesta 2^n pasos con unos pocos KB de texto. El medidor mide cada fragmento una sola vez (tiempo lineal) y satura las cifras en 1 000 000. Mutación: sin esa memoria, la prueba de la bomba (40 fragmentos) excede los 500 ms.
+- **Cada límite se prueba en su valor exacto (pasa) y en el siguiente (se rechaza):** profundidad 7/8, complejidad 100/101, alias 10/11, campos de la raíz 5/6, consulta 10 000/10 001 caracteres. Mutación: quitar `.timeout(...)` hace fallar la prueba del tiempo.
+- **Resultado:** `mvn -B clean verify` con JDK 21: **1459 pruebas, 0 fallas** (1431 + 28), cobertura cumplida.
+
+**Hallazgo — Jackson limita a 10 000 caracteres cualquier cadena JSON:** la consulta viaja como una cadena JSON y una de 10 001 caracteres se rechaza con un 400 sin cuerpo *antes* de llegar al motor (`StreamReadConstraints`). Mi tope inicial de 16 000 era inalcanzable por HTTP, así que se alineó a 10 000 (y es el máximo admitido de `consulta-maxima-caracteres`, con un comentario que explica el acoplamiento). **Consecuencia futura:** cualquier campo de texto largo que viaje en el JSON (por ejemplo el `textoIntegral` del aviso de privacidad de Clientes, o las `notas`) tropezará con el mismo tope. Hay que decidirlo al escribir esos resolvedores: subir el límite de lectura de Jackson o aceptar el máximo. No lo cambié.
+
+**Cambio en una prueba de otra sesión (aditivo):** `FlujoHttp` (pruebas de Identidad) ganó `sesionConNegocio()`, que arma una sesión con negocio activo; mi prueba de la Fase 1 ahora lo usa en vez de repetir el armado.
+
+**Límites / no verificado:**
+- La complejidad cuenta 1 por campo; **no pondera el tamaño de página** (`primeros`). El tope del tamaño de página lo pone cada resolvedor (SG-07), y el límite de tasa llega en la Fase 4.
+- Al vencer el tiempo máximo la respuesta sale a tiempo, pero **el motor no cancela un resolvedor que ya corre**: un resolvedor lento sigue ocupando su hilo hasta terminar.
+- No se tocaron las opciones del analizador de `graphql-java` (`ParserOptions`, estáticas y globales); la protección del analizador es el tope de 10 000 caracteres.
+- Los campos de prueba (`arbolDePrueba`, `lentoDePrueba`, `contextoDePrueba`) viven solo en `src/test/resources/graphql-prueba/`.
+- Solo MockMvc y llamadas directas al manejador, no un servidor real. Sin commits ni pushes.
+
+**Siguiente:** Fase 4 (límite de tasa por cuenta y por IP; SG-10).
+
+### 2026-10-16 — IDN-4, Fase 4: límite de tasa de `/graphql` por cuenta y por IP (hecho; SG-10)
+**Qué se hizo, con TDD:**
+- **RED:** 5 clases de prueba (4 unitarias y una de integración con sesiones reales); el RED fue de compilación (faltaban `LimitadorDeTasa`, `PropiedadesTasa` y los dos filtros).
+- **GREEN, en `compartido.seguridad`:** `LimitadorDeTasa` (una cubeta de fichas por clave; **aritmética entera**, porque con decimales `0.999 + 0.001` puede dar `0.9999999999999999` y negar justo en el borde; memoria acotada: al pasar el máximo de claves se descarta la menos usada), `LimiteDeTasaPorIpFilter`, `LimiteDeTasaPorCuentaFilter`, `PropiedadesTasa` (`seguridad.tasa.*`: 60 por minuto por cuenta, 20 fallos por minuto por IP, 100 000 claves) y la respuesta fija 429 `{"codigo":"DEMASIADAS_PETICIONES"}` con `Retry-After`.
+- **Qué cuenta cada límite:** por IP se cuentan los **intentos sin sesión válida** (respuestas 401: sin token, o token falso, vencido o revocado), no todas las peticiones; lo que rechaza la puerta HTTP (405, 415, 413...) no gasta fichas. Por cuenta se cuenta cada petición con sesión válida. Una IP agotada recibe 429 sin que se consulte a Identidad.
+- **Error que encontraron las pruebas de integración:** los unitarios pasaron desde el primer intento, pero con sesiones reales el límite de IP no contaba los intentos **sin token**. El 401 de ese caso lo escribe `ExceptionTranslationFilter`, que estaba *antes* del filtro de IP y recibe la excepción de autorización cuando el filtro ya salió, así que nunca veía la respuesta final. Con un token falso sí funcionaba (ese 401 lo escribe mi filtro de Bearer). Se corrigió registrando la puerta HTTP y el límite de IP *antes* de `ExceptionTranslationFilter`; `OrdenDeFiltrosTest` fija el orden real (puerta HTTP, IP, traducción de excepciones, Bearer, cuenta, autorización).
+- **Mutaciones:** dejar de contar los 401 hace fallar 3 pruebas unitarias; volver al orden anterior hace fallar 3 de integración (incluida `OrdenDeFiltrosTest`). Se restauraron los archivos.
+- **Resultado:** `mvn -B clean verify` con JDK 21: **1484 pruebas, 0 fallas** (1459 + 25), cobertura cumplida.
+
+**Decisiones de diseño (a confirmar):**
+- **IP compartida:** una IP bloqueada por acumular fallos recibe 429 también para quien traiga una sesión válida (no se puede saber antes de validarla). Con 20 por minuto solo ocurre ante un abuso, pero afecta a todos los que comparten esa IP (una oficina, una red celular). Hay una prueba que lo documenta.
+- **La IP es la de la conexión**, no la de `X-Forwarded-For` (cualquiera puede escribir esa cabecera). Detrás de un proxy hay que lograr que la IP real llegue a la conexión; si no, todos los clientes parecerían una sola IP.
+
+**Límites / no verificado:**
+- Los contadores viven en la memoria de **cada instancia**: con varias instancias cada una cuenta aparte, y al reiniciar se reinician.
+- **Tasa más baja por operación** (`cliente(id)`, `sugerirClientes`, la exportación; clientes.md SG-10) **no se hizo**: necesita las operaciones reales y llega con sus resolvedores. Hoy hay un solo tope por cuenta.
+- El límite no se aplica todavía a la subida de WebSocket (Fase 7). Las rutas REST de Identidad (`/auth/**`, `/registro/**`) siguen con su propio límite interno, sin cambios.
+- La configuración de pruebas (`src/test/resources/config/application.yml`) sube los topes a 10 000 para que las pruebas que comparten contexto e IP no se estorben; `TasaGraphqlConSesionTest` los baja a 5 y 3 en su propio contexto, y `PropiedadesTasaTest` fija los valores iniciales.
+- Solo MockMvc, no un servidor real. Sin commits ni pushes.
+
+**Siguiente:** Fase 5 (errores enmascarados y registro por operación; SG-13 y SG-20).
+
+### 2026-10-16 — IDN-4, Fase 5: errores enmascarados y registro por operación en `/graphql` (hecho; SG-13 y SG-20)
+**Qué se hizo, con TDD:**
+- **RED:** 5 clases de prueba (33 pruebas) y campos de prueba que fallan a propósito (con una excepción cuyo mensaje trae SQL, una contraseña y un teléfono); el RED fue de compilación (faltaban `ErrorTraducido`, `TraductorDeErrores` y los traductores de los módulos).
+- **SG-13, en `compartido.graphql`:**
+  - `ResolvedorDeErroresGraphql`: sin permiso, `PERMISO_DENEGADO` (no dice qué permiso faltó); sin sesión, `NO_AUTENTICADO`; un error de negocio lo traduce el traductor de su módulo; todo lo demás, `ERROR_INTERNO` con una referencia al azar de 12 caracteres hexadecimales. Desenvuelve las excepciones asíncronas.
+  - `TraductorDeErrores` (interfaz en `compartido`; cada módulo aporta su bean, como `CatalogoDePermisos`): `TraductorDeErroresDeClientes` y `TraductorDeErroresDeInventario` dan el código del diseño, el texto fijo de su plantilla, el id del recurso involucrado como extensión (`recursoId`, por ejemplo el cliente que ya tenía ese teléfono) y `reintentable: true` para `CONCURRENCIA` y `ERROR_TEMPORAL`. Nunca usan el mensaje de la excepción.
+  - `EnmascaradoDeErroresInterceptor`: **lista blanca**. Solo pasan tal cual los errores con `extensions.codigo` en mayúsculas (los nuestros). Todo lo que produce el motor sale como `CONSULTA_INVALIDA` (sintaxis, validación, variables; sin posiciones ni texto) o `ERROR_INTERNO` con referencia (por ejemplo un null en un campo que no lo admite).
+- **SG-20, `RegistroDeOperacionesInterceptor`:** una línea por operación en el logger `auditoria.graphql`: `cuenta=… negocio=… operacion=tipo:campo1,campo2 resultado=OK|ERROR errores=CODIGO1,CODIGO2 ms=n`. La operación sale de los **nombres de campo que el esquema ya validó** (no de los alias). **Nunca** se registran el texto de la consulta, las variables ni el nombre de la operación que manda el cliente (podría traer saltos de línea para falsificar renglones). Una consulta que no valida o que se rechaza por tamaño sale como `no_ejecutada`.
+- **Registro de errores internos sin el mensaje:** la línea lleva la referencia, el campo, las clases de la cadena de causas y los primeros 8 marcos de la pila, **no** el mensaje de la excepción (puede traer SQL o valores de columnas). Costo: quien depure no ve el mensaje original; ve la pila y la clase.
+- **Evidencia de que el enmascarado era necesario:** al apagarlo (mutación), 7 pruebas fallan: los mensajes del motor sí repiten el nombre del campo, del tipo, del fragmento y el valor de una variable. La introspección cerrada (SG-12) no servía de mucho si los errores lo contaban. Otra mutación (el registro incluye el mensaje de la excepción) hace fallar la prueba del registro. Cero apariciones de los datos de prueba en toda la salida de la corrida, incluidos los registros de Spring y de `graphql-java`.
+- **Resultado:** `mvn -B clean verify` con JDK 21: **1517 pruebas, 0 fallas** (1484 + 33), cobertura cumplida.
+
+**Cambio en una prueba de la Fase 3:** `LimitesGraphqlTest` comprobaba que un error de sintaxis conservaba su texto normal; ahora exige `CONSULTA_INVALIDA` y que no se confunda con los códigos de límites.
+
+**Convención que dejé (a confirmar):** los errores de la plataforma llevan el código como mensaje (`PERMISO_DENEGADO`, `CONSULTA_INVALIDA`, `CONSULTA_MUY_PROFUNDA`…) y los de negocio llevan el texto de la plantilla del módulo; en ambos casos el contrato es `extensions.codigo`.
+
+**Límites / decisiones pendientes:**
+- **Lo que se rechaza antes de GraphQL no deja línea de registro:** 401, 403, 429, 405, 415, 413. Hoy nadie ve un intento de adivinar tokens. Registrarlos útilmente exige la IP, que es un dato personal; hay que decidir si se registra (y con qué retención) o si bastan contadores sin IP.
+- Falta configurar a dónde va el logger `auditoria.graphql` (archivo o servicio de registros), su retención y quién puede leerlo (el pendiente B11 de retención de la bitácora de accesos).
+- `IdentidadException` no tiene traductor porque Identidad hoy se expone por REST (su `ErroresIdentidadAdvice`); lo necesitará si Identidad se expone por GraphQL.
+- Cuando existan suscripciones (Fase 7), el registro de una operación de larga vida y su `ms` tendrán que revisarse.
+- Solo MockMvc y llamadas directas al manejador. Sin commits ni pushes.
+
+**Siguiente:** Fase 6 (autorización por operación: tabla operación → permiso que impide arrancar si falta una, y operaciones sensibles negadas por omisión; SG-03, SG-04, SG-19 y SG-21).
+
+### 2026-10-16 — IDN-4, Fase 6: autorización por operación en `/graphql` (hecho; SG-03, SG-04, SG-19 y SG-21)
+**Qué se hizo, con TDD:**
+- **RED:** 7 clases de prueba y campos de prueba nuevos; el RED fue de compilación (faltaban la tabla, el instrumento y la confirmación reforzada).
+- **SG-21, el inventario de operaciones, en `compartido.graphql`:** cada módulo declara las operaciones de GraphQL que aporta con `OperacionesGraphql` (igual que sus permisos con `CatalogoDePermisos`), y `TablaDeOperaciones` las junta. **Al arrancar, `VerificadorDeOperaciones` compara la tabla con el esquema y, si no coinciden, la aplicación no arranca**, reportando todos los problemas juntos: un campo de `Query`, `Mutation` o `Subscription` que nadie declaró; una declaración de un campo o tipo que no existe; un permiso que ningún módulo declara; una variante de comando sin declarar o de más; una declaración doble. Las operaciones de la plataforma (`prepararComando`, `confirmarComando`) las declara `OperacionesDePlataforma`; Clientes declara las suyas en `OperacionesDeClientes`.
+- **SG-03 y SG-04, la puerta (`AutorizacionDeOperacionesInstrumentation`):** antes de ejecutar un campo de la raíz comprueba, en orden: sesión con negocio activo (si no, `NO_AUTENTICADO` o `PERMISO_DENEGADO`); que la tabla conozca el campo (si no lo conoce lo **niega**, falla cerrado); que la persona tenga el permiso, que para `prepararComando` es el de la **variante del comando** (`registrarCliente`, `anonimizarCliente`…) leída del argumento ya resuelto. El resolvedor no se ejecuta si algo falla. Solo se vigilan los campos de la raíz; cada campo negado falla por su cuenta (resultado parcial). Los errores no dicen qué permiso faltaba.
+- **SG-19, operaciones sensibles:** si el permiso está declarado `sensible`, además exige `ConfirmacionReforzada` (interfaz en `compartido.seguridad`). **No existe implementación (IDN-3.2 no está hecho), así que toda operación sensible se niega por omisión** con `CONFIRMACION_REQUERIDA`; hasta el DUENO con el permiso. Se comprueba primero el permiso: sin él sale `PERMISO_DENEGADO`, para no revelar que existe el flujo. Cuando IDN-3.2 aporte un bean `ConfirmacionReforzada`, esas operaciones se abren para lo que confirme; una prueba fija ese contrato.
+- **Permisos por operación de Clientes (a confirmar):** `clientes`→`clientes.lista.ver`; `cliente`, `historialCliente`, `consentimientosCliente`→`clientes.ficha.ver`; `sugerirClientes`→`clientes.sugerir`; `panoramaClientes`→`clientes.panorama.ver`; **`avisoPrivacidadVigente`→`clientes.cliente.registrar`** (decisión mía: quien da de alta necesita el aviso, L-01); `solicitudesArco`→`clientes.arco.gestionar` (sensible). Variantes: `registrarCliente`, `editarCliente`, `registrarConsentimiento` con su permiso; `anonimizarCliente`→`clientes.cliente.anonimizar` (sensible); `publicarAvisoPrivacidad`→`clientes.aviso.publicar` (sensible); las tres de ARCO→`clientes.arco.gestionar` (sensible). Una prueba (`TablaRealDeOperacionesTest`) fija todo esto.
+- **Mutaciones (5, todas detectadas):** sin la confirmación de lo sensible; sin comprobar el permiso; un campo sin entrada que queda abierto; un verificador que no verifica; sin comprobar la variante del comando. Se restauraron los archivos.
+- **Resultado:** `mvn -B clean verify` con JDK 21: **1589 pruebas, 0 fallas** (1517 + 72), cobertura cumplida, cero fugas de datos de prueba en toda la salida.
+
+**Cambio en pruebas de las fases 3 a 5 (esperado):** 16 pruebas ejecutaban campos de la raíz **sin sesión**, que era justo el hueco; ahora fallaban con `NO_AUTENTICADO`. En vez de relajar la puerta, esas pruebas (`LimitesGraphqlTest`, `ResolvedorDeErroresGraphqlTest`, `EnmascaradoDeErroresTest`, `TiempoMaximoGraphqlTest`) entran con una sesión de prueba (`SesionDePrueba`). La del tiempo máximo entra dentro del hilo que ejecuta, porque `assertTimeoutPreemptively` corre en otro hilo y la sesión de prueba es del hilo de la prueba.
+
+**Límites / decisiones pendientes:**
+- **`confirmarComando` solo pide sesión.** Su permiso se comprueba al *preparar* el comando; el token está ligado a quien lo preparó y al comando, y vale 5 minutos. Si se revoca el permiso en ese lapso, el comando aún podría confirmarse: la revalidación del permiso al confirmar la hará cada módulo (para Inventario, la fachada ya acordada); Clientes aún no la tiene.
+- **Los comandos sensibles de Clientes (anonimizar, publicar el aviso, ARCO) no se pueden preparar por GraphQL hasta que exista IDN-3.2**, ni siquiera el DUENO. La exportación (`GET /clientes/:id/exportacion`, REST) no está bajo esta puerta: necesita la suya.
+- La puerta sigue el hilo de la sesión: depende de que Spring propague el contexto de seguridad al resolvedor, como ya prueban las pruebas por HTTP.
+- Inventario aún no tiene esquema GraphQL ni `OperacionesGraphql`; cuando lo tenga, el arranque exigirá declararlas.
+- Solo MockMvc y llamadas directas al manejador. Sin commits ni pushes.
+
+**Siguiente:** Fase 7 (WebSocket: activarlo en `/graphql` con autenticación en `connection_init`, `Origin` verificado, tope de suscripciones por cuenta y aislamiento de eventos por negocio; SG-15 y SG-16).
+
+### 2026-10-16 — IDN-4, Fase 7: WebSocket de `/graphql` autenticado y aislado por negocio (hecho; SG-15 y SG-16)
+**Qué se hizo, con TDD:**
+- **Dependencia y configuración:** `spring-boot-starter-websocket`; `spring.graphql.websocket.path=/graphql` (mismo endpoint, D-02), `connection-init-timeout=5s` y `keep-alive=30s`. El mayor mensaje es el mismo tope de 64 KB del cuerpo HTTP, por el parámetro de contexto de Tomcat `org.apache.tomcat.websocket.textBufferSize` (que sigue a `seguridad.http.cuerpo-maximo-bytes`): uno mayor cierra la conexión con 1009, y uno de 9000 caracteres, que excede los 8 KB que Tomcat trae por omisión, pasa.
+- **El apretón de manos (un GET con `Upgrade`):** un navegador no puede mandar `Authorization` ahí, así que pasa sin sesión (`SubidaWebSocket`), pero la puerta HTTP **verifica el origen igual que en HTTP** (403 si no está permitido) y un filtro propio limita las **conexiones nuevas por IP** (`seguridad.websocket.conexiones-por-minuto-ip`, 30 por omisión). Un GET sin `Upgrade` completo sigue siendo 405.
+- **Autenticación en `connection_init` (`AutenticacionWebSocketInterceptor`):** el cliente manda `{"Authorization": "Bearer <token>"}`. Cualquier problema (sin token, mal formado, desconocido, o sesión sin negocio activo) cierra la conexión con **4401**, y cuenta como intento fallido de la IP con **el mismo limitador de HTTP**: tras 20 fallos por minuto el apretón siguiente recibe 429 aunque traiga una sesión válida. Se guarda el **token**, no la sesión, y **cada operación nueva lo valida de nuevo**: una sesión revocada se nota en la siguiente operación. También aplica a cada operación el tope de peticiones por cuenta.
+- **Tope de operaciones abiertas por cuenta (`ControlDeSuscripciones`, `seguridad.websocket.suscripciones-por-cuenta`, 5 por omisión):** suma todas las conexiones de la cuenta; una suscripción ocupa un lugar mientras su flujo siga abierto y lo libera al terminar, al cancelarse (el cliente manda `complete`) o al cerrarse la conexión. La siguiente recibe `TOPE_DE_SUSCRIPCIONES`. Una cuenta sin nada abierto se olvida, así que la memoria no crece.
+- **SG-16, aislamiento (`EventosPorNegocio`):** `filtrar(flujo, negocioDe)` y `deSobres(flujo)` dejan pasar solo los eventos del negocio de la sesión, fijado **al suscribirse** y nunca de un argumento; un evento sin negocio se descarta; sin sesión o sin negocio la suscripción falla al abrirse. Con servidor real, dos sesiones de negocios distintos reciben cada una solo lo suyo.
+- **SG-13 en suscripciones:** los errores de un flujo van dentro de cada resultado, no en la primera respuesta, y por ahí también podían filtrar lo que el motor dice del esquema: `EnmascaradoDeErroresInterceptor` ahora enmascara cada resultado del flujo. Y `ResolvedorDeErroresDeSuscripcion` evita un hueco que encontré en el código de Spring: cuando nadie resuelve la excepción de un flujo, su manejador la escribe en el registro **con su mensaje completo**. La regla de clasificación quedó en un solo lugar (`ClasificadorDeErrores`) para consultas y suscripciones.
+- **SG-20:** el registro de una operación por WebSocket lee la cuenta y el negocio del contexto de Reactor.
+- **Resultado:** `mvn -B clean verify` con JDK 21: **1660 pruebas, 0 fallas** (1589 + 71), cobertura cumplida, cero fugas de datos de prueba. Cinco mutaciones, todas detectadas: sin aislamiento por negocio, sin liberar el lugar de la suscripción, sin enmascarar el flujo, sin contar los `connection_init` fallidos y sin verificar el origen en el apretón.
+
+**Hallazgo — la sesión viajaba por el hilo y la puerta de autorización no la veía en un WebSocket:** lo encontraron solo las pruebas con servidor real (9 de 16 fallaron). El registro mostraba la cuenta y el negocio correctos, pero toda operación respondía `NO_AUTENTICADO`. Mi puerta (`AutorizacionDeOperacionesInstrumentation`) envuelve al resolvedor por *fuera* del decorador de Spring GraphQL, que es quien restaura la sesión en el hilo desde el contexto de Reactor; cuando la puerta corre, el hilo aún no la tiene. En HTTP no se notaba porque la sesión ya vive en el hilo de la petición. **Arreglo:** la sesión viaja en el contexto de GraphQL (`ClavesDeContexto.SESION`): la pone `AutenticacionWebSocketInterceptor` en WebSocket y `SesionEnContextoInterceptor` en HTTP, y la puerta lee de ahí y solo recurre al hilo si no hay. Las pruebas unitarias de la Fase 6 no podían verlo porque ejecutaban con la sesión en el hilo.
+
+**Infraestructura de pruebas:** los contextos nuevos (varios con puerto real) agotaron las 100 conexiones de la base de pruebas (`remaining connection slots are reserved`): cada combinación de propiedades crea un contexto que Spring guarda en caché con su pool de 10. Los *pools* de pruebas bajaron a 3 (`src/test/resources/config/application.yml`). Una corrida posterior falló por un arranque lento de Docker (Ryuk) y se repitió sin cambios; no puedo separar con certeza cuál de los dos ajustes ayudó en la corrida verde.
+
+**Límites / decisiones pendientes:**
+- **Una suscripción ya abierta sigue viva aunque la sesión se revoque o se quite un permiso**; se nota en la siguiente operación nueva o al cerrarse la conexión. Un tiempo máximo de vida por suscripción lo resolvería; no lo hice.
+- **Hoy el esquema de producción no tiene ninguna suscripción**: el endpoint WebSocket está activo, protegido, y solo responde consultas y mutaciones. Las suscripciones de prueba viven en `src/test`. `EventosPorNegocio` **no se aplica solo**: cada módulo que agregue una suscripción debe pasar su flujo por ahí (por ejemplo `alertasClientes`, P2, y las alertas de Inventario). Falta una prueba arquitectónica que lo exija cuando existan.
+- La carga de `connection_init` usa la clave `Authorization` con el esquema `Bearer`, como el extractor estándar de Spring; es una propuesta a confirmar con quien haga el cliente (Flutter, panel).
+- El cierre 4401 no distingue token falso, sin negocio o IP agotada, a propósito.
+- La línea de registro de una suscripción reporta lo que tardó en abrirse, no su duración.
+- El tamaño de mensaje es una configuración de Tomcat; con otro servidor habría que ponerla en otro lugar.
+- Solo servidor real de pruebas con Tomcat; no hay pruebas de carga ni de reconexión. Sin commits ni pushes.
+
+**Siguiente:** Fase 8 (consultas permitidas por hash, exigidas solo en producción; SG-11).
+
+### 2026-10-16 — Autorización: unir las dos puertas de `/graphql` (opción 1)
+**Contexto:** al traer `origin/julio` (commit `230766e`, «modulo de negocios») apareció una segunda implementación de IDN-4 hecha por el equipo: `FiltroDeEntrada`, `EntradaGraphQl`, `InterceptorDeEntrada`, `LimitesDeConsultaGraphQl`, `ResolvedorDeErroresComunes` y los resolvedores de Negocios. Chocan con las Fases 0 a 7 de este trabajo (sesión obligatoria en todo `/graphql` frente a superficie pública sin sesión; dos instrumentos de límites; dos portadores de sesión). El árbol no compilaba en verde (2000 pruebas: 1 falla y 525 errores de contexto).
+
+**Pedido del usuario (cita textual):** «la opción 1, hazme el plan» y, tras ver el plan, «acepto el plan ejecuta la skill /ecc:tdd-workflow para ejecutarlo». **Autorización escrita para programar esto: sí.** El «sí» acepta también las recomendaciones 1 a 5 del plan.
+
+**Qué autoriza:** con TDD, quedarse con el filtro de entrada del remoto (`FiltroDeEntrada`, `EntradaGraphQl`, resolvedores de Negocios) y portar encima las capas de las Fases 0 a 7, en las fases M0 a M7: línea base, un solo portador de sesión (`EntradaGraphQl`), operaciones públicas en la tabla de operaciones, filtro de entrada unificado (incluye WebSocket con origen), errores (Negocios pasa a ser un `TraductorDeErrores`), un solo instrumento de límites, WebSocket con la suscripción `altaDeNegocio` (aislada por cuenta) y cierre con revisión.
+
+**Decisiones aceptadas con las recomendaciones:** (1) cuerpo máximo de 64 KB; (2) tasa: anónimas válidas 120/min por IP y 60/min por dispositivo, fallos de autenticación 20/min por IP, con sesión 60/min por cuenta; (3) topes de consulta profundidad 7 y costo 100, que solo se suben si una consulta real de Negocios no cabe y con evidencia; (4) `confirmarComando` pública para las reseñas del turista (la dueña del token es la reseña con su dispositivo); (5) un solo mecanismo de tasa en `/graphql`.
+
+**Reglas que se respetan:** no se borra ni se debilita ninguna prueba, del remoto o mía (si una clase se retira, sus aserciones pasan a la que la reemplaza); sin commit ni push; Jira intacto.
+
+**Fuera de lo autorizado:** SG-11 (consultas por hash), SG-18, la conexión Identidad↔Inventario, el adaptador de Inventario al bus de eventos y cualquier commit o push.
+
+### 2026-10-16 — IDN-4: una sola puerta de `/graphql`, fases M0 a M7 (hecho)
+**Pedido del usuario:** la autorización de la entrada anterior («Autorización: unir las dos puertas de `/graphql`»). Con TDD (`/ecc:tdd-workflow`). Sin commit ni push.
+
+**Qué quedó:** el filtro de entrada del equipo (`FiltroDeEntrada`, `EntradaGraphQl`, resolvedores de Negocios) es la base, y encima están las capas de las Fases 0 a 7.
+- **Un solo portador de sesión en GraphQL:** `EntradaGraphQl`. La puerta de autorización, la confirmación reforzada, el WebSocket, el tope de suscripciones, el aislamiento de eventos (`EventosPorNegocio.filtrar(flujo, entrada, …)`) y el registro la leen de ahí. Se retiraron `SesionEnContextoInterceptor` y `ClavesDeContexto.SESION`.
+- **Tabla de operaciones con tres accesos** (`Acceso.PUBLICA`, `CUENTA`, `NEGOCIO`) y variantes de comando públicas (`ComandoDeclarado.publico`, con marca explícita: un permiso ausente sin la marca es un error). Negocios declara sus 19 operaciones (`OperacionesDeNegocios`): el panel con el mismo permiso que ya exige su servicio, `misAltasDeNegocio` y `altaDeNegocio` de cuenta, y tres consultas públicas del turista más la variante `publicarResena`. `confirmarComando` pasó a pública (decisión 4).
+- **Filtro de entrada ampliado:** deja pasar el apretón de manos de WebSocket (a los controles de origen y de conexiones por IP), cuenta los tokens falsos como fallos de la IP y consulta antes de autenticar, aplica la tasa por cuenta, topa el token en 256 caracteres y manda `WWW-Authenticate: Bearer` en el 401. La cadena de Spring Security solo deja pasar `/graphql` si el filtro dejó la entrada (falla cerrado). Cuerpo máximo 64 KB para todo.
+- **Errores:** Negocios es ahora un `TraductorDeErrores` (conserva códigos, estados y `faltantes`); `ClasificadorDeErrores` entiende `NO_AUTENTICADO`, `SIN_NEGOCIO_ACTIVO` y los argumentos ilegibles (`CONSULTA_INVALIDA`, con una línea WARN sin el valor). Un solo código de tasa: `DEMASIADAS_SOLICITUDES`. Un solo medidor de consultas (el mío); los 7 casos del otro se portaron.
+- **WebSocket:** una sesión sin negocio activo ya puede conectarse (`altaDeNegocio` es para quien aún no tiene negocio); lo que pide negocio lo niega la puerta con `SIN_NEGOCIO_ACTIVO`. Probado con servidor real, con dos cuentas.
+- **Rutas REST de Negocios** declaradas públicas una por una (`RutasPublicasDeNegocios`) y las de documentación (para que fuera de desarrollo respondan 404 y no 401).
+
+**Verificación hecha:** `mvn -B clean verify` con JDK 21: **2069 pruebas, 0 fallas**, cobertura cumplida, ningún dato de prueba sensible en los registros. La suite del equipo (1560 en su rama) sigue en verde dentro de ella. 18 mutaciones en los puntos críticos, todas detectadas. Dos revisiones independientes (`java-reviewer`, `security-reviewer`): ningún camino para saltarse la autorización; 7 hallazgos corregidos con prueba primero. Detalle, tablas y estado de SG-01 a SG-21 en [`docs/pruebas/idn4-puerta-unificada.tdd.md`](pruebas/idn4-puerta-unificada.tdd.md).
+
+**Hallazgos de verdad (los encontraron las pruebas, no el plan):**
+- **Bug de raíz en `LimiteDeTasaEnMemoria` (de Identidad):** el barrido usaba la ventana de la llamada que lo disparaba y borraba los intentos de todas las claves. Con el tráfico de `/graphql` (1 minuto) se liberaban los topes de solicitud de código de acceso (hasta 24 h). Corregido: cada clave guarda su ventana.
+- **Regresión de auditoría (SG-20)** al quitar la sesión del hilo: el registro salía con `cuenta=- negocio=-`. Corregido.
+- `InterceptorDeEntrada` podía pisar la entrada autenticada del WebSocket (funcionaba por un orden implícito). Ahora ignora el WebSocket.
+
+**Cambios de contrato que verá quien consuma la API** (todos intencionales): sin token una consulta llega a GraphQL y lo protegido responde `NO_AUTENTICADO` con HTTP 200 (token falso o revocado sigue siendo 401, idéntico); una sesión sin negocio activo recibe `SIN_NEGOCIO_ACTIVO` en vez de `PERMISO_DENEGADO`/403; los rechazos del filtro salen como `{"errors":[…]}`; el tope de cuerpo es 64 KB; los límites de consulta devuelven `DEMASIADOS_ALIAS`, `DEMASIADOS_CAMPOS_RAIZ`, `CONSULTA_MUY_PROFUNDA` o `CONSULTA_MUY_COSTOSA`.
+
+**Lo que no se hizo igual que en el plan:** la decisión 5 (un solo mecanismo de tasa) no se unificó: el puerto `LimiteDeTasa` de Identidad no tiene «consultar sin consumir», que los fallos por IP necesitan. Tres de mis filtros siguen en la cadena (origen, conexiones de WebSocket, y los de tasa para las rutas REST) porque hacen algo que el filtro del equipo no hace. No se creó `EventosPorCuenta`: `AvisosDeAlta` ya aísla por cuenta.
+
+**Pendiente y decisiones abiertas** (registradas, no corregidas): proxy y IP real al desplegar; las suscripciones por SSE no pasan por el tope de suscripciones; no hay tope de conexiones WebSocket simultáneas por cuenta; `X-Dispositivo-Id` rotable (reseñas fuera de demo); `/demo/**` y `/admin/**` abiertos a nivel de cadena (protegidos por perfil y por token); `confirmarComando` pública exige una prueba arquitectónica cuando Clientes e Inventario tengan resolvedores; falta registro de los 401/429 del filtro y agrupar IPv6 por /64. **SG-11 y SG-18 siguen pendientes** (no necesarias para la demo). Sigue pendiente la conexión Identidad↔Inventario y el adaptador de Inventario al bus de eventos.
+
+**Cierra:** el pendiente «cerrar `/graphql` antes del primer resolvedor (SG-01 a SG-10)» queda levantado para Negocios y el resto, con las reservas de arriba.
+
+### 2026-10-16 — Se trae la rama `uriel` (Ventas, Caja, canal de demo y maqueta Flutter) a `julio`
+**Pedido del usuario:** «trae lo que hay en la rama uriel a la rama julio, ahí está venta y caja». Merge local, sin push.
+
+**Qué se hizo:** se adelantó `julio` a `origin/julio` (un commit de documentación, `inventario.md`) y se mezcló `origin/uriel` (6 commits sobre la base vieja `98762d3`, anterior a Negocios y a todo IDN-4) con un commit de mezcla (`6366210`). Trae los módulos `ventas`, `caja` y `canal`, el esquema `ventas/caja/canal.graphqls` y la maqueta en Flutter (`frontend/`). El trabajo sin confirmar de IDN-4 se guardó antes en el stash, con copia en archivo, y se devolvió después; **sigue sin confirmar**.
+
+**Conflictos resueltos conservando ambos lados:** `application-desarrollo.yml`, `EstructuraModulosTest` y `BITACORA.md`. Además, **`compartido/dinero/Redondeo`** existía en las dos ramas con contenido distinto (la de Ventas y Caja tenía `precio`, `dineroValido` y `cantidadComoTexto`; la de Inventario, `costoUnitario`, `factor` y `dividir`). Eran compatibles (mismas constantes y mismo `dinero` y `cantidad`): quedó una sola clase con la unión, y la prueba de Inventario pasó a llamarse `RedondeoDeInventarioTest`. `ContextoDeSesionTest` (del canal) usaba un doble escrito a mano contra la API vieja de Identidad; ahora usa un mock, sin tocar sus aserciones.
+
+**Estado tras la mezcla (no está en verde):** `mvn clean verify`: 2249 pruebas, 3 fallas y 542 errores. **Una sola causa para casi todo:** la verificación de la tabla de operaciones (SG-21) falla al arrancar porque `Query.cajas`, `cortes`, `turnoActivo`, `saldoTurno`, `venta`, `ventasDelTurno`, `productosSimulados`, `cuponesSimulados` y sus mutaciones no están declaradas; ningún contexto de Spring arranca. Las 3 fallas son `EsquemaGraphqlClientesTest`, que aún supone un esquema con solo Clientes y compartido.
+
+**Lo que hay que integrar (necesita plan y autorización):**
+1. Declarar las operaciones de Ventas, Caja y canal en la tabla (`OperacionesGraphql`) con permisos reales; hoy el canal usa `PermisosSimulados`.
+2. El canal trae su **propio interceptor de sesión** (`InterceptorDeSesion`, `ContextoGraphQl`) que autentica el Bearer por su cuenta y asigna un **negocio de demostración** a las sesiones sin negocio. Hay que moverlo a `EntradaGraphQl` y decidir qué se queda del negocio de demostración.
+3. `ComandosController` también resuelve `prepararComando` y `confirmarComando`, igual que Negocios: GraphQL admite un solo resolvedor por campo. Hace falta el despachador de comandos por variante (el mismo que necesitan Clientes e Inventario).
+4. Ajustar `EsquemaGraphqlClientesTest` y verificar el aislamiento de datos de Ventas y Caja con la puerta unificada.
+
+### 2026-10-16 — Plan de integración de Ventas y Caja (plan, sin autorización para programar)
+**Pedido del usuario (cita textual):** «define el plan de integración, el objetivo es únicamente traer caja y venta de la rama uriel. De igual forma define cómo quedarán las queries de GraphQL para que en lo que estamos integrando esto trabajemos a la par en misceláneos y en restaurantes para que cuando todo quede podamos consumir los módulos horizontales, esto preséntalo en un .md y en un artefacto para mejor lectura, sé específico y no omitas nada». Con `/ecc:plan`. **Es un plan: no hay autorización escrita para programar.**
+
+**Qué se hizo:** [`docs/planes/integracion-ventas-caja.md`](planes/integracion-ventas-caja.md) (19 secciones y 3 anexos) y su artefacto. Cubre: alcance (qué entra de `uriel` y qué no), 16 hallazgos, decisiones, arquitectura objetivo, el **esquema GraphQL final** de Ventas y Caja (con la tabla de operaciones, permisos, límites y ejemplos), 11 permisos nuevos y la matriz de roles, el contrato Java, los eventos, cómo consumen los verticales, las fases F0 a F7 con TDD, el trabajo en paralelo con Misceláneos y Restaurantes (hitos, propiedad de archivos, reparto de migraciones y de decisiones), riesgos, criterios de aceptación y estimación.
+
+**Hallazgos que cambian el plan:** (H-01) los identificadores `D-76` a `D-90` están **usados dos veces** (Identidad y Negocios, y Ventas y Caja); (H-02, H-03, H-04) el canal de `uriel` trae una tercera autenticación, un negocio de demostración que se asigna a toda sesión sin negocio y permisos simulados que dejan a cualquier cuenta anular y autorizar diferencias; (H-05, H-06) `prepararComando` y `confirmarComando` los resuelven dos controladores y `Resultado.datos` es no nulo pero Negocios no lo devuelve; (H-11) las migraciones `V030` y `V040` que reservó `uriel` ya no están libres; (H-10) sus eventos salen sin outbox.
+
+**Decisiones propuestas:** D-110 a D-124 (las de `uriel`, renumeradas) y D-125 a D-134 (despachador único de comandos, permiso al preparar y al confirmar, 11 permisos, SPI de productos en `compartido.catalogo`, revocar el negocio de demostración, prefijo de tipos GraphQL, paginación, outbox, reparto de migraciones, cupones inválidos sin Pasaporte). **Todas PROPUESTA.**
+
+**Pendiente (preguntas P-1 a P-10 del documento):** quitar `canal` y `frontend` de `julio`; aprobar la renumeración, los permisos y la matriz, las queries, el SPI de productos; si la persistencia entra ahora o después; quién mantiene Negocios y quién toma Misceláneos y Restaurantes.
+
+### 2026-10-16 — Maqueta completa de Restaurantes en Flutter (personal, comensal por QR y turista)
+**Pedido del usuario (cita textual):** «genera un mockup completo para la app de restaurantes […] basándote en el siguiente artefacto [Módulo Restaurantes v0.5] […] y de la arquitectura que se tiene en el repositorio […] frontend/lib/pantallas […] estilo limpio con bordes semirredondeados y afilados con colores claros #FFFFFF #002F6C #4A90E2 #0A192F #FDFBF7 #3D2314 #E65F00 #1A4314 #8B2520 […] formal pero no de oficinista, cómodo e intuitivo […] con Dart y la biblioteca de Flutter, para móvil y para web».
+
+**Alcance y autorización:** es una **maqueta** del frontend (D-89, aceptada: Dart y Flutter, móvil primero), con **datos de ejemplo en memoria** y sin tocar el servidor. **No hay autorización para programar el módulo `restaurantes` del servidor** (P1b y la persistencia siguen sin autorizar según el diseño v0.5); la maqueta no lo sustituye ni lo adelanta. El diseño fuente (`docs/diseno/restaurantes.md`) no está en esta rama: se leyó del artefacto.
+
+**Qué se hizo (`frontend/`):**
+- **Tema:** `tema.dart` con la paleta pedida (nueve colores; los tonos suaves se mezclan con blanco o crema, no se agregan colores) en claro y oscuro. Formas: tarjetas y paneles de 14 px, controles de 10 px y **sellos casi rectos (3 px)** para estados, más una barra lateral recta de color en las tarjetas de estado. Colores con significado fijo (`ColoresSemanticos`): verde = libre o listo, naranja = ocupado o en preparación, rojo = agotado, cancelado o alergia, azul cielo = información.
+- **Adaptable:** `widgets/adaptativo.dart`. Teléfono (barra inferior, con «Más» si hay más de cinco secciones), tableta (riel lateral) y escritorio o web (riel extendido y vistas maestro-detalle: menú con detalle, salón con cuenta, tablero de cocina en tres columnas, carta con pedido al lado).
+- **Personal (`pantallas/restaurantes/`):** Panel (ventas, ticket, mesas libres, avisos del salón, lo más vendido, alertas y margen por platillo), Menú (búsqueda, filtros, platillos con etiquetas, temporada, agotado y publicado; alta, edición y baja), Receta (versiones, insumos con merma, costo teórico y margen, flujo preparar → confirmar), Salón (mesas por zona, estado derivado, QR de cada mesa con regenerar, pausar y bloquear), Cuenta (líneas, enviar a cocina, anular con motivo, pedir la cuenta, cobrar y ver los insumos descontados), Cocina y barra (comandas por estación, tiempo resaltado desde 15 min, marca de alergia), Insumos (existencias, mínimo, CPP y consumos sin descontar) y Ajustes (modo de servicio, pedidos por QR, publicación). **El puesto se elige en la barra superior** (Dueño, Mesero, Cocinero, Cajero) para ver cómo cambian las secciones y los permisos; el costo y el margen solo los ve el dueño (RC-10).
+- **Comensal por QR (`pantallas/comensal/`):** escáner simulado, y la página que abre el QR sin cuenta (carta, Mi pedido, Info y reseñas), con límites, idempotencia, seguimiento por línea (en cocina, preparando, listo, cancelado con su motivo) y pedir la cuenta. Es la pantalla que el diseño pide como web pública (D-185, D-190).
+- **Turista (`pantallas/turista/restaurantes.dart`):** nueva sección «Restaurantes» con filtros por tipo de cocina, mesas libres **en vivo** del restaurante de la demo, ficha con menú público (sin costos ni recetas), reseñas y entrada al QR.
+- **Estado (`estado/restaurante_demo.dart`):** reproduce las reglas del diseño que la maqueta necesita (MN, RC, CM, MS, CT, CD y QR); cada operación exige su permiso y falla con el código del contrato y su texto en español. Dinero en centavos y cantidades de insumos en diezmilésimas, sin `double`. La cemita poblana da 43.25 de costo y 41.75 de margen (49.12 %), igual que el diseño.
+
+**Pruebas:** `flutter analyze` sin hallazgos y `flutter test` con **80 pruebas en verde** (14 anteriores, 42 de reglas del estado y 24 de recorridos en teléfono y pantalla ancha). Se revisó el resultado en un navegador, en teléfono (390 px), escritorio (1440 px) y modo oscuro.
+
+**Límites y decisiones de la maqueta (sin ID: si el equipo las acepta se numeran):**
+- Todo es simulado y rotulado «Datos de ejemplo»: no hay GraphQL, ni sesión de Identidad, ni Ventas ni Inventario reales; el cobro y el descuento de insumos son locales. El dominio de la web pública sigue sin elegirse (se muestra `dominio-por-definir`).
+- El QR es un dibujo de ejemplo, no escaneable; la cámara se simula con botones. El «refresco cada ~10 s» del comensal es inmediato porque el estado es local.
+- El selector de puesto existe **solo en la maqueta**; con el servidor el puesto sale de la sesión.
+- Los permisos de la maqueta (`permisos_restaurante.dart`) siguen los nombres del diseño pero **no son** la matriz final (sección 9 del diseño); hay que cotejarlos cuando se programe el servidor.
+- Se agregó en la maqueta una regla que el diseño no lista: el nombre de un platillo de 2 a 80 caracteres falla con `NOMBRE_INVALIDO`.
+
+**Pendiente:** confirmar la paleta y las formas como estándar de toda la app (la maqueta de Ventas y Caja ya las usa por el tema común); decidir si la web pública es esta misma app en Flutter web; conectar con el servidor cuando Restaurantes esté autorizado e integrado con Ventas e Inventario.

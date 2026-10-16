@@ -12,11 +12,17 @@ import mx.negocio360.identidad.aplicacion.puertos.LimiteDeTasa;
 /**
  * Ventana deslizante en memoria (AS-03): guarda el momento de cada intento permitido y cuenta los que caen dentro de
  * la ventana. Los rechazados no se guardan, asi que un bloqueo no se alarga por insistir. Una vez por ventana se barre
- * la memoria y se olvidan las claves sin actividad. Solo para desarrollo, demo y una sola instancia.
+ * la memoria y se olvidan las claves sin actividad, cada una segun SU propia ventana: la misma instancia atiende claves de
+ * ventana de un minuto (la entrada de /graphql) y de horas (las solicitudes de codigo), y el barrido que dispara una no
+ * puede borrar los intentos de la otra. Solo para desarrollo, demo y una sola instancia.
  */
 public final class LimiteDeTasaEnMemoria implements LimiteDeTasa {
 
-    private final Map<String, Deque<Instant>> intentosPorClave = new HashMap<>();
+    /** Los intentos de una clave y la ventana con la que se cuentan. */
+    private record Registro(Deque<Instant> intentos, Duration ventana) {
+    }
+
+    private final Map<String, Registro> registros = new HashMap<>();
     private Instant ultimoBarrido;
 
     @Override
@@ -26,18 +32,19 @@ public final class LimiteDeTasaEnMemoria implements LimiteDeTasa {
             throw new IllegalArgumentException("El maximo y la ventana deben ser positivos");
         }
         barrerSiToca(ventana, ahora);
-        var intentos = intentosPorClave.computeIfAbsent(clave, k -> new ArrayDeque<>());
-        olvidarVencidos(intentos, ventana, ahora);
-        if (intentos.size() >= maximo) {
+        var registro = registros.compute(clave, (k, actual) -> new Registro(
+                actual == null ? new ArrayDeque<>() : actual.intentos(), ventana));
+        olvidarVencidos(registro.intentos(), ventana, ahora);
+        if (registro.intentos().size() >= maximo) {
             return false;
         }
-        intentos.addLast(ahora);
+        registro.intentos().addLast(ahora);
         return true;
     }
 
     /** Claves con intentos guardados, para las pruebas. */
     public synchronized int clavesActivas() {
-        return intentosPorClave.size();
+        return registros.size();
     }
 
     private void barrerSiToca(Duration ventana, Instant ahora) {
@@ -48,8 +55,8 @@ public final class LimiteDeTasaEnMemoria implements LimiteDeTasa {
         if (ahora.isBefore(ultimoBarrido.plus(ventana))) {
             return;
         }
-        intentosPorClave.values().forEach(intentos -> olvidarVencidos(intentos, ventana, ahora));
-        intentosPorClave.values().removeIf(Deque::isEmpty);
+        registros.values().forEach(registro -> olvidarVencidos(registro.intentos(), registro.ventana(), ahora));
+        registros.values().removeIf(registro -> registro.intentos().isEmpty());
         ultimoBarrido = ahora;
     }
 

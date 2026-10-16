@@ -1,11 +1,13 @@
 package mx.negocio360.compartido.graphql;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.compartido.seguridad.Autorizacion;
 import mx.negocio360.compartido.seguridad.NoAutenticadoException;
+import mx.negocio360.compartido.seguridad.SesionDePeticion;
 
 /**
  * Lo que el filtro de entrada de {@code /graphql} le entrega a los resolvedores (IDN-4): la cuenta y el negocio de la sesion,
@@ -40,6 +42,20 @@ public final class EntradaGraphQl {
         return new EntradaGraphQl(Objects.requireNonNull(cuentaId, "cuentaId"), contexto, autorizacion, dispositivo);
     }
 
+    /**
+     * La entrada de una sesion que entrega el autenticador de la plataforma (la conexion WebSocket). El actor de la
+     * sesion es el id de la cuenta; si no lo es, es un error de programacion y falla, sin repetir el actor.
+     */
+    public static EntradaGraphQl deSesion(SesionDePeticion sesion, String dispositivo) {
+        UUID cuenta;
+        try {
+            cuenta = UUID.fromString(sesion.actor());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("El actor de la sesion no es el id de una cuenta");
+        }
+        return new EntradaGraphQl(cuenta, sesion.contexto().orElse(null), sesion.autorizacion(), dispositivo);
+    }
+
     /** Sin sesion: sin cuenta, sin contexto y sin ningun permiso. El dispositivo, si vino, se conserva. */
     public static EntradaGraphQl anonima(String dispositivo) {
         return new EntradaGraphQl(null, null, NADA, dispositivo);
@@ -66,12 +82,22 @@ public final class EntradaGraphQl {
         return contexto;
     }
 
+    /** La cuenta, si hay sesion; para el registro, que no debe fallar por no tenerla. */
+    public Optional<UUID> cuenta() {
+        return Optional.ofNullable(cuentaId);
+    }
+
+    /** El negocio activo, si lo hay; para el registro, que no debe fallar por no tenerlo. */
+    public Optional<UUID> negocio() {
+        return Optional.ofNullable(contexto).map(ContextoNegocio::negocioId);
+    }
+
     /** Los permisos de la sesion; vacios si no hay sesion o negocio activo. Todo esta negado por omision. */
     public Autorizacion autorizacion() {
         return autorizacion;
     }
 
-    /** El id de dispositivo que mando la app del turista, sin validar, o nulo. */
+    /** El id de dispositivo que mando la app del turista (el filtro de entrada ya comprobo que es un UUID), o nulo. */
     public String dispositivo() {
         return dispositivo;
     }

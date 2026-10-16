@@ -32,7 +32,7 @@ import reactor.core.publisher.Flux;
  * Los resolvedores del panel del negocio (seccion 9.3). Solo traducen GraphQL a {@link NegociosApi}: el negocio, el actor y
  * los permisos salen de la sesion que dejo el filtro de entrada ({@link EntradaGraphQl}), nunca de un argumento (SG-02);
  * sin sesion o sin negocio activo fallan cerrado, y cada funcion exige su permiso (SG-04). Los errores de negocio salen con
- * su codigo en {@link ResolvedorDeErroresDeNegocios}.
+ * su codigo en {@link TraductorDeErroresDeNegocios}.
  */
 @Controller
 public class NegociosGraphQlController {

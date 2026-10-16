@@ -104,4 +104,36 @@ class LimiteDeTasaEnMemoriaTest {
 
         assertThat(limite.clavesActivas()).isLessThanOrEqualTo(1);
     }
+
+    @Test
+    @DisplayName("el barrido respeta la ventana de cada clave: el trafico de una ventana corta no borra los intentos de una larga")
+    void barrido_noUsaLaVentanaDeQuienLoDispara() {
+        var larga = Duration.ofHours(1);
+        var corta = Duration.ofMinutes(1);
+        // Una clave con ventana de una hora agota sus 3 intentos...
+        for (var i = 0; i < 3; i++) {
+            assertThat(limite.intentar("codigo:correo", 3, larga, T0)).isTrue();
+        }
+        // ...y mucho trafico de ventana corta (el de /graphql) dispara varios barridos durante esa hora.
+        for (var minuto = 1; minuto <= 30; minuto++) {
+            limite.intentar("entrada:ip", 100, corta, T0.plus(Duration.ofMinutes(minuto)));
+        }
+
+        // Pasados 30 minutos, la clave de ventana larga sigue bloqueada.
+        assertThat(limite.intentar("codigo:correo", 3, larga, T0.plus(Duration.ofMinutes(30)))).isFalse();
+        // Y cumplida su hora, vuelve a permitir.
+        assertThat(limite.intentar("codigo:correo", 3, larga, T0.plus(larga).plusSeconds(1))).isTrue();
+    }
+
+    @Test
+    @DisplayName("las claves vencidas segun SU ventana siguen olvidandose con el barrido")
+    void barrido_olvidaLasVencidasSegunSuPropiaVentana() {
+        limite.intentar("larga", 3, Duration.ofHours(1), T0);
+        limite.intentar("corta", 3, Duration.ofMinutes(1), T0);
+
+        limite.intentar("otra", 3, Duration.ofMinutes(1), T0.plus(Duration.ofMinutes(5)));
+
+        // 'corta' ya vencio; 'larga' sigue dentro de su hora; 'otra' es nueva.
+        assertThat(limite.clavesActivas()).isEqualTo(2);
+    }
 }

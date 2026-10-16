@@ -1,7 +1,9 @@
 package mx.negocio360.identidad.infraestructura;
 
+import mx.negocio360.compartido.seguridad.RutasPublicas;
 import mx.negocio360.identidad.web.DevCanalController;
 import mx.negocio360.identidad.web.DevNegociosController;
+import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +26,12 @@ import org.springframework.context.annotation.Profile;
 @ConditionalOnProperty(name = CanalSimulado.PROPIEDAD_DE_HABILITACION, havingValue = "true")
 @Import({DevCanalController.class, DevNegociosController.class})
 public class IdentidadDesarrolloConfiguracion {
+
+    /** Los controladores de desarrollo solo existen aqui, asi que su ruta solo se abre aqui. */
+    @Bean
+    public RutasPublicas rutasPublicasDeDesarrollo() {
+        return () -> List.of("/dev/**");
+    }
 
     @Bean
     public CanalSimulado canalSimulado() {

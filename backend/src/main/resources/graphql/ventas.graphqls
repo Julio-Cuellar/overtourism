@@ -1,0 +1,80 @@
+# Esquema del modulo de Ventas (docs/diseno/ventas.md, F4). Sin negocioId: el negocio sale de la sesion (SG-02).
+# Los comandos se preparan y confirman con prepararComando y confirmarComando (D-55).
+
+extend type Query {
+  "VF-01: una venta del negocio, o null si no existe en este negocio."
+  venta(id: ID!): Venta
+  "VF-02: ventas de un turno."
+  ventasDelTurno(turnoId: ID!): [Venta!]!
+}
+
+enum MetodoPago { EFECTIVO TARJETA TRANSFERENCIA }
+enum EstadoVenta { REGISTRADA ANULADA }
+
+type Venta {
+  id: ID!
+  serie: String!
+  folio: Int!
+  estado: EstadoVenta!
+  turnoId: ID!
+  subtotal: Decimal!
+  descuento: Decimal!
+  total: Decimal!
+  lineas: [LineaVenta!]!
+  pagos: [PagoVenta!]!
+  ocurridoEn: DateTime!
+  anuladaEn: DateTime
+}
+
+type LineaVenta {
+  linea: Int!
+  productoId: ID!
+  descripcion: String!
+  cantidad: Decimal!
+  unidad: String!
+  precioUnitario: Decimal!
+  importe: Decimal!
+  serie: String
+}
+
+type PagoVenta {
+  metodo: MetodoPago!
+  monto: Decimal!
+  recibido: Decimal
+  cambio: Decimal
+  referencia: String
+}
+
+extend input ComandoInput {
+  registrarVenta: RegistrarVentaInput
+  anularVenta: AnularVentaInput
+}
+
+"VF-10: el precio lo pone Catalogo; los pagos deben sumar el total (VT-02, VT-04)."
+input RegistrarVentaInput {
+  turnoId: ID!
+  lineas: [LineaVentaInput!]!
+  pagos: [PagoInput!]!
+  codigoCupon: String
+  clienteId: ID
+}
+
+input LineaVentaInput {
+  productoId: ID!
+  cantidad: Decimal!
+  serie: String
+}
+
+input PagoInput {
+  metodo: MetodoPago!
+  monto: Decimal!
+  "Solo en efectivo: lo que entrega el cliente, para calcular el cambio."
+  recibido: Decimal
+  referencia: String
+}
+
+"VF-11: anular con motivo (VT-09)."
+input AnularVentaInput {
+  ventaId: ID!
+  motivo: String!
+}

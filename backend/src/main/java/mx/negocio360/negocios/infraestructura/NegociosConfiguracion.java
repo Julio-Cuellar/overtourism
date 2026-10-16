@@ -156,12 +156,6 @@ public class NegociosConfiguracion {
         return new AvisosDeAlta(altas);
     }
 
-    /** Los errores de negocio de los resolvedores GraphQL: su codigo y su texto fijos (SG-13). */
-    @Bean
-    public org.springframework.graphql.execution.DataFetcherExceptionResolver resolvedorDeErroresDeNegocios() {
-        return new mx.negocio360.negocios.web.ResolvedorDeErroresDeNegocios();
-    }
-
     @Bean
     public EscuchaDeIdentidad escuchaDeIdentidadEnNegocios(AltasApi altas) {
         return new EscuchaDeIdentidad(altas);

@@ -411,7 +411,16 @@ class GraphQlEntradaTest {
 
         var r = graphql(null, alias.toString());
 
-        assertThat(r.at("/errors/0/message").asText()).isEqualTo("CONSULTA_DEMASIADO_GRANDE");
+        // Doce campos de la raiz con alias pasan el tope de campos de la raiz (5) antes que el de alias.
+        assertThat(r.at("/errors/0/message").asText()).isEqualTo("DEMASIADOS_CAMPOS_RAIZ");
+
+        var anidados = new StringBuilder("{ negocioPublico(id: \"" + UUID.randomUUID() + "\") { ");
+        for (var i = 0; i < 12; i++) {
+            anidados.append("a").append(i).append(": id ");
+        }
+        anidados.append("} }");
+
+        assertThat(graphql(null, anidados.toString()).at("/errors/0/message").asText()).isEqualTo("DEMASIADOS_ALIAS");
     }
 
     @Test
@@ -431,8 +440,12 @@ class GraphQlEntradaTest {
     @DisplayName("SG-14: GET a /graphql es 405; un cuerpo enorme, 413")
     void httpEstricto() throws Exception {
         mvc.perform(get("/graphql").queryParam("query", "{ miNegocio { id } }")).andExpect(status().isMethodNotAllowed());
+        // El tope del cuerpo es de 64 KB (seguridad.http.cuerpo-maximo-bytes): uno de 70 000 bytes es 413 sin leerlo.
         mvc.perform(post("/graphql").contentType(MediaType.APPLICATION_JSON).content("{\"query\":\""
-                + "x".repeat(40_000) + "\"}")).andExpect(status().isPayloadTooLarge());
+                + "x".repeat(70_000) + "\"}")).andExpect(status().isPayloadTooLarge());
+        // Uno que cabe en el cuerpo pero tiene una consulta de mas de 10 000 caracteres tambien se rechaza (400).
+        mvc.perform(post("/graphql").contentType(MediaType.APPLICATION_JSON).content("{\"query\":\""
+                + "x".repeat(40_000) + "\"}")).andExpect(status().isBadRequest());
     }
 
     @Test

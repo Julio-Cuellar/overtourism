@@ -31,6 +31,12 @@ spring:
         schema-initialization:
           enabled: false
   graphql:
+    # SG-15: las suscripciones viajan por el mismo endpoint. La autenticacion es el mensaje connection_init, asi que una
+    # conexion que no lo manda en 5 segundos se cierra; los pings cada 30 s detectan a quien se fue sin cerrar.
+    websocket:
+      path: /graphql
+      connection-init-timeout: 5s
+      keep-alive: 30s
     # SG-12: superficie cerrada. Sin introspeccion, sin GraphiQL y sin imprimir el esquema.
     graphiql:
       enabled: false
@@ -45,3 +51,12 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+server:
+  servlet:
+    context-parameters:
+      # SG-09 y SG-15: el mayor mensaje de WebSocket es el mismo tope de 64 KB del cuerpo HTTP; uno mayor cierra la
+      # conexion con 1009. Tomcat usa 8 KB por omision, que una consulta de 10000 caracteres puede exceder. Si se
+      # cambia seguridad.http.cuerpo-maximo-bytes, este valor lo sigue.
+      "[org.apache.tomcat.websocket.textBufferSize]": ${seguridad.http.cuerpo-maximo-bytes:65536}
+      "[org.apache.tomcat.websocket.binaryBufferSize]": 1024

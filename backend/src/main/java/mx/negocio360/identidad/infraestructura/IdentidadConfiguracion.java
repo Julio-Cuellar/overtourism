@@ -2,9 +2,12 @@ package mx.negocio360.identidad.infraestructura;
 
 import java.time.Clock;
 import java.util.List;
+import mx.negocio360.compartido.seguridad.Autenticador;
 import mx.negocio360.compartido.seguridad.CatalogoDePermisos;
 import mx.negocio360.compartido.transaccion.FronteraTransaccional;
 import mx.negocio360.identidad.dominio.IdentidadException;
+import mx.negocio360.compartido.seguridad.RutasPublicas;
+import mx.negocio360.compartido.seguridad.SesionDePeticion;
 import mx.negocio360.identidad.aplicacion.EquipoServicio;
 import mx.negocio360.identidad.aplicacion.PermisosDeIdentidad;
 import mx.negocio360.identidad.aplicacion.puertos.PublicadorEventos;
@@ -15,6 +18,7 @@ import mx.negocio360.identidad.aplicacion.puertos.RepositorioRoles;
 import mx.negocio360.identidad.aplicacion.puertos.SolicitudesDeNegocio;
 import mx.negocio360.identidad.IdentidadApi;
 import mx.negocio360.identidad.IdentidadServicio;
+import mx.negocio360.identidad.SesionAutenticada;
 import mx.negocio360.identidad.aplicacion.PoliticaDeAcceso;
 import mx.negocio360.identidad.aplicacion.puertos.CanalDeCodigos;
 import mx.negocio360.identidad.aplicacion.puertos.LimiteDeTasa;
@@ -60,6 +64,25 @@ public class IdentidadConfiguracion {
         var registro = new FilterRegistrationBean<>(new CabecerasDeSeguridad());
         registro.addUrlPatterns("/auth/*", "/cuenta", "/registro", "/registro/*", "/roles", "/permisos", "/dev/*");
         return registro;
+    }
+
+    /**
+     * SG-01: la sesion de Identidad es la unica forma de autenticarse. La plataforma solo conoce la interfaz
+     * {@link Autenticador}; aqui se traduce {@link SesionAutenticada} a la sesion neutral de la peticion.
+     */
+    @Bean
+    public Autenticador autenticadorDeIdentidad(IdentidadApi identidad) {
+        return token -> identidad.autenticar(token)
+                .map(sesion -> new SesionDePeticion(sesion.cuentaId().toString(), sesion.negocioId(), sesion.permisos()));
+    }
+
+    /**
+     * Rutas de acceso que validan su propio token (SI-05): la cadena de filtros las deja pasar. El resto de la
+     * plataforma exige autenticacion por omision (SG-01).
+     */
+    @Bean
+    public RutasPublicas rutasPublicasDeIdentidad() {
+        return () -> List.of("/auth/**", "/registro/**", "/roles", "/permisos", "/cuenta");
     }
 
     /** Los permisos de Identidad; los demas modulos declaran los suyos con su propio {@link CatalogoDePermisos}. */

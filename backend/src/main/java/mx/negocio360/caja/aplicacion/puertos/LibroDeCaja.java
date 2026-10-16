@@ -1,0 +1,79 @@
+package mx.negocio360.caja.aplicacion.puertos;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import mx.negocio360.caja.dominio.Corte;
+import mx.negocio360.caja.dominio.EstadoVentaAplicada;
+import mx.negocio360.caja.dominio.MovimientoCaja;
+import mx.negocio360.caja.dominio.VentaAplicada;
+
+/** Puerto de {@code movimiento_caja}, {@code venta_aplicada}, {@code evento_procesado} y {@code corte}. */
+public interface LibroDeCaja {
+
+    /**
+     * Inserta un movimiento; nunca se edita ni se borra.
+     *
+     * @param movimiento movimiento nuevo
+     */
+    void agregar(MovimientoCaja movimiento);
+
+    /**
+     * Movimientos de un turno.
+     *
+     * @param negocioId negocio
+     * @param turnoId   turno
+     * @return movimientos del turno en orden
+     */
+    List<MovimientoCaja> movimientos(UUID negocioId, UUID turnoId);
+
+    /**
+     * Lo que Caja hizo con una venta, si ya la vio (CJ-04).
+     *
+     * @param negocioId negocio
+     * @param ventaId   venta
+     * @return la fila de {@code venta_aplicada}, si existe
+     */
+    Optional<VentaAplicada> ventaAplicada(UUID negocioId, UUID ventaId);
+
+    /**
+     * Inserta o reemplaza la fila de una venta.
+     *
+     * @param venta fila nueva o reemplazo
+     */
+    void guardarVentaAplicada(VentaAplicada venta);
+
+    /**
+     * Cuenta ventas de un turno en un estado (CJ-07).
+     *
+     * @param negocioId negocio
+     * @param turnoId   turno
+     * @param estado    estado buscado
+     * @return cuantas hay
+     */
+    long contarVentas(UUID negocioId, UUID turnoId, EstadoVentaAplicada estado);
+
+    /**
+     * Anota que un consumidor proceso un evento (R3).
+     *
+     * @param consumidor nombre del consumidor
+     * @param eventoId   id del evento
+     * @return falso si ya se habia procesado
+     */
+    boolean registrarEvento(String consumidor, UUID eventoId);
+
+    /**
+     * Guarda un corte confirmado.
+     *
+     * @param corte corte confirmado
+     */
+    void guardarCorte(Corte corte);
+
+    /**
+     * Cortes del negocio.
+     *
+     * @param negocioId negocio
+     * @return cortes en orden de confirmacion
+     */
+    List<Corte> cortes(UUID negocioId);
+}
