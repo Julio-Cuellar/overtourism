@@ -29,6 +29,8 @@ Este archivo existe para que **cualquier agente o persona que entre al proyecto 
 | Mapa de Identidad (página publicada, privada) | https://claude.ai/artifact/AyFzKR2Rp4cJszZYagsFpa — versión 0.1 (2026-10-13): módulo de autenticación y equipo del personal de los negocios, por REST y API Java: 13 tablas, 45 reglas, 26 endpoints, 25 permisos con matriz por rol, 20 reglas de seguridad, 15 diagramas y el plan en 8 épicas y 36 historias con sprints propuestos. Privada. Aún no hay documento en `docs/diseno/` ni nada en Jira. |
 | Mapa de Contabilidad (página publicada) | https://claude.ai/artifact/CYLdtRhkzV2o1wRZsCphmh — versión 0.2 (2026-10-15): 14 tablas con diagramas entidad-relación, 40 reglas de dominio, 30 funciones de `ContabilidadApi`, 4 eventos publicados y 3 consumidos, tabla de comunicación con la API (GraphQL, WebSocket, REST, Java y bus), plan de consultas, seguridad y plan. La versión escrita vive en `docs/diseno/contabilidad.md`. Compartida con cualquiera que tenga el enlace. |
 | `docs/diseno/contabilidad.md` | Diseño del módulo de Contabilidad (v0.2, PROPUESTA): dueño de cada dato, reglas A, C, T, E, J, U y F con prueba de aceptación, API pública, eventos, contratos que necesita de Ventas, Pasaporte y Caja, GraphQL y REST, seguridad SK, decisiones D-91 a D-104, hallazgos K-1 a K-12 y 9 preguntas abiertas. |
+| `docs/diseno/miscelanea.md` | Diseño del vertical Misceláneos (v0.2, PROPUESTA, 2026-10-16): mapa de cobertura, módulo `miscelaneos` (Surtido y Disponibilidad), 9 tablas, reglas SU-01 a SU-17 y DA-01 a DA-06, `MiscelaneosApi`, 2 eventos publicados y 0 consumidos, cambios propuestos a contratos ajenos CP-1 a CP-3, seguridad y LFPDPPP, decisiones D-105 a D-119, 15 preguntas, estimación y la revisión de `ecc:architect`. Fiado como roadmap |
+| Mapa de Misceláneos (página publicada, privada) | https://claude.ai/artifact/PMGrAHK5HoTCv4ADD5EH4T — versión 1 (2026-10-16), con el formato del Mapa de Clientes: cobertura, entidad-relación y estados, todas las tablas, reglas filtrables, funciones y códigos, eventos con JSON y secuencia, cambios a contratos ajenos, tabla de comunicación con la API filtrable por protocolo, plan de consultas y esquema propuesto, seguridad, decisiones, hallazgos, preguntas, fases y riesgos. Privada hasta que se comparta. Si cambia `miscelanea.md`, hay que volver a publicarla |
 | `docs/diseno/contabilidad-diagramas.md` | Diagramas de Contabilidad (12 en Mermaid), interacciones síncronas y asíncronas, ejemplos de contratos de eventos y modelo de datos con todas las columnas e índices. |
 | Mockup de la plataforma (página publicada) | https://claude.ai/artifact/3o4no2gWTCwAkG5tcatffJ — flujos, módulos, pantallas, sección de APIs (GraphQL, WebSocket, REST). Marca como primera opción de stack a Python; **ya está desactualizada en eso** (ver D-03). |
 | `docs/mockups/app-turista.html` | Mockup detallado de la app del turista (solo local, abrir en el navegador): teléfono interactivo con 16 pantallas, 75 acciones con su operación, entrada, salida y eventos, mapa de la interfaz (qué pasa al tocar cada botón), catálogo de 14 eventos publicados y 3 consumidos, mapa de comunicación con el bus y hallazgos H-1 a H-15. Operaciones y eventos son PROPUESTA. |
@@ -204,6 +206,21 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-102 | Contabilidad no guarda datos personales ni `cliente_id` | PROPUESTA | 2026-10-15 | |
 | D-103 | Campos nuevos opcionales: `medio_pago`, `caja_sesion_id` y `propina` en `venta.registrada` v1; `financiador` en `cupon.canjeado` v1; `caja.cerrada` v1 completo (Caja sin diseño) | PROPUESTA | 2026-10-15 | Falta congelar con Ventas, Pasaporte y Caja |
 | D-104 | Contabilidad no es herramienta fiscal: no emite CFDI ni calcula declaraciones | PROPUESTA | 2026-10-15 | |
+| D-105 | Misceláneos es **un solo** módulo vertical `miscelaneos` (esquema propio). P1 = Surtido (proveedores, pedido sugerido, recepción) y Disponibilidad (atención en vivo, D-33). En la demo se muestra como mockup con datos simulados | PROPUESTA | 2026-10-16 | El usuario eligió un solo módulo, Surtido y Disponibilidad en P1 y demo como mockup. Registrado como propuesta por pedido suyo. `docs/diseno/miscelanea.md` |
+| D-106 | Fiado queda **fuera del MVP** (roadmap P3, §12 de `miscelanea.md`) | PROPUESTA | 2026-10-16 | Respuesta del usuario. Respeta el alcance original (cuentas por cobrar fuera) y Clientes, que excluye el fiado |
+| D-107 | La utilidad bruta (ventas − costo de lo vendido) es responsabilidad de un horizontal (K-10); Misceláneos no la calcula | PROPUESTA | 2026-10-16 | Respuesta del usuario. Depende de la pregunta 9 de `contabilidad.md` |
+| D-108 | El pedido sugerido es una consulta; solo se guarda el pedido confirmado | PROPUESTA | 2026-10-16 | Mismo patrón que Ventas: preparar no escribe |
+| D-109 | La cantidad sugerida se redondea **hacia arriba** al múltiplo de compra; excepción a HALF_UP (D-20) solo en sugerencias | PROPUESTA | 2026-10-16 | El usuario la confirmó en la Fase 2 |
+| D-110 | Sin nivel objetivo, objetivo = 2 × mínimo (regla versionada) | PROPUESTA | 2026-10-16 | Valor sin calibrar |
+| D-111 | La recepción registra las entradas con `InventarioApi.registrarEntradas` (CP-1), síncrono y en la misma transacción, como escritura del sistema sin preparar → confirmar (extiende D-22) | PROPUESTA | 2026-10-16 | Cambio propuesto a un contrato ajeno: falta que lo acepte el dueño de Inventario. Cambia también el esquema de Inventario (tabla de idempotencia de entradas) |
+| D-112 | Campos opcionales `minimoBase`, `rastreo`, `activo` y `nombre` en `SaldoVista` (CP-2) | PROPUESTA | 2026-10-16 | Cambio propuesto a un contrato ajeno (Inventario) |
+| D-113 | `negocio.disponibilidad_cambiada` con tipo ATENCION, `espera` y `vigente_hasta`; `libres` y `total` solo para MESAS y AFORO; Directorio muestra «sin dato» al vencer y Rutas RT-13 no decide con ATENCION (CP-3) | PROPUESTA | 2026-10-16 | Cambio propuesto a contratos ajenos sin dueño (`compartido`, Directorio, Rutas) |
+| D-114 | `cambiarAtencion` sin preparar → confirmar, con sesión y permiso | PROPUESTA | 2026-10-16 | Excepción a la convención de `CLAUDE.md`, como D-22 y D-35. El usuario la confirmó en la Fase 2; necesita aceptación explícita del equipo |
+| D-115 | Misceláneos no consume eventos en P1; publica `miscelaneos.recepcion_registrada` v1 (sin consumidores) y la atención; no hay evento de pedido | PROPUESTA | 2026-10-16 | |
+| D-116 | Sin datos de contacto del proveedor en P1 (minimización, LFPDPPP); el contacto pasa a P2 con aviso | PROPUESTA | 2026-10-16 | Respuesta del usuario |
+| D-117 | Siete permisos `miscelaneos.*` con matriz para dueño, encargado y cajero; el cajero recibe sin ver el historial de costos y necesita autorización si el costo es atípico (SU-17); autorización campo por campo | PROPUESTA | 2026-10-16 | Respuesta del usuario más el hallazgo 5 de `ecc:architect`. Falta alinear nombres con el Mapa de Identidad |
+| D-118 | Fuera de P1: pago al proveedor desde la caja, anular recepción, artículos con serie, contacto del proveedor | PROPUESTA | 2026-10-16 | |
+| D-119 | La transacción compartida Misceláneos–Inventario (SU-12) es una restricción para el endurecimiento de V001 (una conexión por módulo) | PROPUESTA | 2026-10-16 | Hallazgo 3 de `ecc:architect` |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -1150,3 +1167,33 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 - `caja.cerrada` v1 lo definió Contabilidad porque Caja no tenía diseño (D-103); ahora Caja sí lo tiene.
 
 **Pendiente:** revisión del pull request por otra persona del equipo (D-32) y decidir los dos contratos de arriba.
+
+### 2026-10-16 — Diseño del vertical Misceláneos (propuesta)
+**Pedido del usuario:** con `/ecc:plan`, diseñar el primer producto vertical, Misceláneos (tienda de abarrotes), por fases y con confirmación en cada una. «Solo diseño: no programes, no hagas push, no cambies de rama y no modifiques contratos de otros módulos». «Registra en la Bitácora solo como "propuesta"».
+
+**Qué se hizo:**
+1. **Fase 0:** lectura de `CLAUDE.md`, esta Bitácora y todo `docs/diseno/`, más los eventos que existen en el código.
+2. **Fase 1:** mapa de cobertura de 16 necesidades contra los horizontales. Respuestas del usuario: Fiado fuera del MVP, utilidad bruta en un horizontal, un solo módulo `miscelaneos`, demo como mockup, y Surtido y Disponibilidad en P1.
+3. **Fases 2 a 4:**
+   - 9 tablas con seguridad por fila forzada y reglas SU y DA con prueba de aceptación.
+   - 2 eventos publicados y ninguno consumido.
+   - 3 cambios propuestos a contratos ajenos (CP-1 y CP-2 a Inventario, CP-3 a C-01, E-12 y Rutas), **sin aplicar**.
+   - 15 vías de comunicación en P1, sin WebSocket ni REST.
+   - Seguridad con 7 permisos. Por respuesta del usuario: sin contacto del proveedor en P1, y el cajero recibe sin ver el historial de costos.
+4. **Fase 5:** revisión de solo lectura de `ecc:architect`, con 17 hallazgos (1 crítico, 4 altos). Todos se aplicaron en la v0.2 del documento. Los hallazgos 3, 7, 8 y 9 se comprobaron contra V001, V030 y `ServicioPreparacion`.
+5. **Entregas:** `docs/diseno/miscelanea.md` y el artefacto «Mapa de Misceláneos» (ver documentos relacionados).
+
+**Decisiones:** D-105 a D-119, todas **PROPUESTA**. Las respuestas del usuario se registraron como propuesta porque así lo pidió.
+
+**Observaciones para quien continúe:**
+- No se tocaron los documentos de otros módulos. CP-1 a CP-3 necesitan a sus dueños, y CP-3 no tiene dueño (`compartido`, Directorio y Rutas).
+- El Mapa de Identidad no se pudo leer en esta sesión: la herramienta respondió que no existe o que no está compartido con esta cuenta. Los nombres de los permisos están por alinear.
+- La línea 1 de `docs/diseno/inventario.md` empieza con caracteres basura (`[[[[[[[[[]()]()…`). No se corrigió porque es de otro módulo.
+- **No hay autorización escrita para programar Misceláneos.**
+
+**No verificado:** los diagramas Mermaid no se renderizaron ni se pasaron por un analizador, y la página publicada no se abrió en el visor. El artículo de la LFPDPPP sobre la relación comercial está por verificar. Los valores iniciales (factor 2, 50 %, 30 min, 200 líneas) y la estimación (≈ 5.5 días-persona) son heurísticas. No se hizo commit ni push, y no se cambió de rama (`liz-testing`).
+
+**Pendiente:** contestar las 15 preguntas de `miscelanea.md` §14, acordar CP-1 a CP-3 con sus dueños y, si se quiere programar, la autorización escrita.
+
+**Archivos creados:** `docs/diseno/miscelanea.md`.
+**Archivos modificados:** `docs/BITACORA.md` (documentos relacionados, D-105 a D-119 y esta entrada).
