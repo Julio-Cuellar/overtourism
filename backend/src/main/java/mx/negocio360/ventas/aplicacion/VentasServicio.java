@@ -17,6 +17,7 @@ import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.compartido.dinero.Redondeo;
 import mx.negocio360.ventas.ResumenTurno;
 import mx.negocio360.ventas.VentasApi;
+import mx.negocio360.ventas.VerificadorDeTurno;
 import mx.negocio360.ventas.aplicacion.puertos.AutorizacionVentas;
 import mx.negocio360.ventas.aplicacion.puertos.CatalogoDeVentas;
 import mx.negocio360.ventas.aplicacion.puertos.CuponesDePasaporte;
@@ -49,6 +50,7 @@ public final class VentasServicio implements VentasApi {
      *
      * @param catalogo      precios de Catalogo
      * @param cupones       cupones de Pasaporte
+     * @param turnos        Caja dice si el turno esta abierto (VT-01)
      * @param ventas        repositorio de ventas
      * @param preparaciones tabla {@code preparacion} de Ventas
      * @param eventos       outbox
@@ -56,11 +58,12 @@ public final class VentasServicio implements VentasApi {
      * @param reloj         reloj de la plataforma
      * @return el servicio listo para usarse
      */
-    public static VentasServicio armar(CatalogoDeVentas catalogo, CuponesDePasaporte cupones, RepositorioVentas ventas,
+    public static VentasServicio armar(CatalogoDeVentas catalogo, CuponesDePasaporte cupones,
+                                       VerificadorDeTurno turnos, RepositorioVentas ventas,
                                        RepositorioPreparaciones preparaciones, PublicadorEventos eventos,
                                        AutorizacionVentas autorizacion, Clock reloj) {
         var manejadores = List.of(
-                new ManejadorRegistrarVenta(catalogo, cupones, ventas, eventos, reloj),
+                new ManejadorRegistrarVenta(catalogo, cupones, turnos, ventas, eventos, reloj),
                 new ManejadorAnularVenta(ventas, autorizacion, eventos, reloj));
         var preparacion = new ServicioPreparacion(preparaciones, manejadores, reloj,
                 fallo -> new VentasException(CodigoError.valueOf(fallo.name())));

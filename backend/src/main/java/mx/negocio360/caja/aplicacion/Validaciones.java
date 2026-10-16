@@ -46,9 +46,12 @@ final class Validaciones {
         return turno;
     }
 
-    /** Dice si un monto tiene a lo mas 2 decimales. */
-    static boolean escalaDeDinero(BigDecimal monto) {
-        return monto.stripTrailingZeros().scale() <= Redondeo.ESCALA_DINERO;
+    /**
+     * Dice si un monto es dinero valido: acotado y con a lo mas 2 decimales. Se revisa antes de redondear, para que un
+     * exponente enorme se rechace sin calcular (revision M1). El signo lo revisa quien llama.
+     */
+    static boolean dineroValido(BigDecimal monto) {
+        return Redondeo.dineroValido(monto);
     }
 
     /** Texto obligatorio recortado, o nulo si viene vacio o pasa del maximo. */

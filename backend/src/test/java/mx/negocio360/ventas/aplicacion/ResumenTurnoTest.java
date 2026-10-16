@@ -52,7 +52,9 @@ class ResumenTurnoTest {
     void resumen_preparacionesVigentes() {
         e.api.preparar(e.ctxA, Fixtures.ventaSinCupon());
         e.api.preparar(e.ctxA, Fixtures.ventaSinCupon());
-        e.api.preparar(e.ctxA, new RegistrarVentaComando(UUID.randomUUID(), Fixtures.dosBoletosYMedioKilo(),
+        var otroTurno = UUID.randomUUID();
+        e.turnos.abrir(e.negocioA, otroTurno);
+        e.api.preparar(e.ctxA, new RegistrarVentaComando(otroTurno, Fixtures.dosBoletosYMedioKilo(),
                 List.of(Fixtures.efectivo("150.00", null)), null, null));
 
         assertThat(e.api.resumenTurno(e.ctxA, Fixtures.TURNO).preparacionesVigentes()).isEqualTo(2);

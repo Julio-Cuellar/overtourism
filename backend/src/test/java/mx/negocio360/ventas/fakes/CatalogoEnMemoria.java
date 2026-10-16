@@ -11,6 +11,7 @@ import mx.negocio360.ventas.aplicacion.puertos.ProductoParaVenta;
 public final class CatalogoEnMemoria implements CatalogoDeVentas {
 
     private final Map<UUID, Map<UUID, ProductoParaVenta>> porNegocio = new HashMap<>();
+    private int consultas;
 
     public CatalogoEnMemoria con(UUID negocioId, ProductoParaVenta producto) {
         porNegocio.computeIfAbsent(negocioId, n -> new HashMap<>()).put(producto.productoId(), producto);
@@ -19,6 +20,7 @@ public final class CatalogoEnMemoria implements CatalogoDeVentas {
 
     @Override
     public Map<UUID, ProductoParaVenta> preciosParaVenta(UUID negocioId, Set<UUID> productoIds) {
+        consultas++;
         var productos = porNegocio.getOrDefault(negocioId, Map.of());
         var encontrados = new HashMap<UUID, ProductoParaVenta>();
         for (var id : productoIds) {
@@ -28,5 +30,10 @@ public final class CatalogoEnMemoria implements CatalogoDeVentas {
             }
         }
         return Map.copyOf(encontrados);
+    }
+
+    /** Cuantas veces se consulto Catalogo. */
+    public int consultas() {
+        return consultas;
     }
 }

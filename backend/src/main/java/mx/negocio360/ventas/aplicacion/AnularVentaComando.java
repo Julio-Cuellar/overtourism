@@ -10,4 +10,10 @@ import mx.negocio360.compartido.comandos.Comando;
  * @param motivo  por que se anula, de 1 a 200 caracteres
  */
 public record AnularVentaComando(UUID ventaId, String motivo) implements Comando {
+
+    /** El motivo es texto libre y puede traer datos personales: no se imprime. */
+    @Override
+    public String toString() {
+        return "AnularVentaComando[ventaId=" + ventaId + "]";
+    }
 }

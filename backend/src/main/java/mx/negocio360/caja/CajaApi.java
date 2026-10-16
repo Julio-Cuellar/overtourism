@@ -37,11 +37,12 @@ public interface CajaApi {
     ResultadoComando confirmar(ContextoNegocio contexto, String token);
 
     /**
-     * CF-01: turno abierto o en corte de una caja; lo usa el canal antes de cada venta (VT-01).
+     * CF-01: turno abierto o en corte de una caja; lo usa el canal antes de cada venta (VT-01). Devuelve el estado
+     * efectivo: si el corte preparado vencio, el turno sale ABIERTO (D-81).
      *
      * @param contexto negocio
      * @param cajaId   caja
-     * @return el turno no cerrado, o vacio
+     * @return el turno no cerrado con su estado efectivo, o vacio
      */
     Optional<Turno> turnoActivo(ContextoNegocio contexto, UUID cajaId);
 

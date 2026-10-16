@@ -14,12 +14,14 @@ import mx.negocio360.ventas.dominio.VentasException;
 
 /**
  * Doble de Pasaporte. Cada codigo da un porcentaje de descuento o un monto fijo. Un cupon canjeado ya no sirve
- * (CUPON_YA_CANJEADO), como hara Pasaporte con {@code canjearCupon} (D-34).
+ * (CUPON_YA_CANJEADO), como hara Pasaporte con {@code canjearCupon} (D-34). Si al canjear el descuento no es el
+ * esperado, rechaza con COMANDO_CAMBIO sin canjear, como exige el puerto.
  */
 public final class CuponesEnMemoria implements CuponesDePasaporte {
 
     /** Un canje registrado, para que la prueba lo revise. */
-    public record Canje(UUID negocioId, String codigo, UUID ventaId, BigDecimal subtotal) {
+    public record Canje(UUID negocioId, String codigo, UUID ventaId, BigDecimal subtotal,
+                        BigDecimal descuentoEsperado) {
     }
 
     private record Regla(UUID cuponId, BigDecimal porcentaje, BigDecimal montoFijo) {
@@ -30,6 +32,9 @@ public final class CuponesEnMemoria implements CuponesDePasaporte {
 
     /** Cuando es verdadero, canjear falla como si Pasaporte estuviera caido. */
     public boolean fallarAlCanjear;
+    /** Si no es nulo, el descuento que Pasaporte calcula al canjear (simula que la regla cambio entre pasos). */
+    public BigDecimal descuentoAlCanjear;
+    private int cotizaciones;
 
     public CuponesEnMemoria porcentaje(String codigo, UUID cuponId, String porcentaje) {
         reglas.put(codigo, new Regla(cuponId, new BigDecimal(porcentaje), null));
@@ -43,6 +48,7 @@ public final class CuponesEnMemoria implements CuponesDePasaporte {
 
     @Override
     public CuponCotizado cotizar(UUID negocioId, String codigo, BigDecimal subtotal) {
+        cotizaciones++;
         var regla = reglas.get(codigo);
         if (regla == null) {
             throw new VentasException(CodigoError.CUPON_INVALIDO);
@@ -56,13 +62,23 @@ public final class CuponesEnMemoria implements CuponesDePasaporte {
     }
 
     @Override
-    public CuponCotizado canjear(UUID negocioId, String codigo, UUID ventaId, BigDecimal subtotal) {
+    public CuponCotizado canjear(UUID negocioId, String codigo, UUID ventaId, BigDecimal subtotal,
+                                 BigDecimal descuentoEsperado) {
         if (fallarAlCanjear) {
             throw new VentasException(CodigoError.ERROR_TEMPORAL);
         }
         var cotizado = cotizar(negocioId, codigo, subtotal);
-        canjes.add(new Canje(negocioId, codigo, ventaId, subtotal));
-        return cotizado;
+        var descuento = descuentoAlCanjear != null ? descuentoAlCanjear : cotizado.descuento();
+        if (descuento.compareTo(descuentoEsperado) != 0) {
+            throw new VentasException(CodigoError.COMANDO_CAMBIO);
+        }
+        canjes.add(new Canje(negocioId, codigo, ventaId, subtotal, descuentoEsperado));
+        return new CuponCotizado(cotizado.cuponId(), descuento);
+    }
+
+    /** Cuantas veces se pregunto a Pasaporte por un cupon. */
+    public int cotizaciones() {
+        return cotizaciones;
     }
 
     public List<Canje> canjes() {

@@ -74,15 +74,16 @@ public final class PlantillasCaja {
             case RETIRO_MAYOR_AL_EFECTIVO -> "No hay tanto efectivo en la caja para ese retiro.";
             case NOTA_REQUERIDA -> "Escribe una nota de hasta 200 caracteres.";
             case CORTE_VENTAS_PENDIENTES -> "Hay ventas por confirmar en este turno. Espera unos minutos.";
-            case CORTE_EVENTOS_PENDIENTES -> "Aún no llegan todas las ventas del turno. Inténtalo en un momento.";
+            case CORTE_EVENTOS_PENDIENTES ->
+                    "Aún no llegan todas las ventas del turno. Espera un momento y vuelve a preparar el corte.";
             case CORTE_REQUIERE_AUTORIZACION -> "La diferencia es grande: un encargado debe autorizar el corte.";
             case CONTEO_INVALIDO -> "Revisa el conteo: montos de cero o más, con hasta 2 decimales.";
             case TOKEN_INVALIDO -> "La confirmación no es válida. Vuelve a empezar.";
             case TOKEN_EXPIRADO -> "La confirmación venció. Vuelve a empezar.";
             case TOKEN_USADO -> "Esa confirmación ya se usó.";
             case COMANDO_CAMBIO -> "Lo que ibas a confirmar cambió. Vuelve a empezar.";
-            case CONCURRENCIA -> "Alguien más modificó este turno. Recarga e inténtalo de nuevo.";
-            case ERROR_TEMPORAL -> "Hubo un problema temporal. Inténtalo de nuevo en un momento.";
+            case CONCURRENCIA -> "Alguien más modificó este turno. Recarga y vuelve a empezar.";
+            case ERROR_TEMPORAL -> "Hubo un problema temporal. Espera un momento y vuelve a empezar.";
         };
     }
 

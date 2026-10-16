@@ -48,4 +48,13 @@ class RedondeoTest {
         assertThat(Redondeo.cantidadComoTexto(new BigDecimal("0.5000"))).isEqualTo("0.5");
         assertThat(Redondeo.cantidadComoTexto(new BigDecimal("100.0000"))).isEqualTo("100");
     }
+
+    @ParameterizedTest
+    @CsvSource({"150.00, true", "-150.00, true", "0, true", "999999999999.99, true", "1000000000000, false",
+            "1.001, false", "1E+999999999, false", "1E-999999999, false"})
+    @DisplayName("M1: dineroValido acepta hasta NUMERIC(14, 2) y 2 decimales, y rechaza exponentes enormes sin calcular")
+    void dineroValido_rangoYEscala(String valor, boolean valido) {
+        assertThat(Redondeo.dineroValido(new BigDecimal(valor))).isEqualTo(valido);
+        assertThat(Redondeo.dineroValido(null)).isFalse();
+    }
 }

@@ -65,9 +65,12 @@ class RegistrarVentaTest {
     }
 
     @Test
-    @DisplayName("VT-06: una preparacion que vence no consume folio")
+    @DisplayName("VT-06: una preparacion que vence sin confirmar no consume folio")
     void folios_preparacionVencida_noConsumeFolio() {
-        e.api.preparar(e.ctxA, Fixtures.ventaSinCupon());
+        var vencida = e.api.preparar(e.ctxA, Fixtures.ventaSinCupon()).token();
+        e.reloj.avanzar(java.time.Duration.ofMinutes(5));
+        fallaCon(() -> e.api.confirmar(e.ctxA, vencida), CodigoError.TOKEN_EXPIRADO);
+
         var vendida = e.vender(e.ctxA, Fixtures.ventaSinCupon());
 
         assertThat(e.api.venta(e.ctxA, vendida).orElseThrow().folio()).isEqualTo(1);

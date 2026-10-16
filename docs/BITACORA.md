@@ -182,6 +182,9 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-83 | Todo el código se documenta con **JavaDoc**: cada tipo y método público, con `@param`, `@return`, fallos (`@throws` o código de error), el ID de función y las reglas que aplica (`VT-04`, `CJ-07`), y escala y redondeo en todo monto. `mvn javadoc:javadoc` sin advertencias entra en la verificación | ACEPTADA | 2026-10-14 | Dicho por el usuario: «el codigo debe de ser documentado con JavaDoc para no batallar a la hora de encontrar errores». Falta reflejarlo en la skill `negocio360-reglas` (§7) si el equipo lo pide |
 | D-84 | El patrón preparar → confirmar genérico vive en `compartido.comandos` (`ServicioPreparacion`, `ManejadorComando`, `ResultadoComando` con `datos`); lo usan Ventas y Caja. Clientes conserva el suyo hasta que se migre | PROPUESTA | 2026-10-15 | Evita copiar 180 líneas por módulo. Agrega el ámbito de la preparación para contar ventas preparadas por turno (CJ-07) |
 | D-85 | Al confirmar, si el cálculo deja de cuadrar porque el mundo cambió entre los dos pasos (precio, cupón, ventas del turno), la respuesta es `COMANDO_CAMBIO` y no el error de validación | PROPUESTA | 2026-10-15 | Encontrado al programar: sin esto salían `PAGOS_NO_CUADRAN` o `CORTE_REQUIERE_AUTORIZACION`, que confunden a la persona |
+| D-86 | Ventas verifica que el turno siga abierto al preparar y al confirmar, preguntando por la interfaz `VerificadorDeTurno` de su propia API pública; Caja la implementa (`VerificadorDeTurnoDesdeCaja`, estado efectivo de D-81). Ventas sigue sin depender de Caja | PROPUESTA | 2026-10-15 | Revisión de seguridad A1: antes Ventas confiaba solo en el canal y una venta en un turno cerrado o en corte se registraba igual |
+| D-87 | `canjearCupon` recibe el descuento que vio el cajero; si Pasaporte calcula otro, rechaza con `COMANDO_CAMBIO` sin canjear | PROPUESTA | 2026-10-15 | Revisión de calidad (medio 2): evita que un cupón quede gastado en una venta que no se registra. Cambia el contrato J3 que hay que acordar con el dueño de Pasaporte |
+| D-88 | El consumidor de Caja marca un evento como procesado solo si lo aplicó. Si el turno no existe o cerró responde `SIN_TURNO_ABIERTO`, y si el evento no cumple el contrato o no viene de Ventas responde `DATOS_INVALIDOS`; en los dos casos el evento no se pierde. La anulación revierte lo que Caja registró, no los montos del evento | PROPUESTA | 2026-10-15 | Revisión de seguridad y calidad (A1, M3, M4): antes la venta se descartaba y quedaba marcada, y un método desconocido lanzaba excepción en cada reintento |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -986,3 +989,27 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 
 **Archivos creados:** `backend/src/main/java/mx/negocio360/compartido/comandos/*` (8), `compartido/dinero/Redondeo.java`, `ventas/**` (30), `caja/**` (48); pruebas en `backend/src/test/java/mx/negocio360/{compartido/comandos,compartido/dinero,compartido/pruebas,ventas,caja}/**`; `docs/pruebas/ventas-caja-f2-f3.tdd.md`.
 **Archivos modificados:** `backend/src/test/java/mx/negocio360/EstructuraModulosTest.java` (módulos `ventas` y `caja`), `docs/diseno/caja.md`, `docs/BITACORA.md`.
+
+### 2026-10-15 — Correcciones de la revisión de seguridad y calidad de Ventas y Caja
+**Pedido del usuario:** «realiza los 6 puntos como dices» (los seis puntos propuestos tras las revisiones de `ecc:security-reviewer` y `ecc:code-reviewer`). Dentro de la autorización del 2026-10-14; sin base de datos, GraphQL ni push.
+
+**Qué se hizo (con pruebas primero):**
+1. **Caja no pierde eventos** (D-88): un evento solo se marca como procesado si se aplicó. `SIN_TURNO_ABIERTO` y `DATOS_INVALIDOS` dejan el evento pendiente (`ResultadoAplicacion.completado()`). Exige origen `ventas`, método conocido y montos positivos, acotados y con 2 decimales. La anulación revierte los movimientos que Caja registró, no los montos del evento. Ya no lanza excepción en cada reintento.
+2. **Ventas verifica el turno** (D-86): interfaz `ventas.VerificadorDeTurno` que Caja implementa con `VerificadorDeTurnoDesdeCaja` (estado efectivo de D-81). Ventas sigue sin depender de Caja (`EstructuraModulosTest` en verde).
+3. **`turnoActivo` devuelve el estado efectivo** (`Turno.vigenteEn`): un corte vencido sale ABIERTO.
+4. **Límites con código propio:** `DEMASIADAS_LINEAS`, `DEMASIADOS_PAGOS`, `TEXTO_DEMASIADO_LARGO`; cupón de más de 40 caracteres es `CUPON_INVALIDO` sin llamar a Pasaporte; `Redondeo.dineroValido` (tope `NUMERIC(14, 2)`) rechaza `1E+999999999` sin calcular, en Ventas y en Caja. Los límites se revisan antes de consultar a Caja, Catálogo o Pasaporte.
+5. **El cupón no se gasta si la venta falla** (D-87): `canjear` recibe el descuento esperado y el puerto rechaza sin canjear.
+6. **Detalles:** el resumen de la venta lleva cada línea con su precio (detecta cambios que se compensan); copias defensivas en `RegistrarVentaComando` y `CerrarTurnoComando`; `toString` sin cupón, cliente, actores, motivo ni nota; los textos de `CONCURRENCIA`, `ERROR_TEMPORAL` y `CORTE_EVENTOS_PENDIENTES` piden volver a empezar porque el token ya se gastó; pruebas renombradas (`folios_preparacionVencida_noConsumeFolio` ahora sí deja vencer el token; `eventoMalFormado_falla` pasó a `metodoDesconocido_datosInvalidos`).
+
+**Verificación hecha:** RED en compilación (faltaban `VerificadorDeTurno` y su implementación) y luego RED en ejecución con firmas vacías: 37 fallas por la razón esperada. GREEN: `mvn -B verify` sin las 10 clases que necesitan Docker: **848/848, BUILD SUCCESS, cobertura cumplida** (Ventas 96.6 %, Caja 97.6 %, `compartido.comandos` 94.0 %, `compartido.dinero` 100 %). JavaDoc con `-Ddoclint=all`: 0 advertencias en los paquetes tocados.
+
+**No verificado:** `verify` completo con Docker (sigue apagado). No se repitió la revisión de agentes sobre estas correcciones.
+
+**Decisiones:** D-86, D-87 y D-88 (PROPUESTA). Siguen abiertas para el equipo: venta con total 0.00 (cupón del 100 %), quién puede retirar efectivo y preparar el corte, si quien autoriza una diferencia debe ser otra persona, y quitar el texto libre (`motivo`, `serie`) de los eventos (cambia D-77).
+
+**Pendiente para F5 (base de datos):** bloqueos del turno al cerrar y retirar, una sola transacción para marcar el evento y aplicarlo, limpieza de preparaciones viejas, firma del comando guardado y cola de revisión para `DATOS_INVALIDOS`.
+
+**Además:** documento para el equipo en lenguaje simple (qué se hizo, qué falta, dónde va el frontend y qué será funcional, demo o simulación en el concurso): https://claude.ai/code/artifact/b1efa956-2b71-48d5-b553-e81d2a9c6a67 (privado hasta que se comparta).
+
+**Archivos creados:** `ventas/VerificadorDeTurno.java`, `caja/aplicacion/VerificadorDeTurnoDesdeCaja.java`; pruebas `RevisionVentasTest`, `RevisionCajaTest` y `ventas/fakes/TurnosEnMemoria`.
+**Archivos modificados:** Ventas (manejador de venta, calculadora, plantillas, códigos, comandos, `Venta`, servicio, puerto de cupones), Caja (consumidor, resultado, servicio, API, `Turno`, validaciones, plantillas, códigos, comandos), `compartido/dinero/Redondeo`, dobles y pruebas existentes, `docs/diseno/ventas.md`, `docs/diseno/caja.md`, `docs/pruebas/ventas-caja-f2-f3.tdd.md` y esta Bitácora (D-86 a D-88).

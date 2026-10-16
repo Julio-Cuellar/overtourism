@@ -84,7 +84,8 @@ public final class CajaServicio implements CajaApi {
 
     @Override
     public Optional<Turno> turnoActivo(ContextoNegocio contexto, UUID cajaId) {
-        return cajas.turnoNoCerradoDeCaja(contexto.negocioId(), cajaId);
+        var ahora = reloj.instant();
+        return cajas.turnoNoCerradoDeCaja(contexto.negocioId(), cajaId).map(turno -> turno.vigenteEn(ahora));
     }
 
     @Override

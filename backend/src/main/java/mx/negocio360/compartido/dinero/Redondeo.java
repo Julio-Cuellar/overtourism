@@ -17,7 +17,23 @@ public final class Redondeo {
     /** Modo de redondeo de toda la plataforma. */
     public static final RoundingMode MODO = RoundingMode.HALF_UP;
 
+    /** Mayor monto que cabe en {@code NUMERIC(14, 2)}, la columna de dinero de la base. */
+    public static final BigDecimal MAXIMO_DINERO = new BigDecimal("999999999999.99");
+
     private Redondeo() {
+    }
+
+    /**
+     * Dice si un monto que llega de fuera es dinero valido: no nulo, con valor absoluto hasta {@link #MAXIMO_DINERO} y
+     * a lo mas 2 decimales. El signo lo revisa quien llama. Solo compara: no redondea, asi que un valor como
+     * {@code 1E+999999999} se rechaza al instante en lugar de expandirse en memoria (revision M1).
+     *
+     * @param valor monto recibido, puede ser nulo
+     * @return verdadero si se puede redondear y guardar sin riesgo
+     */
+    public static boolean dineroValido(BigDecimal valor) {
+        return valor != null && valor.abs().compareTo(MAXIMO_DINERO) <= 0
+                && valor.stripTrailingZeros().scale() <= ESCALA_DINERO;
     }
 
     /**

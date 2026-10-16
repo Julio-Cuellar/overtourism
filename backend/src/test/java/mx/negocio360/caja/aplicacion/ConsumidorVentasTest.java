@@ -1,7 +1,6 @@
 package mx.negocio360.caja.aplicacion;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -108,9 +107,22 @@ class ConsumidorVentasTest {
     }
 
     @Test
-    @DisplayName("un pago con dinero como numero o un metodo desconocido es un evento mal formado")
-    void eventoMalFormado_falla() {
-        assertThatThrownBy(() -> e.consumidor.procesar(e.ventaRegistrada(e.negocioA, turno, venta,
-                Map.of("CHEQUE", "10.00")))).isInstanceOf(IllegalArgumentException.class);
+    @DisplayName("M4: un metodo de pago desconocido es DATOS_INVALIDOS y no envenena la cola con excepciones")
+    void metodoDesconocido_datosInvalidos() {
+        var resultado = e.consumidor.procesar(e.ventaRegistrada(e.negocioA, turno, venta, Map.of("CHEQUE", "10.00")));
+
+        assertThat(resultado).isEqualTo(ResultadoAplicacion.DATOS_INVALIDOS);
+        assertThat(esperado(MetodoPago.EFECTIVO)).isEqualTo(new BigDecimal("500.00"));
+    }
+
+    @Test
+    @DisplayName("M4: datos que no cumplen el contrato (sin venta_id) son DATOS_INVALIDOS")
+    void sinVentaId_datosInvalidos() {
+        var ahora = e.reloj.instant();
+        var roto = new mx.negocio360.compartido.eventos.SobreEvento(
+                mx.negocio360.compartido.identidad.UuidV7.generar(ahora), "venta.registrada", 1, e.negocioA, "ventas",
+                ahora, venta, null, Map.of("turno_id", turno.toString()));
+
+        assertThat(e.consumidor.procesar(roto)).isEqualTo(ResultadoAplicacion.DATOS_INVALIDOS);
     }
 }

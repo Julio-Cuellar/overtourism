@@ -14,6 +14,7 @@ import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.compartido.dinero.DecimalPlano;
 import mx.negocio360.compartido.dinero.Redondeo;
 import mx.negocio360.compartido.identidad.UuidV7;
+import mx.negocio360.ventas.VerificadorDeTurno;
 import mx.negocio360.ventas.aplicacion.puertos.CatalogoDeVentas;
 import mx.negocio360.ventas.aplicacion.puertos.CuponesDePasaporte;
 import mx.negocio360.ventas.aplicacion.puertos.PublicadorEventos;
@@ -29,10 +30,12 @@ import mx.negocio360.ventas.eventos.VentaRegistrada;
 /**
  * VF-10 RegistrarVenta: VT-01 a VT-08, VT-12 y VT-13.
  *
- * <p>Preparar y confirmar calculan lo mismo con los precios y el cupon del momento. Confirmar compara su resumen con
- * el que se mostro (VT-05), canjea el cupon (VT-07), toma el folio (VT-06), guarda y publica {@code venta.registrada}
- * v1. El orden importa: el canje va antes del folio para que un canje fallido no gaste folio; en produccion todo es
- * una sola transaccion con el outbox, y un fallo despues del canje la revierte entera.
+ * <p>Preparar y confirmar calculan lo mismo con el turno, los precios y el cupon del momento: primero los limites de
+ * entrada (sin consultar a nadie), luego Caja confirma que el turno esta ABIERTO (VT-01) y despues Catalogo y
+ * Pasaporte. Confirmar compara su resumen, que lleva cada linea, con el que se mostro (VT-05), canjea el cupon pasando
+ * el descuento esperado para que Pasaporte rechace sin canjear si cambio (VT-07), toma el folio (VT-06), guarda y
+ * publica {@code venta.registrada} v1. El canje va antes del folio para que un canje fallido no gaste folio; en
+ * produccion todo es una sola transaccion con el outbox, y un fallo despues del canje la revierte entera.
  */
 public final class ManejadorRegistrarVenta implements ManejadorComando<RegistrarVentaComando> {
 
@@ -40,9 +43,12 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
     public static final String TIPO = "registrar_venta";
     /** Serie unica del MVP; series por caja estan por definir. */
     public static final String SERIE = "A";
+    /** Largo maximo del codigo de cupon; uno mas largo no se manda a Pasaporte. */
+    public static final int MAX_CARACTERES_CUPON = 40;
 
     private final CatalogoDeVentas catalogo;
     private final CuponesDePasaporte cupones;
+    private final VerificadorDeTurno turnos;
     private final RepositorioVentas ventas;
     private final PublicadorEventos eventos;
     private final Clock reloj;
@@ -57,14 +63,16 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
      *
      * @param catalogo precios de Catalogo (VT-02)
      * @param cupones  cupones de Pasaporte (VT-07)
+     * @param turnos   Caja dice si el turno esta abierto (VT-01)
      * @param ventas   repositorio de ventas y folios
      * @param eventos  outbox
      * @param reloj    reloj de la plataforma
      */
-    public ManejadorRegistrarVenta(CatalogoDeVentas catalogo, CuponesDePasaporte cupones, RepositorioVentas ventas,
-                                   PublicadorEventos eventos, Clock reloj) {
+    public ManejadorRegistrarVenta(CatalogoDeVentas catalogo, CuponesDePasaporte cupones, VerificadorDeTurno turnos,
+                                   RepositorioVentas ventas, PublicadorEventos eventos, Clock reloj) {
         this.catalogo = Objects.requireNonNull(catalogo, "catalogo");
         this.cupones = Objects.requireNonNull(cupones, "cupones");
+        this.turnos = Objects.requireNonNull(turnos, "turnos");
         this.ventas = Objects.requireNonNull(ventas, "ventas");
         this.eventos = Objects.requireNonNull(eventos, "eventos");
         this.reloj = Objects.requireNonNull(reloj, "reloj");
@@ -89,7 +97,7 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
     /**
      * Valida y calcula la venta sin escribir nada.
      *
-     * @throws VentasException TURNO_NO_ABIERTO, los de {@link CalculadoraVenta} o los del cupon
+     * @throws VentasException los de {@link CalculadoraVenta}, TURNO_NO_ABIERTO o los del cupon
      */
     @Override
     public String preparar(ContextoNegocio contexto, RegistrarVentaComando comando) {
@@ -99,7 +107,8 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
     /**
      * Registra la venta.
      *
-     * @throws VentasException COMANDO_CAMBIO si el precio o el cupon cambiaron (VT-05), o los de preparar y canje
+     * @throws VentasException COMANDO_CAMBIO si una linea, un precio o el cupon cambiaron (VT-05), TURNO_NO_ABIERTO si
+     *                         el turno entro en corte o cerro, o los de preparar y canje
      */
     @Override
     public ResultadoComando confirmar(ContextoNegocio contexto, RegistrarVentaComando comando,
@@ -112,7 +121,8 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
         var ventaId = UuidV7.generar(ahora);
         if (calculo.cuponId() != null) {
             var canje = cupones.canjear(contexto.negocioId(), comando.codigoCupon().strip(), ventaId,
-                    calculo.subtotal());
+                    calculo.subtotal(), calculo.descuento());
+            // El puerto ya rechaza sin canjear si el descuento cambio; esto cuida a un adaptador que no lo haga.
             if (canje.descuento().compareTo(calculo.descuento()) != 0) {
                 throw new VentasException(CodigoError.COMANDO_CAMBIO);
             }
@@ -132,13 +142,16 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
     }
 
     /**
-     * Calcula la venta con los precios y el cupon de ahora.
+     * Calcula la venta con el turno, los precios y el cupon de ahora. Los limites de entrada van primero para no
+     * consultar a Caja, Catalogo ni Pasaporte con una peticion desmedida (revision M2).
      *
      * @param alConfirmar verdadero al confirmar: el comando es el mismo que ya paso la validacion al preparar, asi
      *                    que si los pagos dejan de cuadrar es porque el total cambio, y eso es COMANDO_CAMBIO (VT-05)
      */
     private Calculo calcular(ContextoNegocio contexto, RegistrarVentaComando comando, boolean alConfirmar) {
-        if (comando.turnoId() == null) {
+        CalculadoraVenta.validarTamano(comando.lineas(), comando.pagos());
+        var codigoCupon = codigoCupon(comando);
+        if (comando.turnoId() == null || !turnos.abierto(contexto, comando.turnoId())) {
             throw new VentasException(CodigoError.TURNO_NO_ABIERTO);
         }
         var productos = catalogo.preciosParaVenta(contexto.negocioId(), productosDe(comando));
@@ -146,8 +159,8 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
         var subtotal = CalculadoraVenta.subtotal(lineas);
         UUID cuponId = null;
         var descuento = Redondeo.dinero(BigDecimal.ZERO);
-        if (comando.codigoCupon() != null && !comando.codigoCupon().isBlank()) {
-            var cotizado = cupones.cotizar(contexto.negocioId(), comando.codigoCupon().strip(), subtotal);
+        if (codigoCupon != null) {
+            var cotizado = cupones.cotizar(contexto.negocioId(), codigoCupon, subtotal);
             if (cotizado.descuento().signum() < 0) {
                 throw new VentasException(CodigoError.CUPON_NO_APLICA, cotizado.cuponId());
             }
@@ -160,8 +173,20 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
         var total = Redondeo.dinero(subtotal.subtract(descuento));
         var pagos = pagosDe(total, comando, alConfirmar);
         var cambio = CalculadoraVenta.cambio(pagos);
-        var resumen = PlantillasVentas.resumenVenta(lineas.size(), subtotal, descuento, total, cambio);
+        var resumen = PlantillasVentas.resumenVenta(lineas, subtotal, descuento, total, cambio);
         return new Calculo(lineas, subtotal, cuponId, descuento, total, pagos, cambio, resumen);
+    }
+
+    /** Codigo de cupon recortado, o nulo si no hay; uno desmedido es CUPON_INVALIDO sin preguntar a Pasaporte. */
+    private static String codigoCupon(RegistrarVentaComando comando) {
+        if (comando.codigoCupon() == null || comando.codigoCupon().isBlank()) {
+            return null;
+        }
+        var codigo = comando.codigoCupon().strip();
+        if (codigo.length() > MAX_CARACTERES_CUPON) {
+            throw new VentasException(CodigoError.CUPON_INVALIDO);
+        }
+        return codigo;
     }
 
     private static List<PagoVenta> pagosDe(BigDecimal total, RegistrarVentaComando comando, boolean alConfirmar) {
@@ -176,9 +201,6 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
     }
 
     private static Set<UUID> productosDe(RegistrarVentaComando comando) {
-        if (comando.lineas() == null) {
-            return Set.of();
-        }
         return comando.lineas().stream().filter(Objects::nonNull).map(LineaSolicitada::productoId)
                 .filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
     }

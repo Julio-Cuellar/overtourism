@@ -23,10 +23,10 @@ public enum CodigoError {
     TURNO_NO_ABIERTO("CJ-09"),
     /** El turno esta en corte y no acepta movimientos. */
     TURNO_EN_CORTE("CJ-10"),
-    /** Fondo negativo o con mas de 2 decimales. */
+    /** Fondo negativo, desmedido o con mas de 2 decimales. */
     FONDO_INVALIDO("CJ-02"),
     // Movimientos
-    /** Monto nulo, cero, negativo o con mas de 2 decimales. */
+    /** Monto nulo, cero, negativo, desmedido o con mas de 2 decimales. */
     MONTO_INVALIDO("CF-11"),
     /** El retiro dejaria el efectivo esperado bajo cero. */
     RETIRO_MAYOR_AL_EFECTIVO("CJ-05"),
@@ -39,7 +39,7 @@ public enum CodigoError {
     CORTE_EVENTOS_PENDIENTES("CJ-07"),
     /** La diferencia supera el umbral y falta la autorizacion de un encargado. */
     CORTE_REQUIERE_AUTORIZACION("CJ-08"),
-    /** Conteo ausente, negativo o con mas de 2 decimales. */
+    /** Conteo ausente, negativo, desmedido o con mas de 2 decimales. */
     CONTEO_INVALIDO("CJ-12"),
     // Preparar y confirmar
     /** Token vacio, desconocido o ajeno. */

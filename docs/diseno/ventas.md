@@ -142,13 +142,13 @@ No hay estado «preparada» en `venta`: `preparar` no escribe en tablas de negoc
 
 | ID | Regla | Prioridad |
 |---|---|---|
-| VT-01 | Toda venta lleva `turno_id`. El canal lo obtiene de `CajaApi.turnoActivo` y verifica que el turno esté `ABIERTO` antes de preparar y antes de confirmar. Ventas lo guarda como referencia opaca y no lo valida (D-76). | P1 |
+| VT-01 | Toda venta lleva `turno_id`. El canal lo obtiene de `CajaApi.turnoActivo` y verifica que el turno esté `ABIERTO` antes de preparar y antes de confirmar. Ventas lo guarda como referencia opaca. Además, Ventas pregunta por la interfaz `VerificadorDeTurno` (en su API pública) si el turno sigue abierto, al preparar y al confirmar; Caja la implementa, así Ventas no depende de Caja (D-76). [P] D-86 | P1 |
 | VT-02 | El precio, la descripción y la unidad de cada línea se toman de Catálogo al preparar y se copian a la línea. Un cambio de precio posterior no afecta la venta. | P1 |
 | VT-03 | La cantidad es mayor que 0. Solo admite decimales si Catálogo dice que el producto admite fracción (venta a granel del misceláneo, D-80); si no, es entera. | P1 |
 | VT-04 | Al confirmar, la suma de pagos es igual al total. En efectivo, `recibido ≥ monto` y `cambio = recibido − monto`. Se permiten varios pagos (mixto). | P1 |
-| VT-05 | `confirmar` vuelve a validar todo; si el precio o el cupón cambiaron desde `preparar`, responde `COMANDO_CAMBIO` y no escribe. | P1 |
+| VT-05 | `confirmar` vuelve a validar todo; si una línea, un precio o el cupón cambiaron desde `preparar`, responde `COMANDO_CAMBIO` y no escribe. El resumen lleva cada línea con su precio, para que dos cambios que se compensan en el subtotal también se detecten. | P1 |
 | VT-06 | El folio es consecutivo y sin huecos por negocio y serie, y se asigna en la transacción de confirmar (D-79). | P1 |
-| VT-07 | Máximo un cupón por venta [?]. Al preparar se cotiza con `PasaporteApi` (solo lectura). Al confirmar se canjea con `PasaporteApi.canjearCupon` dentro de la misma transacción (D-34, D-78). Si el canje falla, la venta no se registra. | P1 |
+| VT-07 | Máximo un cupón por venta [?]. Al preparar se cotiza con `PasaporteApi` (solo lectura). Al confirmar se canjea con `PasaporteApi.canjearCupon` dentro de la misma transacción (D-34, D-78). Si el canje falla, la venta no se registra. El canje recibe el descuento que vio el cajero; si Pasaporte calcula otro, rechaza con `COMANDO_CAMBIO` sin canjear ([P] D-87). | P1 |
 | VT-08 | `descuento ≤ subtotal` y `total = subtotal − descuento`. El `total` de `venta.registrada` es neto del cupón (D-65). | P1 |
 | VT-09 | Solo se anula una venta `REGISTRADA`, con motivo y con el permiso de anular de Identidad [?]. La anulación usa preparar → confirmar. El límite de tiempo para anular está abierto [?]. | P1 |
 | VT-10 | Anular una venta con cupón llama a `PasaporteApi` para revertir el canje [?] (operación por acordar con Pasaporte, D-78). | P2 |
@@ -192,9 +192,10 @@ Viajan por el par de plataforma `prepararComando` / `confirmarComando` (D-55) co
 | Grupo | Códigos |
 |---|---|
 | Datos de la venta | `VENTA_SIN_LINEAS`, `CANTIDAD_INVALIDA`, `CANTIDAD_NO_FRACCIONABLE`, `PRODUCTO_NO_ENCONTRADO`, `PRODUCTO_INACTIVO` |
+| Límites de entrada (agregados el 2026-10-15 tras la revisión) | `DEMASIADAS_LINEAS` (más de 100), `DEMASIADOS_PAGOS` (más de 10), `TEXTO_DEMASIADO_LARGO` (serie o referencia de más de 60 caracteres). Un código de cupón de más de 40 caracteres es `CUPON_INVALIDO` sin consultar a Pasaporte; un monto de más de 999,999,999,999.99 es `METODO_PAGO_INVALIDO` |
 | Pagos | `PAGOS_NO_CUADRAN`, `EFECTIVO_INSUFICIENTE`, `METODO_PAGO_INVALIDO` |
 | Cupón | `CUPON_INVALIDO`, `CUPON_YA_CANJEADO`, `CUPON_NO_APLICA`, `DESCUENTO_MAYOR_AL_SUBTOTAL` |
-| Turno (los devuelve el canal) | `TURNO_NO_ABIERTO` |
+| Turno (los devuelve el canal y Ventas, D-86) | `TURNO_NO_ABIERTO` |
 | Anulación | `VENTA_NO_ENCONTRADA`, `VENTA_YA_ANULADA`, `MOTIVO_REQUERIDO`, `SIN_PERMISO_ANULAR` |
 | Preparar y confirmar | `TOKEN_INVALIDO`, `TOKEN_EXPIRADO`, `TOKEN_USADO`, `COMANDO_CAMBIO` |
 | Reintentables | `CONCURRENCIA`, `ERROR_TEMPORAL` |
@@ -298,7 +299,7 @@ Tienda de un museo ficticio («Museo Talavera Viva»): 2 boletos generales y med
 | G7 | GraphQL (suscripción, WebSocket) | `ventaRegistrada` | Panel (dueño) | — → resumen de cada venta del negocio | Tablero en vivo | P2 |
 | J1 | Java | `CatalogoApi.preciosParaVenta(ids)` | Ventas | ids → precio, unidad, fracción, activo | VT-02, VT-03 | P1 |
 | J2 | Java | `PasaporteApi.cotizarCupon(codigo, subtotal)` [?] | Ventas | código → cupón y descuento, sin canjear | VT-07 al preparar | P1 |
-| J3 | Java | `PasaporteApi.canjearCupon(codigo, ventaId, subtotal)` | Ventas | → canje o error | VT-07 al confirmar (D-34) | P1 |
+| J3 | Java | `PasaporteApi.canjearCupon(codigo, ventaId, subtotal, descuentoEsperado)` | Ventas | → canje, o `COMANDO_CAMBIO` sin canjear si el descuento ya no es el esperado | VT-07 al confirmar (D-34, [P] D-87) | P1 |
 | J4 | Java | `VentasApi.resumenTurno(turnoId)` | Caja | → `ResumenTurnoVista` | Corte (CJ-06) | P1 |
 | B1 | Bus | `venta.registrada` | Ventas → Caja, Inventario, Restaurantes, Clientes, Contabilidad | | | P1 |
 | B2 | Bus | `venta.anulada` | Ventas → los mismos | | | P1 |

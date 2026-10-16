@@ -86,7 +86,7 @@ public final class ManejadorMovimientoCaja implements ManejadorComando<Registrar
     private Valido validar(ContextoNegocio contexto, RegistrarMovimientoCajaComando comando) {
         Validaciones.turnoAbierto(cajas, contexto.negocioId(), comando.turnoId(), reloj.instant());
         var monto = comando.monto();
-        if (comando.tipo() == null || monto == null || monto.signum() <= 0 || !Validaciones.escalaDeDinero(monto)) {
+        if (comando.tipo() == null || monto == null || monto.signum() <= 0 || !Validaciones.dineroValido(monto)) {
             throw new CajaException(CodigoError.MONTO_INVALIDO);
         }
         var nota = Validaciones.textoObligatorio(comando.nota(), MAX_CARACTERES_NOTA);

@@ -147,10 +147,11 @@ Reglas generales iguales a Ventas: `negocio_id` del contexto, respuesta `{ ok, c
 
 | ID | Operación | Entrada | Salida | La usa | Prioridad |
 |---|---|---|---|---|---|
-| CF-01 | `turnoActivo` | `cajaId?` (si falta, el del actor) | `TurnoVista` o vacío | Canal (VT-01), panel | P1 |
+| CF-01 | `turnoActivo` | `cajaId?` (si falta, el del actor) | `TurnoVista` o vacío, con el estado efectivo: un corte vencido sale `ABIERTO` (D-81) | Canal (VT-01), panel | P1 |
 | CF-02 | `estadoTurno` | `turnoId` | esperado por método, movimientos, número de ventas aplicadas | Panel | P1 |
 | CF-03 | `cortes` | rango de fechas, `cajaId?`, cursor | página de `CorteVista` con diferencias | Panel (dueño) | P1 |
 | CF-04 | `cajas` | — | cajas del negocio | Panel | P1 |
+| CF-05 | `VerificadorDeTurno.abierto` (implementa la interfaz de Ventas) | `turnoId` | verdadero solo si el turno es del negocio y su estado efectivo es `ABIERTO` | Ventas al preparar y al confirmar ([P] D-86) | P1 |
 
 ### 5.2 Comandos (preparar → confirmar, por `prepararComando` / `confirmarComando`, D-55)
 
@@ -170,6 +171,8 @@ Para el corte, `preparar` es lo que pone el turno `EN_CORTE` y devuelve lo esper
 |---|---|---|---|
 | CF-20 | `aplicarVenta` | Listener de `venta.registrada` | `APLICADA`, `YA_APLICADA`, `OMITIDA_ANULADO_PREVIO` |
 | CF-21 | `revertirVenta` | Listener de `venta.anulada` | `REVERTIDA`, `YA_REVERTIDA`, `MARCADA_ANULADO_PREVIO` |
+
+Desde la revisión del 2026-10-15 ([P] D-88), las dos funciones también pueden responder `SIN_TURNO_ABIERTO` (el turno no existe en el negocio o ya cerró; CJ-11 sigue pendiente) o `DATOS_INVALIDOS` (el evento no lo publicó Ventas, le faltan datos, trae un método desconocido o montos no positivos, desmedidos o con más de 2 decimales). En esos dos casos el evento **no se marca como procesado**: no se pierde y el adaptador del bus no lo da por entregado (`ResultadoAplicacion.completado()` es falso). La anulación revierte los movimientos que Caja registró para la venta, no los montos que diga el evento.
 
 ### 5.4 Códigos de error
 

@@ -102,7 +102,7 @@ public final class ManejadorAbrirTurno implements ManejadorComando<AbrirTurnoCom
 
     private static java.math.BigDecimal fondoValido(AbrirTurnoComando comando) {
         var fondo = comando.fondoInicial();
-        if (fondo == null || fondo.signum() < 0 || !Validaciones.escalaDeDinero(fondo)) {
+        if (fondo == null || fondo.signum() < 0 || !Validaciones.dineroValido(fondo)) {
             throw new CajaException(CodigoError.FONDO_INVALIDO);
         }
         return fondo;

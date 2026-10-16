@@ -21,6 +21,8 @@ public final class CalculadoraVenta {
 
     /** Maximo de renglones por venta (limite de entrada). */
     public static final int MAX_LINEAS = 100;
+    /** Maximo de formas de pago por venta (limite de entrada). */
+    public static final int MAX_PAGOS = 10;
     /** Cota superior exclusiva de una cantidad. */
     static final BigDecimal MAX_CANTIDAD = new BigDecimal("1000000");
     private static final int MAX_CARACTERES_SERIE = 60;
@@ -35,21 +37,35 @@ public final class CalculadoraVenta {
      * @param solicitadas renglones que pide el panel
      * @param productos   productos de Catalogo del negocio, por id
      * @return renglones numerados desde 1, con importe en escala 2
-     * @throws VentasException VENTA_SIN_LINEAS, CANTIDAD_INVALIDA, CANTIDAD_NO_FRACCIONABLE,
-     *                         PRODUCTO_NO_ENCONTRADO o PRODUCTO_INACTIVO
+     * @throws VentasException VENTA_SIN_LINEAS, DEMASIADAS_LINEAS, CANTIDAD_INVALIDA, CANTIDAD_NO_FRACCIONABLE,
+     *                         PRODUCTO_NO_ENCONTRADO, PRODUCTO_INACTIVO o TEXTO_DEMASIADO_LARGO
      */
     public static List<LineaVenta> lineas(List<LineaSolicitada> solicitadas, Map<UUID, ProductoParaVenta> productos) {
-        if (solicitadas == null || solicitadas.isEmpty()) {
-            throw new VentasException(CodigoError.VENTA_SIN_LINEAS);
-        }
-        if (solicitadas.size() > MAX_LINEAS) {
-            throw new IllegalArgumentException("Una venta admite hasta " + MAX_LINEAS + " lineas");
-        }
+        validarTamano(solicitadas, null);
         var lineas = new ArrayList<LineaVenta>(solicitadas.size());
         for (var i = 0; i < solicitadas.size(); i++) {
             lineas.add(linea(i + 1, solicitadas.get(i), productos));
         }
         return List.copyOf(lineas);
+    }
+
+    /**
+     * Revisa cuantas lineas y pagos trae la venta antes de consultar a nadie (limites de entrada de la revision M2).
+     *
+     * @param lineas renglones solicitados
+     * @param pagos  pagos solicitados; si son nulos o faltan, {@link #pagos} lo reporta despues
+     * @throws VentasException VENTA_SIN_LINEAS, DEMASIADAS_LINEAS o DEMASIADOS_PAGOS
+     */
+    public static void validarTamano(List<LineaSolicitada> lineas, List<PagoSolicitado> pagos) {
+        if (lineas == null || lineas.isEmpty()) {
+            throw new VentasException(CodigoError.VENTA_SIN_LINEAS);
+        }
+        if (lineas.size() > MAX_LINEAS) {
+            throw new VentasException(CodigoError.DEMASIADAS_LINEAS);
+        }
+        if (pagos != null && pagos.size() > MAX_PAGOS) {
+            throw new VentasException(CodigoError.DEMASIADOS_PAGOS);
+        }
     }
 
     private static LineaVenta linea(int numero, LineaSolicitada solicitada, Map<UUID, ProductoParaVenta> productos) {
@@ -102,11 +118,15 @@ public final class CalculadoraVenta {
      * @param total       total de la venta, escala 2
      * @param solicitados pagos que captura el cajero
      * @return pagos en escala 2; solo el efectivo lleva recibido y cambio
-     * @throws VentasException PAGOS_NO_CUADRAN, EFECTIVO_INSUFICIENTE o METODO_PAGO_INVALIDO
+     * @throws VentasException PAGOS_NO_CUADRAN, DEMASIADOS_PAGOS, EFECTIVO_INSUFICIENTE, METODO_PAGO_INVALIDO o
+     *                         TEXTO_DEMASIADO_LARGO
      */
     public static List<PagoVenta> pagos(BigDecimal total, List<PagoSolicitado> solicitados) {
         if (solicitados == null || solicitados.isEmpty()) {
             throw new VentasException(CodigoError.PAGOS_NO_CUADRAN);
+        }
+        if (solicitados.size() > MAX_PAGOS) {
+            throw new VentasException(CodigoError.DEMASIADOS_PAGOS);
         }
         var pagos = solicitados.stream().map(CalculadoraVenta::pago).toList();
         var suma = pagos.stream().map(PagoVenta::monto).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -140,8 +160,9 @@ public final class CalculadoraVenta {
                 referencia);
     }
 
+    /** Positivo, acotado y con 2 decimales; se revisa antes de redondear (revision M1). */
     private static boolean montoValido(BigDecimal monto) {
-        return monto != null && monto.signum() > 0 && monto.stripTrailingZeros().scale() <= Redondeo.ESCALA_DINERO;
+        return Redondeo.dineroValido(monto) && monto.signum() > 0;
     }
 
     /**
@@ -161,7 +182,7 @@ public final class CalculadoraVenta {
         }
         var limpio = texto.strip();
         if (limpio.length() > maximo) {
-            throw new IllegalArgumentException("Texto de mas de " + maximo + " caracteres");
+            throw new VentasException(CodigoError.TEXTO_DEMASIADO_LARGO);
         }
         return limpio;
     }

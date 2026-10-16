@@ -75,4 +75,11 @@ public record Venta(UUID id, UUID negocioId, String serie, long folio, EstadoVen
         return new Venta(id, negocioId, serie, folio, EstadoVenta.ANULADA, turnoId, clienteId, cuponId, subtotal,
                 descuento, total, lineas, pagos, ocurridoEn, registradaPor, cuando, actor, motivo, version + 1);
     }
+
+    /** Sin cliente, actores ni motivo: son datos personales o texto libre y no deben llegar a los registros. */
+    @Override
+    public String toString() {
+        return "Venta[id=" + id + ", negocioId=" + negocioId + ", folio=" + serie + "-" + folio + ", estado=" + estado
+                + ", turnoId=" + turnoId + ", total=" + total + ", version=" + version + "]";
+    }
 }

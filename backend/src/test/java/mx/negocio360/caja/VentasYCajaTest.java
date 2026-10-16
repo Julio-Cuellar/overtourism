@@ -12,6 +12,7 @@ import mx.negocio360.caja.aplicacion.CerrarTurnoComando;
 import mx.negocio360.caja.aplicacion.ConsumidorVentas;
 import mx.negocio360.caja.aplicacion.CrearCajaComando;
 import mx.negocio360.caja.aplicacion.ResumenVentasDesdeVentasApi;
+import mx.negocio360.caja.aplicacion.VerificadorDeTurnoDesdeCaja;
 import mx.negocio360.caja.dominio.CodigoError;
 import mx.negocio360.caja.dominio.EstadoTurno;
 import mx.negocio360.caja.dominio.MetodoPago;
@@ -43,6 +44,10 @@ class VentasYCajaTest {
     private final ConsumidorVentas consumidor = new ConsumidorVentas(cajas, libro);
     private final ContextoNegocio cajero = ventas.ctxA;
     private final ContextoNegocio encargado = new ContextoNegocio(ventas.negocioA, "encargado-a");
+
+    {
+        ventas.turnos.delegarEn(new VerificadorDeTurnoDesdeCaja(cajas, ventas.reloj));
+    }
 
     @Test
     @DisplayName("abrir turno, cobrar 135.00 con cupon, anular otra venta y cerrar el corte sin diferencia")
@@ -82,6 +87,20 @@ class VentasYCajaTest {
 
         mx.negocio360.caja.fakes.Escenario.fallaCon(() -> caja.confirmar(cajero, token),
                 CodigoError.CORTE_EVENTOS_PENDIENTES);
+    }
+
+    @Test
+    @DisplayName("VT-01 y D-81: con el corte preparado, Ventas consulta a Caja y no deja vender en ese turno")
+    void turnoEnCorte_ventasNoVende() {
+        var cajaId = confirmarCaja(cajero, new CrearCajaComando("Taquilla"));
+        var turno = confirmarCaja(cajero, new AbrirTurnoComando(cajaId, new BigDecimal("500.00")));
+        caja.preparar(cajero, new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, new BigDecimal("500.00")),
+                false));
+        var venta = new RegistrarVentaComando(turno, Fixtures.dosBoletosYMedioKilo(),
+                List.of(Fixtures.efectivo("150.00", null)), null, null);
+
+        Escenario.fallaCon(() -> ventas.api.preparar(cajero, venta),
+                mx.negocio360.ventas.dominio.CodigoError.TURNO_NO_ABIERTO);
     }
 
     private UUID confirmarCaja(ContextoNegocio contexto, Comando comando) {

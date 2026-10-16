@@ -75,3 +75,22 @@
 - Adaptadores reales: Catálogo, Pasaporte, permisos de Identidad, reglas versionadas y repositorios JDBC (F5, sin autorización).
 - GraphQL del panel (F4, sin autorización) y el canal que llama a `turnoActivo` antes de cada venta (VT-01).
 - VT-10 (revertir el canje del cupón al anular) y CJ-11 (venta tardía como ajuste), ambas P2.
+
+## Ronda 2: correcciones de la revisión (2026-10-15)
+
+| Paso | Qué se hizo | Resultado |
+|---|---|---|
+| RED (compilación) | `RevisionVentasTest`, `RevisionCajaTest`, casos nuevos en `RedondeoTest`, `ConsumidorVentasTest` y `VentasYCajaTest` | `mvn test-compile` falla solo por `VerificadorDeTurno` y `VerificadorDeTurnoDesdeCaja` |
+| RED (ejecución) | Firmas nuevas sin comportamiento | 37 fallas y errores por la razón esperada; uno era de armado de la prueba (actor sin permiso de anular) y se corrigió la prueba |
+| GREEN | Implementación de los seis puntos (ver Bitácora) | 151/151 en las clases afectadas; `ResumenTurnoTest` necesitó abrir el turno extra en el doble |
+| Verificación sin Docker | `mvn -B verify` sin las 10 clases de Docker | **848/848**, BUILD SUCCESS, cobertura: Ventas 96.6 %, Caja 97.6 % |
+
+| # | Garantía nueva | Prueba |
+|---|---|---|
+| 18 | Ventas no prepara ni confirma en un turno que Caja no da por ABIERTO | `RevisionVentasTest`, `VentasYCajaTest.turnoEnCorte_ventasNoVende` |
+| 19 | Límites de líneas, pagos, cupón, textos y montos con código propio, sin consultar vecinos | `RevisionVentasTest`, `RedondeoTest` |
+| 20 | El cupón no se gasta si el descuento cambió al canjear | `RevisionVentasTest` |
+| 21 | Dos precios que se compensan dan `COMANDO_CAMBIO` | `RevisionVentasTest` |
+| 22 | Un evento no aplicado no se marca; datos inválidos u origen ajeno no tienen efecto; la anulación revierte lo registrado | `RevisionCajaTest`, `ConsumidorVentasTest` |
+| 23 | `turnoActivo` y el verificador usan el estado efectivo | `RevisionCajaTest` |
+| 24 | Copias defensivas, `toString` sin datos personales, textos que no invitan a reusar el token | `RevisionVentasTest`, `RevisionCajaTest` |

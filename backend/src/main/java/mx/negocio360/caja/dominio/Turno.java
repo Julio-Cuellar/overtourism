@@ -53,6 +53,21 @@ public record Turno(UUID id, UUID negocioId, UUID cajaId, String cajero, EstadoT
     }
 
     /**
+     * El turno como se ve en un instante: si el corte preparado ya vencio, una copia ABIERTA y sin vencimiento, con la
+     * misma version (no es un cambio guardado). Asi quien consulta no ve EN_CORTE en un turno que ya puede vender.
+     *
+     * @param ahora instante de referencia
+     * @return este mismo turno, o la copia con su estado efectivo
+     */
+    public Turno vigenteEn(Instant ahora) {
+        if (estadoEn(ahora) == estado) {
+            return this;
+        }
+        return new Turno(id, negocioId, cajaId, cajero, EstadoTurno.ABIERTO, fondoInicial, abiertoEn, cerradoEn, null,
+                version);
+    }
+
+    /**
      * Copia en corte hasta un vencimiento (D-81).
      *
      * @param vence fin del corte preparado

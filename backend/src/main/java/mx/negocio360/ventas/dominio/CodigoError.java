@@ -16,15 +16,21 @@ public enum CodigoError {
     PRODUCTO_NO_ENCONTRADO("VT-02"),
     /** El producto existe pero no se vende. */
     PRODUCTO_INACTIVO("VT-02"),
+    /** Mas renglones de los que admite una venta (limite de entrada). */
+    DEMASIADAS_LINEAS("VF-10"),
+    /** Una serie o una referencia de pago pasa de su largo maximo. */
+    TEXTO_DEMASIADO_LARGO("VF-10"),
     // Pagos
+    /** Mas formas de pago de las que admite una venta (limite de entrada). */
+    DEMASIADOS_PAGOS("VF-10"),
     /** La suma de pagos no es el total, o no hay pagos. */
     PAGOS_NO_CUADRAN("VT-04"),
     /** El efectivo recibido es menor que el monto de ese pago. */
     EFECTIVO_INSUFICIENTE("VT-04"),
-    /** Pago sin metodo, con monto no positivo o con mas de 2 decimales, o con recibido fuera del efectivo. */
+    /** Pago sin metodo, con monto no positivo, desmedido o con mas de 2 decimales, o con recibido fuera del efectivo. */
     METODO_PAGO_INVALIDO("VT-04"),
     // Cupon
-    /** Pasaporte no reconoce el codigo. */
+    /** Pasaporte no reconoce el codigo, o el codigo pasa de su largo maximo. */
     CUPON_INVALIDO("VT-07"),
     /** El cupon ya se canjeo. */
     CUPON_YA_CANJEADO("VT-07"),
@@ -33,7 +39,7 @@ public enum CodigoError {
     /** El descuento supera el subtotal. */
     DESCUENTO_MAYOR_AL_SUBTOTAL("VT-08"),
     // Turno
-    /** La venta no trae turno (el canal valida que este ABIERTO). */
+    /** La venta no trae turno o Caja dice que no esta ABIERTO en este negocio. */
     TURNO_NO_ABIERTO("VT-01"),
     // Anulacion
     /** La venta no existe en este negocio. */

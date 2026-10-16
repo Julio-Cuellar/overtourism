@@ -1,8 +1,12 @@
 package mx.negocio360.ventas.aplicacion;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 import mx.negocio360.compartido.dinero.DecimalPlano;
+import mx.negocio360.compartido.dinero.Redondeo;
 import mx.negocio360.ventas.dominio.CodigoError;
+import mx.negocio360.ventas.dominio.LineaVenta;
 import mx.negocio360.ventas.dominio.Venta;
 
 /**
@@ -21,18 +25,33 @@ public final class PlantillasVentas {
 
     /**
      * Resumen que el cajero revisa antes de cobrar. Es determinista: confirmar lo recalcula y lo compara (VT-05).
+     * Lleva cada renglon con su precio, para que dos cambios de precio que se compensan en el subtotal tambien se
+     * noten.
      *
-     * @param lineas    numero de renglones
+     * @param lineas    renglones con precio de Catalogo
      * @param subtotal  escala 2
      * @param descuento escala 2
      * @param total     escala 2
      * @param cambio    escala 2
      * @return texto del resumen
      */
-    public static String resumenVenta(int lineas, BigDecimal subtotal, BigDecimal descuento, BigDecimal total,
-                                      BigDecimal cambio) {
-        return "Venta de %d %s. Subtotal %s, descuento %s, total %s. Cambio %s.".formatted(lineas,
-                lineas == 1 ? "línea" : "líneas", texto(subtotal), texto(descuento), texto(total), texto(cambio));
+    public static String resumenVenta(List<LineaVenta> lineas, BigDecimal subtotal, BigDecimal descuento,
+                                      BigDecimal total, BigDecimal cambio) {
+        var renglones = lineas.stream().map(PlantillasVentas::renglon).collect(Collectors.joining("; "));
+        return "Venta de %d %s: %s. Subtotal %s, descuento %s, total %s. Cambio %s.".formatted(lineas.size(),
+                lineas.size() == 1 ? "línea" : "líneas", renglones, texto(subtotal), texto(descuento), texto(total),
+                texto(cambio));
+    }
+
+    private static String renglon(LineaVenta linea) {
+        return "%s %s %s a %s = %s".formatted(Redondeo.cantidadComoTexto(linea.cantidad()), linea.unidad(),
+                linea.descripcion(), precio(linea.precioUnitario()), texto(linea.importe()));
+    }
+
+    /** Precio con al menos 2 decimales y sin ceros de mas: 45.0000 se lee 45.00 y 12.3450 se lee 12.345. */
+    private static String precio(BigDecimal precio) {
+        var limpio = precio.stripTrailingZeros();
+        return texto(limpio.scale() < Redondeo.ESCALA_DINERO ? limpio.setScale(Redondeo.ESCALA_DINERO) : limpio);
     }
 
     /**
@@ -61,6 +80,9 @@ public final class PlantillasVentas {
             case CANTIDAD_NO_FRACCIONABLE -> "Ese producto se vende por pieza: usa una cantidad entera.";
             case PRODUCTO_NO_ENCONTRADO -> "No encontramos ese producto en tu catálogo.";
             case PRODUCTO_INACTIVO -> "Ese producto ya no está a la venta.";
+            case DEMASIADAS_LINEAS -> "Una venta admite hasta 100 productos distintos.";
+            case TEXTO_DEMASIADO_LARGO -> "La serie o la referencia del pago es demasiado larga (hasta 60 caracteres).";
+            case DEMASIADOS_PAGOS -> "Una venta admite hasta 10 formas de pago.";
             case PAGOS_NO_CUADRAN -> "Los pagos no suman el total de la venta.";
             case EFECTIVO_INSUFICIENTE -> "El efectivo recibido no alcanza para ese pago.";
             case METODO_PAGO_INVALIDO -> "Revisa la forma de pago y su monto.";
@@ -77,8 +99,8 @@ public final class PlantillasVentas {
             case TOKEN_EXPIRADO -> "La confirmación venció. Vuelve a empezar.";
             case TOKEN_USADO -> "Esa confirmación ya se usó.";
             case COMANDO_CAMBIO -> "Lo que ibas a confirmar cambió. Vuelve a empezar.";
-            case CONCURRENCIA -> "Alguien más modificó esta venta. Recarga e inténtalo de nuevo.";
-            case ERROR_TEMPORAL -> "Hubo un problema temporal. Inténtalo de nuevo en un momento.";
+            case CONCURRENCIA -> "Alguien más modificó esta venta. Recarga y vuelve a empezar.";
+            case ERROR_TEMPORAL -> "Hubo un problema temporal. Espera un momento y vuelve a empezar.";
         };
     }
 

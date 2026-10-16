@@ -65,6 +65,11 @@ public final class LibroDeCajaEnMemoria implements LibroDeCaja {
         return cortes.stream().filter(c -> c.negocioId().equals(negocioId)).toList();
     }
 
+    /** Dice si el consumidor ya marco el evento como procesado. */
+    public boolean procesado(String consumidor, UUID eventoId) {
+        return procesados.contains(consumidor + "/" + eventoId);
+    }
+
     public List<MovimientoCaja> todos() {
         return List.copyOf(movimientos);
     }

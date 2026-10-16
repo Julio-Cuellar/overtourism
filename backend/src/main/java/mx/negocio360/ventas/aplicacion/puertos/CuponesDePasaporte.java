@@ -23,12 +23,16 @@ public interface CuponesDePasaporte {
 
     /**
      * Canjea el cupon para esa venta (VT-07 al confirmar). En produccion corre en la misma transaccion que la venta.
+     * Si el descuento que Pasaporte calcula ahora no es {@code descuentoEsperado}, rechaza con {@code COMANDO_CAMBIO}
+     * <b>sin canjear</b>: el cupon no se gasta en una venta que no se va a registrar.
      *
-     * @param negocioId negocio que vende
-     * @param codigo    codigo que muestra el turista
-     * @param ventaId   venta que se esta registrando
-     * @param subtotal  subtotal de la venta, escala 2
+     * @param negocioId         negocio que vende
+     * @param codigo            codigo que muestra el turista
+     * @param ventaId           venta que se esta registrando
+     * @param subtotal          subtotal de la venta, escala 2
+     * @param descuentoEsperado descuento que vio el cajero en el resumen, escala 2
      * @return cupon y descuento canjeados
      */
-    CuponCotizado canjear(UUID negocioId, String codigo, UUID ventaId, BigDecimal subtotal);
+    CuponCotizado canjear(UUID negocioId, String codigo, UUID ventaId, BigDecimal subtotal,
+                          BigDecimal descuentoEsperado);
 }

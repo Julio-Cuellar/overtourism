@@ -186,7 +186,7 @@ public final class ManejadorCerrarTurno implements ManejadorComando<CerrarTurnoC
         var contado = new EnumMap<MetodoPago, BigDecimal>(MetodoPago.class);
         for (var metodo : MetodoPago.values()) {
             var monto = capturado.getOrDefault(metodo, BigDecimal.ZERO);
-            if (monto == null || monto.signum() < 0 || !Validaciones.escalaDeDinero(monto)) {
+            if (monto == null || monto.signum() < 0 || !Validaciones.dineroValido(monto)) {
                 throw new CajaException(CodigoError.CONTEO_INVALIDO);
             }
             contado.put(metodo, Redondeo.dinero(monto));

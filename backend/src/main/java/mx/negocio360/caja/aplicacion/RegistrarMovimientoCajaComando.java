@@ -14,4 +14,10 @@ import mx.negocio360.compartido.comandos.Comando;
  */
 public record RegistrarMovimientoCajaComando(UUID turnoId, TipoMovimientoManual tipo, BigDecimal monto, String nota)
         implements Comando {
+
+    /** La nota es texto libre y puede traer datos personales: no se imprime. */
+    @Override
+    public String toString() {
+        return "RegistrarMovimientoCajaComando[turnoId=" + turnoId + ", tipo=" + tipo + ", monto=" + monto + "]";
+    }
 }
