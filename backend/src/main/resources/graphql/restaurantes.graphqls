@@ -1,0 +1,211 @@
+# Esquema del modulo de Restaurantes (docs/diseno/restaurantes.md, R1: el menu). Sin negocioId en el panel: el negocio sale de la
+# sesion (SG-02). La unica excepcion es menuPublico, la superficie publica del turista (D-170), que no tiene sesion y entrega
+# solo los campos permitidos (PB-03). Los tipos llevan el prefijo Rest para no chocar con los de otros modulos (D-130).
+# Las variantes de comando (guardarReceta, darDeBajaPlatillo) llegan con el despachador de comandos de la plataforma (D-125).
+
+extend type Query {
+  "Categorias activas del menu, por orden. Requiere restaurantes.menu.ver."
+  categoriasDeMenu: [RestCategoria!]!
+  "Platillos activos, por nombre, con filtros y cursor. primeros de 1 a 100. Requiere restaurantes.menu.ver."
+  platillos(filtro: RestFiltroPlatillos, primeros: Int! = 20, despues: String): RestPlatilloConexion!
+  platillo(id: ID!): RestPlatillo
+  "Conteos del menu y cobertura de recetas."
+  resumenDeMenu: RestResumenDeMenu!
+  "La version vigente de la receta, o la ultima si se desactivo. Sin ninguna cifra de costo. Requiere restaurantes.receta.ver."
+  receta(platilloId: ID!): RestReceta
+  "Costo teorico y margen de la version vigente. Requiere restaurantes.costo.ver (RC-10)."
+  costoDeReceta(platilloId: ID!): RestCostoReceta
+  "Consumos de insumos que Inventario no pudo descontar, del mas nuevo al mas viejo. primeros de 1 a 100. Requiere restaurantes.consumo.ver."
+  consumosFallidos(primeros: Int! = 20, despues: String): RestConsumoFallidoConexion!
+  "Sin sesion. Nulo si el negocio no es un restaurante visible (publicado y activo)."
+  menuPublico(negocioId: ID!, idioma: String = "es-MX"): RestMenuPublico
+}
+
+extend type Mutation {
+  crearCategoria(input: RestCategoriaInput!): RestCategoria!
+  editarCategoria(id: ID!, version: Int!, input: RestCategoriaInput!): RestCategoria!
+  crearPlatillo(input: RestPlatilloInput!): RestPlatillo!
+  editarPlatillo(id: ID!, version: Int!, input: RestPlatilloInput!): RestPlatillo!
+  "Requiere restaurantes.menu.agotar, que tambien tiene el cocinero."
+  marcarAgotado(id: ID!, agotado: Boolean!): RestPlatillo!
+  publicarPlatillo(id: ID!, publicar: Boolean!): RestPlatillo!
+  "RECETA exige una receta activa; VINCULO_DIRECTO no admite una receta activa."
+  cambiarModoDeInventario(id: ID!, modo: RestModoInventario!): RestPlatillo!
+  "Cierra la version abierta de la receta. Falla si el platillo descuenta por receta. Requiere restaurantes.receta.editar."
+  desactivarReceta(platilloId: ID!): RestReceta!
+}
+
+enum RestModoInventario { NINGUNO RECETA VINCULO_DIRECTO }
+enum RestEstacion { COCINA BARRA }
+enum RestEtiqueta {
+  VEGETARIANO VEGANO SIN_GLUTEN SIN_LACTOSA SIN_FRUTOS_SECOS PICANTE TIPICO_POBLANO DE_TEMPORADA CONTIENE_ALCOHOL
+}
+
+type RestCategoria {
+  id: ID!
+  nombre: String!
+  orden: Int!
+  estacion: RestEstacion!
+  activa: Boolean!
+  version: Int!
+}
+
+type RestPlatillo {
+  id: ID!
+  nombre: String!
+  descripcion: String
+  precio: Decimal!
+  categoriaId: ID
+  modo: RestModoInventario!
+  agotado: Boolean!
+  "MM-dd, o nulo si es de todo el año."
+  temporadaDesde: String
+  temporadaHasta: String
+  publicado: Boolean!
+  activo: Boolean!
+  etiquetas: [RestEtiqueta!]!
+  tieneReceta: Boolean!
+  "Activo, no agotado y en temporada hoy."
+  ordenableHoy: Boolean!
+  version: Int!
+}
+
+type RestPlatilloConexion {
+  nodos: [RestPlatillo!]!
+  "Cursor para la siguiente pagina, o nulo si no hay mas."
+  siguiente: String
+}
+
+type RestResumenDeMenu {
+  total: Int!
+  agotados: Int!
+  fueraDeTemporada: Int!
+  conReceta: Int!
+  sinReceta: Int!
+  "Porcentaje de platillos con receta activa, con dos decimales."
+  coberturaDeRecetasPct: Decimal!
+}
+
+input RestFiltroPlatillos {
+  texto: String
+  categoriaId: ID
+  soloAgotados: Boolean = false
+  soloFueraDeTemporada: Boolean = false
+  soloSinReceta: Boolean = false
+}
+
+input RestPlatilloInput {
+  nombre: String!
+  descripcion: String
+  precio: Decimal!
+  categoriaId: ID
+  etiquetas: [RestEtiqueta!] = []
+  "MM-dd. Van juntas o no va ninguna."
+  temporadaDesde: String
+  temporadaHasta: String
+}
+
+input RestCategoriaInput {
+  nombre: String!
+  orden: Int! = 0
+  estacion: RestEstacion
+}
+
+# ---------- Recetas (R2). Guardar una receta es el comando guardarReceta de prepararComando; llega con el despachador (D-125) ----------
+type RestReceta {
+  platilloId: ID!
+  version: Int!
+  "Porciones para las que estan escritas las cantidades."
+  rendimiento: Int!
+  activa: Boolean!
+  vigenteDesde: DateTime!
+  insumos: [RestInsumo!]!
+}
+
+type RestInsumo {
+  articuloId: ID!
+  "Nulo si el articulo ya no esta en Inventario."
+  nombre: String
+  cantidad: Decimal!
+  unidad: String!
+  "Desperdicio sobre lo neto, de 0 a 100."
+  mermaPct: Decimal!
+}
+
+type RestCostoReceta {
+  platilloId: ID!
+  version: Int!
+  rendimiento: Int!
+  precio: Decimal!
+  "Nulo si el costo es incompleto: nunca se estima."
+  costoPorPorcion: Decimal
+  margen: Decimal
+  margenPct: Decimal
+  incompleto: Boolean!
+  insumosSinCosto: [ID!]!
+  insumos: [RestCostoInsumo!]!
+}
+
+type RestCostoInsumo {
+  articuloId: ID!
+  nombre: String
+  cantidadBase: Decimal
+  unidadBase: String
+  mermaPct: Decimal!
+  cpp: Decimal
+  "Costo del insumo en toda la receta, antes de repartirlo entre las porciones."
+  costo: Decimal
+}
+
+# ---------- Consumo de insumos por venta (R3) ----------
+type RestConsumoFallidoConexion {
+  nodos: [RestConsumoFallido!]!
+  siguiente: String
+}
+
+"Un consumo que Inventario no pudo descontar. No lleva datos de la venta ni de quien cobro (CM-08)."
+type RestConsumoFallido {
+  id: ID!
+  ventaId: ID!
+  "SIN_RECETA o el codigo de Inventario, por ejemplo ARTICULO_INACTIVO."
+  codigo: String!
+  "Texto fijo en español, segun el codigo."
+  mensaje: String!
+  lineas: [RestLineaFallida!]!
+  ocurridoEn: DateTime!
+  creadoEn: DateTime!
+}
+
+type RestLineaFallida {
+  platilloId: ID!
+  cantidad: Decimal!
+}
+
+# ---------- Superficie publica (PB-03): solo estos campos ----------
+type RestMenuPublico {
+  negocioId: ID!
+  etiqueta: String!
+  idioma: String!
+  categorias: [RestCategoriaPublica!]!
+  sinCategoria: [RestPlatilloPublico!]!
+  actualizadoEn: DateTime!
+  aviso: String!
+}
+
+type RestCategoriaPublica {
+  id: ID!
+  nombre: String!
+  platillos: [RestPlatilloPublico!]!
+}
+
+type RestPlatilloPublico {
+  id: ID!
+  nombre: String!
+  descripcion: String
+  precio: Decimal!
+  "Declaradas por el negocio, no verificadas."
+  etiquetas: [RestEtiqueta!]!
+  agotado: Boolean!
+  "Falso si el texto esta en español porque no hay traduccion al idioma pedido."
+  traducido: Boolean!
+}

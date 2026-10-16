@@ -1,0 +1,121 @@
+-- V037 · Permisos de Restaurantes, rol MESERO_CAJA y plantilla del giro RESTAURANTE (R0, D-70, D-171).
+--
+-- Los 18 permisos restaurantes.* que declara PermisosDeRestaurantes (AZ-02) y la matriz de la seccion 11 de
+-- docs/diseno/restaurantes.md: el dueno y el administrador los tienen todos; el gerente, todos menos configurar el salon;
+-- el cajero solo mira; el mesero atiende el salon; el cocinero ve el menu y las recetas, marca agotados y prepara comandas.
+-- Los mismos valores que RolesBase: PermisosDeRestaurantesMigracionPostgresTest comprueba que coinciden.
+--
+-- MESERO_CAJA (D-171) es el mesero que tambien cobra. Hoy tiene los mismos permisos que MESERO: ventas.venta.ver,
+-- ventas.venta.registrar y caja.turno.ver se agregan cuando la Pista A los declare (H-1). Van en una migracion posterior
+-- y no aqui, porque en una base nueva la V035 corre antes que la V037 y no puede citar un rol que todavia no existe, ni
+-- esta puede citar permisos que la V035 aun no sembro.
+--
+-- En RESTAURANTE, MESERO_CAJA va despues de MESERO: COCINERO pasa del orden 6 al 7. Se mueve primero y luego se inserta,
+-- para no chocar con uq_plantilla_orden.
+
+INSERT INTO identidad.permiso (codigo, modulo, descripcion, sensible) VALUES
+    ('restaurantes.menu.ver', 'restaurantes', 'Ver el menú y los platillos', false),
+    ('restaurantes.menu.editar', 'restaurantes', 'Crear, editar, publicar y dar de baja platillos', false),
+    ('restaurantes.menu.agotar', 'restaurantes', 'Marcar un platillo como agotado', false),
+    ('restaurantes.receta.ver', 'restaurantes', 'Ver las recetas, sin costos', false),
+    ('restaurantes.receta.editar', 'restaurantes', 'Guardar recetas', false),
+    ('restaurantes.costo.ver', 'restaurantes', 'Ver costos y márgenes de los platillos', false),
+    ('restaurantes.salon.ver', 'restaurantes', 'Ver las mesas y las alertas del salón', false),
+    ('restaurantes.salon.configurar', 'restaurantes', 'Crear zonas y mesas y regenerar el QR de una mesa', false),
+    ('restaurantes.servicio.operar', 'restaurantes', 'Abrir y cerrar el servicio, bloquear mesas, pausar el QR y liberar una mesa', false),
+    ('restaurantes.cuenta.ver', 'restaurantes', 'Ver las cuentas abiertas', false),
+    ('restaurantes.cuenta.abrir', 'restaurantes', 'Abrir cuentas, agregar líneas, enviar a cocina, pedir la cuenta y confirmar presencia', false),
+    ('restaurantes.cuenta.cancelar', 'restaurantes', 'Cancelar una cuenta con motivo', false),
+    ('restaurantes.linea.anular', 'restaurantes', 'Anular una línea con motivo mientras su comanda no esté lista', false),
+    ('restaurantes.linea.anular_preparada', 'restaurantes', 'Anular una línea ya lista o entregada', false),
+    ('restaurantes.comanda.ver', 'restaurantes', 'Ver el tablero de comandas', false),
+    ('restaurantes.comanda.preparar', 'restaurantes', 'Avanzar una comanda hasta lista', false),
+    ('restaurantes.comanda.entregar', 'restaurantes', 'Marcar una comanda como entregada', false),
+    ('restaurantes.consumo.ver', 'restaurantes', 'Ver los consumos de insumos que fallaron', false);
+
+INSERT INTO identidad.rol (codigo, nombre) VALUES ('MESERO_CAJA', 'Mesero con caja');
+
+INSERT INTO identidad.rol_permiso (rol_codigo, permiso_codigo) VALUES
+    ('DUENO', 'restaurantes.menu.ver'),
+    ('DUENO', 'restaurantes.menu.editar'),
+    ('DUENO', 'restaurantes.menu.agotar'),
+    ('DUENO', 'restaurantes.receta.ver'),
+    ('DUENO', 'restaurantes.receta.editar'),
+    ('DUENO', 'restaurantes.costo.ver'),
+    ('DUENO', 'restaurantes.salon.ver'),
+    ('DUENO', 'restaurantes.servicio.operar'),
+    ('DUENO', 'restaurantes.cuenta.ver'),
+    ('DUENO', 'restaurantes.cuenta.abrir'),
+    ('DUENO', 'restaurantes.cuenta.cancelar'),
+    ('DUENO', 'restaurantes.linea.anular'),
+    ('DUENO', 'restaurantes.linea.anular_preparada'),
+    ('DUENO', 'restaurantes.comanda.ver'),
+    ('DUENO', 'restaurantes.comanda.preparar'),
+    ('DUENO', 'restaurantes.comanda.entregar'),
+    ('DUENO', 'restaurantes.consumo.ver'),
+    ('DUENO', 'restaurantes.salon.configurar'),
+    ('ADMINISTRADOR', 'restaurantes.menu.ver'),
+    ('ADMINISTRADOR', 'restaurantes.menu.editar'),
+    ('ADMINISTRADOR', 'restaurantes.menu.agotar'),
+    ('ADMINISTRADOR', 'restaurantes.receta.ver'),
+    ('ADMINISTRADOR', 'restaurantes.receta.editar'),
+    ('ADMINISTRADOR', 'restaurantes.costo.ver'),
+    ('ADMINISTRADOR', 'restaurantes.salon.ver'),
+    ('ADMINISTRADOR', 'restaurantes.servicio.operar'),
+    ('ADMINISTRADOR', 'restaurantes.cuenta.ver'),
+    ('ADMINISTRADOR', 'restaurantes.cuenta.abrir'),
+    ('ADMINISTRADOR', 'restaurantes.cuenta.cancelar'),
+    ('ADMINISTRADOR', 'restaurantes.linea.anular'),
+    ('ADMINISTRADOR', 'restaurantes.linea.anular_preparada'),
+    ('ADMINISTRADOR', 'restaurantes.comanda.ver'),
+    ('ADMINISTRADOR', 'restaurantes.comanda.preparar'),
+    ('ADMINISTRADOR', 'restaurantes.comanda.entregar'),
+    ('ADMINISTRADOR', 'restaurantes.consumo.ver'),
+    ('ADMINISTRADOR', 'restaurantes.salon.configurar'),
+    ('GERENTE', 'restaurantes.menu.ver'),
+    ('GERENTE', 'restaurantes.menu.editar'),
+    ('GERENTE', 'restaurantes.menu.agotar'),
+    ('GERENTE', 'restaurantes.receta.ver'),
+    ('GERENTE', 'restaurantes.receta.editar'),
+    ('GERENTE', 'restaurantes.costo.ver'),
+    ('GERENTE', 'restaurantes.salon.ver'),
+    ('GERENTE', 'restaurantes.servicio.operar'),
+    ('GERENTE', 'restaurantes.cuenta.ver'),
+    ('GERENTE', 'restaurantes.cuenta.abrir'),
+    ('GERENTE', 'restaurantes.cuenta.cancelar'),
+    ('GERENTE', 'restaurantes.linea.anular'),
+    ('GERENTE', 'restaurantes.linea.anular_preparada'),
+    ('GERENTE', 'restaurantes.comanda.ver'),
+    ('GERENTE', 'restaurantes.comanda.preparar'),
+    ('GERENTE', 'restaurantes.comanda.entregar'),
+    ('GERENTE', 'restaurantes.consumo.ver'),
+    ('CAJERO', 'restaurantes.menu.ver'),
+    ('CAJERO', 'restaurantes.salon.ver'),
+    ('CAJERO', 'restaurantes.cuenta.ver'),
+    ('CAJERO', 'restaurantes.comanda.ver'),
+    ('MESERO', 'restaurantes.menu.ver'),
+    ('MESERO', 'restaurantes.salon.ver'),
+    ('MESERO', 'restaurantes.cuenta.ver'),
+    ('MESERO', 'restaurantes.cuenta.abrir'),
+    ('MESERO', 'restaurantes.cuenta.cancelar'),
+    ('MESERO', 'restaurantes.linea.anular'),
+    ('MESERO', 'restaurantes.comanda.ver'),
+    ('MESERO', 'restaurantes.comanda.entregar'),
+    ('MESERO_CAJA', 'clientes.sugerir'),
+    ('MESERO_CAJA', 'negocios.perfil.ver'),
+    ('MESERO_CAJA', 'restaurantes.menu.ver'),
+    ('MESERO_CAJA', 'restaurantes.salon.ver'),
+    ('MESERO_CAJA', 'restaurantes.cuenta.ver'),
+    ('MESERO_CAJA', 'restaurantes.cuenta.abrir'),
+    ('MESERO_CAJA', 'restaurantes.cuenta.cancelar'),
+    ('MESERO_CAJA', 'restaurantes.linea.anular'),
+    ('MESERO_CAJA', 'restaurantes.comanda.ver'),
+    ('MESERO_CAJA', 'restaurantes.comanda.entregar'),
+    ('COCINERO', 'restaurantes.menu.ver'),
+    ('COCINERO', 'restaurantes.menu.agotar'),
+    ('COCINERO', 'restaurantes.receta.ver'),
+    ('COCINERO', 'restaurantes.comanda.ver'),
+    ('COCINERO', 'restaurantes.comanda.preparar');
+
+UPDATE identidad.plantilla_giro_rol SET orden = 7 WHERE giro = 'RESTAURANTE' AND rol_codigo = 'COCINERO';
+INSERT INTO identidad.plantilla_giro_rol (giro, rol_codigo, orden) VALUES ('RESTAURANTE', 'MESERO_CAJA', 6);

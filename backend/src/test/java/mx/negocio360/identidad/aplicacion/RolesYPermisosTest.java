@@ -22,16 +22,17 @@ class RolesYPermisosTest {
     }
 
     @Test
-    @DisplayName("un restaurante ofrece mesero y cocinero; cada rol con sus permisos en orden")
+    @DisplayName("un restaurante ofrece mesero, mesero con caja y cocinero; cada rol con sus permisos en orden")
     void roles_restaurante() {
         var roles = e.api.roles(tokenEnNegocio("RESTAURANTE"));
 
         assertThat(roles).extracting(r -> r.codigo()).containsExactly("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO",
-                "MESERO", "COCINERO");
+                "MESERO", "MESERO_CAJA", "COCINERO");
         assertThat(roles).filteredOn(r -> r.codigo().equals("CAJERO")).singleElement().satisfies(r -> {
             assertThat(r.nombre()).isEqualTo("Cajero");
             assertThat(r.permisos()).containsExactly("clientes.cliente.registrar", "clientes.consentimiento.registrar",
-                    "clientes.sugerir", "negocios.perfil.ver");
+                    "clientes.sugerir", "negocios.perfil.ver", "restaurantes.comanda.ver", "restaurantes.cuenta.ver",
+                    "restaurantes.menu.ver", "restaurantes.salon.ver");
         });
     }
 
@@ -53,7 +54,7 @@ class RolesYPermisosTest {
     void permisos_catalogoCompleto() {
         var permisos = e.api.permisos(tokenEnNegocio("RESTAURANTE"));
 
-        assertThat(permisos).hasSize(30).extracting(p -> p.codigo()).isSorted();
+        assertThat(permisos).hasSize(48).extracting(p -> p.codigo()).isSorted();
         assertThat(permisos).filteredOn(p -> p.codigo().equals("identidad.miembro.invitar")).singleElement()
                 .satisfies(p -> {
                     assertThat(p.modulo()).isEqualTo("identidad");

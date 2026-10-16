@@ -1808,3 +1808,105 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 **Decisiones propuestas:** D-110 a D-124 (las de `uriel`, renumeradas) y D-125 a D-134 (despachador único de comandos, permiso al preparar y al confirmar, 11 permisos, SPI de productos en `compartido.catalogo`, revocar el negocio de demostración, prefijo de tipos GraphQL, paginación, outbox, reparto de migraciones, cupones inválidos sin Pasaporte). **Todas PROPUESTA.**
 
 **Pendiente (preguntas P-1 a P-10 del documento):** quitar `canal` y `frontend` de `julio`; aprobar la renumeración, los permisos y la matriz, las queries, el SPI de productos; si la persistencia entra ahora o después; quién mantiene Negocios y quién toma Misceláneos y Restaurantes.
+
+### 2026-10-16 — Diseño del módulo vertical de Restaurantes (v0.1, plan, sin autorización para programar)
+**Pedido del usuario (cita textual):** «Comenzamos a definir el producto horizontal de Restaurantes. Ejecuta la skill /ecc:plan y definamos que alcance va a tener, que funciones tendrá, como funcionará, sus modulos verticales, diagramas, etc. esto me lo presentaras en un artefacto y en un .md para su desarrollo posterior». Con `/ecc:plan` y la skill `disenar-modulo`. **Es un diseño: no hay autorización escrita para programar.**
+
+**Aclaración de términos:** Restaurantes es **vertical** (R4), no horizontal; los «módulos verticales» del pedido se diseñaron como **nueve paquetes internos** del mismo módulo (D-161). Si el equipo quería otra cosa, se corrige.
+
+**Qué se hizo:** [`docs/diseno/restaurantes.md`](diseno/restaurantes.md) (20 secciones y un anexo) y su artefacto (https://claude.ai/artifact/UEg333rAg7N2SeXvmvXEyr, privado). Cubre: alcance en cortes (P1a menú, recetas, consumo y menú público; P1b salón, cuentas y cocina; P2; P3), 83 reglas de dominio con prueba (MN, RC, CM, MS, CT, CD, PB, SR, DM, IA), modelo de datos (esquema `restaurantes`), GraphQL con tipos `Rest*`, eventos, 17 permisos con matriz de roles, componentes de IA, fuentes de datos, 6 secuencias, 2 máquinas de estado, fases R0 a R7 con TDD (≈ 11 días-persona), riesgos, 14 hallazgos, decisiones D-160 a D-177 y 15 preguntas abiertas. Los 11 diagramas Mermaid se validaron con el analizador de Mermaid 10.9.3.
+
+**Hallazgos que cambian el trabajo de otras pistas:**
+1. **H-R1 (alta):** `venta.registrada` v1 no trae ninguna referencia; sin un campo opcional `referencia` en `registrarVenta` no se puede vincular una cuenta con su venta. Se pide a la Pista A antes del hito H-0 (R-V1). Bloquea P1b.
+2. **H-R5 (alta):** el modo de inventario (D-17) lo llevaría Catálogo, que no existe; se propone que lo lleve Restaurantes y que `FuenteDeProductos` gane `modoInventario` (D-163, R-V2).
+3. **R-I1 (alta):** `CantidadEnBase` hoy no trae `rastreo` ni `activo` (D-27), así que Restaurantes no puede aplicar S-05. También faltan en `InventarioApi` `registrarConsumo`, `revertirConsumo`, el CPP de varios artículos y `@NamedInterface` (M6).
+4. **H-R2:** Ventas registra una venta de un solo golpe y no tiene cuentas abiertas ni propina; la cuenta abierta vive en Restaurantes (D-164) y la propina queda fuera del MVP (D-173).
+5. **H-R6:** `merma_pct` estaba ambiguo; se propone desperdicio sobre el neto, `× (1 + merma/100)` (D-167).
+6. **R-N1 y R-N2:** Negocios consume `negocio.disponibilidad_cambiada` hasta P2 y sus eventos no confirman con certeza la publicación; ambos afectan la ficha del turista.
+
+**Calendario:** la fecha de hoy cae dentro del evento (15 al 17 de octubre). Lo único que cabría en el stand es el menú público en memoria (≈ 1 día-persona); el resto es trabajo posterior.
+
+**Decisiones propuestas (todas PROPUESTA):** D-160 a D-177 (rango de la Pista C: D-160 a D-179). Detalle en la sección 19 del documento.
+
+**Pendiente (preguntas 1 a 15 del documento):** confirmar Restaurantes como giro real de la demo, si P1 incluye el salón, la referencia en Ventas, la excepción de preparar → confirmar para el salón, la convención de la merma, si el mesero cobra, la propina, el modo de inventario, el adelanto de la disponibilidad en Negocios, la prueba de arquitectura interna, la retención de notas a 30 días, la IA de P2 y el modelo, quién toma la pista C, las estaciones y los combos.
+
+### 2026-10-16 — Restaurantes v0.2: respuestas del equipo, QR en las mesas y estaciones desde P1 (diseño)
+**Pedido del usuario (cita textual):** respondió las 15 preguntas de la v0.1 («1. restaurantes es uno de los que yo voy a hacer, mi equipo ya trabaja en miscelaneos · 2. Lo que recomiendes · 3. si · 4. si · 5. si · 6. configurable · 7. si · 8. si · 9. si · 10. no, revision manual · 11. si · 12. si · 13. que es pista c? · 14. desde p1 · 15. si») y agregó: «los QR en las mesas quedan definidos en P1». **Sigue sin haber autorización escrita para programar.**
+
+**Qué se hizo:** [`docs/diseno/restaurantes.md`](diseno/restaurantes.md) pasó a v0.2 y el artefacto (misma URL, https://claude.ai/artifact/UEg333rAg7N2SeXvmvXEyr) se republicó. Cambios: sección «Cambios de la v0.2»; nueva sección 5.8 con 14 reglas QR (100 reglas con prueba en total); comandas **por estación** (cocina y barra) con estado propio (CD-03, CD-08, CD-09); líneas `POR_CONFIRMAR` y `RECHAZADA`; token de mesa en `mesa`, `origen` en `linea_cuenta` y `estacion` en `comanda`; consulta pública `mesaPorQr`, mutación pública `pedirPorQr` y las del personal `aceptarPedidoQr`, `rechazarPedidoQr`, `regenerarQrDeMesa`; evento `restaurantes.pedido_qr_recibido`; rol base `MESERO_CAJA`; fases R0 a R8 (≈ 13 días-persona de P1, antes ≈ 11); dos diagramas nuevos (estados de línea y pedido desde el QR). Los 13 diagramas Mermaid se validaron.
+
+**Decisiones:**
+- **ACEPTADAS** por las respuestas: D-161 (sin prueba de arquitectura interna), D-163, D-164, D-165, D-167, D-169 (falta el acuerdo del dueño de Negocios), D-172, D-173, D-174 (falta elegir el modelo), D-179 (estaciones desde P1), D-182 (combos y comida corrida en P2) y D-183 (P1a antes que P1b, delegada).
+- **D-171** (cobro del mesero configurable): aceptada la idea; el mecanismo, un rol base `MESERO_CAJA` por persona, es propuesta mía porque los roles son fijos (D-69) y los permisos por persona son P2 de Identidad (D-74).
+- **D-178** (giro de la demo): Restaurantes y Misceláneos son verticales reales; **Museos queda como mockup, supuesto mío** porque no se mencionó.
+- **D-180** (QR por mesa en P1) aceptada en cuanto a que entra a P1; su diseño y **D-181** (`pedirPorQr` como mutación pública directa con aceptación del mesero) son PROPUESTA.
+- **Rango de la pista C ampliado** de D-160 a D-179 a **D-160 a D-189**; `D-180` en adelante no tenía asignación en este repositorio al 2026-10-16.
+
+**Respuesta a la pregunta 13 (qué es la pista C):** el plan de integración de Ventas y Caja (§13.1) reparte el trabajo en tres pistas paralelas: A integra Ventas y Caja, B construye Misceláneos (el equipo del usuario) y C construye Restaurantes (el usuario). Cada una tiene sus archivos, su rango de decisiones y su rango de migraciones.
+
+**Hallazgos nuevos:** H-R15 (el QR necesita una página para quien no tiene la app), H-R16 (dibujar el QR necesita una librería), H-R17 (la plantilla de puestos no tiene barra), H-R18 (cobro configurable contra roles fijos), H-R19 (`pedirPorQr` es una escritura anónima y la puerta limita por cuenta y por IP, no por token; se pide R-F1 a la Pista A).
+
+**Pendiente (preguntas 16 a 21 del documento):** 16 si el QR de P1 incluye el pedido o solo el menú (mi interpretación: ambos, con aceptación del mesero); 17 qué ve quien no tiene la app y quién elige la librería del QR; 18 puesto de barra; 19 si basta el rol `MESERO_CAJA`; 20 modelo de IA; 21 quién es el dueño de Negocios para acordar R-N1 y R-N2. Pedidos a otras pistas todavía sin hacer: R-V1 (`referencia` en Ventas, bloquea P1b), R-V2, R-I1 a R-I4, R-N1, R-N2, R-F1.
+
+### 2026-10-16 — Restaurantes v0.3: el QR pide directo a cocina, web pública y cancelación con motivo (diseño)
+**Pedido del usuario (cita textual, resumida):** «1. el QR no requiere del mesero, este es para que los comensales puedan pedir e inmediatamente los pedidos vayan a la cocina y alerte a meseros; si algo no está disponible el restaurante es responsable de colocarlo, y los meseros de cancelarlo y notificarle a sus comensales el motivo. Los pedidos del QR se registran hasta que se solicita la cuenta; meseros o caja cobran y liberan la mesa para que al volver a escanearlo nuevos comensales puedan pedir. 2. Para los que no tienen la app se abre una web únicamente mostrando la carta, el restaurante y sus reseñas, además de poder pedir desde la página. 3. como veas más óptimo. 4. ¿a qué te refieres? [...] yo lo entiendo como el dueño o persona que registró el comercio». **Sigue sin haber autorización escrita para programar.**
+
+**Qué se hizo:** [`docs/diseno/restaurantes.md`](diseno/restaurantes.md) pasó a v0.3 y el artefacto se republicó (misma URL, versión 3). Cambios: se eliminó la aceptación del mesero (`POR_CONFIRMAR`, `aceptarPedidoQr`, `rechazarPedidoQr`); el primer pedido por QR abre la cuenta y las líneas nacen `ENVIADA`; sección 5.8 reescrita (QR-01 a QR-21, 108 reglas con prueba en total); `estadoDePedidoQr` por sondeo y `pedirCuentaPorQr`; cancelación de líneas con motivo por el mesero (`linea.anular` pasa al rol MESERO; `linea.anular_preparada` para gerente en adelante, con preparar → confirmar); alertas a meseros y caja (`pedido_qr_recibido`, `cuenta_solicitada`); `liberarMesa`; interruptor `qr_habilitado` y pausa de mesa; 18 permisos; fases R4 a R6 reestimadas. Los 13 diagramas Mermaid se validaron.
+
+**Decisiones:** ACEPTADAS D-171 (rol `MESERO_CAJA`, delegada), D-180, D-181 (la forma), D-184, D-185, D-188 (que los meseros cancelen) y D-189; PROPUESTAS D-186 (sondeo en vez de WebSocket público) y D-187 (defensas contra pedidos falsos); D-165 precisada. El rango de la pista C queda agotado en D-189.
+
+**Riesgo asumido por decisión del equipo (H-R20, alta):** sin aceptación previa, quien tenga una foto del QR puede mandar comida a cocina sin estar en el local. Las defensas son posteriores y no bloquean: tasa por token, dispositivo e IP, límites de 60 líneas y 3,000.00 por cuenta de QR, alerta inmediata al mesero, pausa automática tras tres cuentas canceladas por `SIN_COMENSALES` e interruptor del local. Los números son propuesta mía (pregunta 23).
+
+**Aclaración (respuesta 4):** la pregunta 21 decía «dueño de Negocios» y me refería al **responsable del módulo Negocios** (quien lo programa y mantiene), no al dueño del comercio. Se corrigió el texto del documento. El dueño del comercio (rol `DUENO`) tiene todos los permisos de Restaurantes.
+
+**Estimación:** servidor ≈ 14.5 días-persona (antes 13) más ≈ 2.5 de la página web pública (frontend, no incluida).
+
+**Pedidos nuevos a otras pistas:** R-F1 ampliado (límite de tasa por token y por dispositivo en operaciones públicas con escritura) y R-F2 (CORS para la web pública). Siguen pendientes R-V1 (`referencia` en Ventas, bloquea P1b), R-V2, R-I1 a R-I4, R-N1 y R-N2.
+
+**Pendiente (preguntas 18, 20 a 24):** 18 puesto de barra; 20 modelo de IA; 21 responsable del módulo Negocios; 22 si mi lectura de «se registran hasta que se solicita la cuenta» es correcta; 23 si les parecen bien las defensas y sus números; 24 quién construye la web pública y en qué dominio se sirve.
+
+### 2026-10-16 — Restaurantes v0.4: preguntas cerradas (diseño)
+**Pedido del usuario (cita textual):** «si es correcto lo que solicité. ahora tus preguntas: 1. Si es correcto · 2. sí estaría bien pero eso en P2 · 3. como veas más óptimo, la web la construimos nosotros · 4. soy yo · 5. que los use cocinero por el momento». **Sigue sin haber autorización escrita para programar.**
+
+**Qué se hizo:** [`docs/diseno/restaurantes.md`](diseno/restaurantes.md) pasó a v0.4 y el artefacto se republicó (misma URL). Solo cambia el estado de decisiones y preguntas; no cambian reglas ni modelo de datos.
+
+**Decisiones:** D-184 (la cuenta del QR se solicita, se cobra y libera la mesa) y D-187 (defensas contra pedidos falsos, con sus números) pasan a **ACEPTADA**. Nuevas: D-190 (la web pública es la app de Flutter compilada para web, en el mismo origen y con la ruta `/m/<token>`, construida por el equipo; el dominio real sigue sin elegirse y se decide con la base de la demo, D-16), D-191 (la barra usa el rol `COCINERO`; se retira el puesto `BARTENDER`) y D-192 (código de mesa rotatorio opcional, en P2). El rango de la pista C se amplió a D-160 a D-199.
+
+**Responsable de Negocios:** es el usuario, así que R-N1 (consumir `negocio.disponibilidad_cambiada` desde P1) y R-N2 (que `negocio.actualizado` lleve `publicado`) son cambios en Negocios que hace el mismo autor, no pedidos a otra persona.
+
+**Pendiente:** la pregunta 20 (modelo de IA de P2: Gemini o ChatGPT), que no bloquea P1; los pedidos a otras pistas sin hacer (R-V1 `referencia` en Ventas, que bloquea P1b; R-V2; R-I1 a R-I4; R-F1; R-F2); y la autorización escrita para programar.
+
+### 2026-10-16 — Autorización: programar Restaurantes P1a, empezando por R0
+**Pedido del usuario (cita textual):** «Autorizo programar Restaurantes P1a, empieza por R0, utiliza /ecc:tdd-workflow para ejecutar el plan establecido».
+
+**Alcance autorizado:** las fases R0, R1, R2 y R3 de [`docs/diseno/restaurantes.md`](diseno/restaurantes.md) §16 (P1a: menú, recetas, consumo y menú público), en ese orden y con TDD (pruebas primero, RED verificado antes del código). **Se empieza por R0** (esqueleto del módulo, `EstructuraModulosTest`, 18 permisos `restaurantes.*`, rol `MESERO_CAJA` y migración `V037`). **No** autoriza P1b (salón, cuentas, cocina, QR), la persistencia de Restaurantes (R7), ni commits ni push: no se hace ninguno sin que lo pida.
+
+**Dependencias que siguen sin existir y se resuelven con dobles:** `FuenteDeProductos` (R-V3, Pista A), `registrarConsumo` y `revertirConsumo` de Inventario (R-I2), y `rastreo` y `activo` en `aBase` (R-I1). Cada vez que una fase dependa de una, se programa contra un puerto propio con doble y se anota aquí.
+
+### 2026-10-16 — Restaurantes R0 programada: módulo, 18 permisos, rol `MESERO_CAJA` y `V037` (hecho)
+**Con TDD** ([evidencia](pruebas/restaurantes-r0.tdd.md)): RED de compilación y luego de ejecución (12 fallas y 1 error por la razón correcta), GREEN, 4 mutaciones detectadas de 4 y cobertura de líneas 100 % en las clases nuevas y en `RolesBase`.
+
+**Qué se hizo:** paquete `restaurantes` con `@ApplicationModule(allowedDependencies = {"compartido", "inventario"})`; `PermisosDeRestaurantes` con los 18 permisos de P1 (ninguno sensible); `RolesBase` con la matriz de la sección 11 y el rol `MESERO_CAJA` («Mesero con caja») después de `MESERO`; `V037__identidad_permisos_de_restaurantes.sql` (permisos, rol, 80 filas de rol-permiso y la plantilla del giro); `EstructuraModulosTest` comprueba R4 y D-160. Los catálogos copiados en `Escenario` y `PerfilProduccionTest` y los conteos 30 → 48 de tres pruebas de Identidad se actualizaron.
+
+**Estado de la suite:** `mvn -o test`: 2262 pruebas, 3 fallas y 542 errores, **los mismos que antes de empezar** (la integración pendiente de Ventas y Caja: «Operaciones de GraphQL mal declaradas» y `EsquemaGraphqlClientesTest`). Por eso `CatalogoDePermisosPlataformaTest` y `EsquemaEquipoPostgresTest`, que sí actualicé, **no se pudieron ejecutar**; la `V037` se verificó con una prueba nueva de Flyway sin Spring.
+
+**Desviación del diseño (anotada):** el diseño decía que `MESERO_CAJA` tiene los permisos de Ventas y Caja. No se pudo en R0: esos permisos no existen hasta que la Pista A los declare (F1) y `RolesBase.verificar` impide citar un permiso no declarado. Hoy `MESERO_CAJA` tiene los del mesero; los tres de Ventas y Caja irán en una migración posterior (propuesta `V039`, reservada). Se corrigió el documento de diseño.
+
+**Riesgo para la Pista A:** Flyway no tiene `out-of-order`. Una base de desarrollo que ya aplicó `V037` rechazará una `V035` o `V036` que llegue después. En una base nueva no pasa. Hay que acordar con la Pista A repair, `outOfOrder` en desarrollo o recrear la base.
+
+**Siguiente:** R1 (menú). Depende de `FuenteDeProductos` en `compartido.catalogo` (R-V3, Pista A), que no existe; se programa contra una interfaz propia con doble y se reemplaza después. **Sin commits ni push.**
+
+### 2026-10-16 — Restaurantes P1a (R1 a R3) programada: menú, recetas y consumo de insumos (hecho)
+**Con TDD** ([evidencia](pruebas/restaurantes-p1a.tdd.md)): RED de compilación en cada tarea, GREEN, **205 pruebas en verde** (185 del paquete `restaurantes`, más roles, migración `V037` y estructura de módulos), **16 de 16 mutaciones detectadas**, 95.3 % de líneas y 85.2 % de ramas del paquete `restaurantes`, y `ApplicationModules.verify()` sin violaciones. La suite completa queda en 2438 pruebas con **las mismas 3 fallas y 542 errores de antes** (integración pendiente de Ventas y Caja); ninguna es de Restaurantes.
+
+**Qué se hizo:** R1 (platillos, categorías, etiquetas, temporada, agotado, publicar, baja con preparar → confirmar, fuente de productos para Ventas, menú público sin sesión, seguimiento de `negocio.registrado`, `negocio.actualizado` y `negocio.estado_cambiado`, esquema GraphQL con 11 operaciones), R2 (recetas con versiones inmutables, costo teórico y margen exactos, comando `guardarReceta`, `desactivarReceta`, `receta` y `costoDeReceta`) y R3 (consumo por `venta.registrada` con la versión de receta del momento de la venta, reversa con `venta.anulada`, consumos fallidos con aviso `restaurantes.consumo_fallido`, escucha con reintento y `consumosFallidos`). Prueba de contrato contra el `VentaRegistrada` y `VentaAnulada` reales de Ventas.
+
+**Desviaciones del diseño (corregidas en `docs/diseno/restaurantes.md`, v0.5):** el `rendimiento` vive en cada versión de la receta; regla nueva MN-14 (agotado y fuera de temporada no impiden el cobro, solo el pedido); `cambiarModoDeInventario` y `desactivarReceta` se agregaron al esquema; `negocio.actualizado` ya trae `giro` y `publicado`, así que R-N2 y R-N3 están cumplidos.
+
+**Qué falta para que funcione de punta a punta (no es de Restaurantes):**
+1. Pista A: el despachador de comandos (D-125) para exponer `guardarReceta` y `darDeBajaPlatillo`, y arreglar los contextos de Spring para poder arrancar `desarrollo`.
+2. Inventario: `rastreo` y `activo` en `aBase` (R-I1), `registrarConsumo` y `revertirConsumo` (R-I2) y `@NamedInterface` (R-I4). Mientras tanto Restaurantes usa su puerto `InventarioPuerto` con un adaptador que responde «no disponible».
+3. Negocios (mismo responsable): publicar `negocio.estado_cambiado`.
+4. R7 (persistencia, `V060` a `V065`) y P1b: **no autorizadas**.
+
+**Commit «feat(restaurantes): P1a (R0 a R3) con TDD…» en la rama `julio`, a pedido del usuario. Sin push.**

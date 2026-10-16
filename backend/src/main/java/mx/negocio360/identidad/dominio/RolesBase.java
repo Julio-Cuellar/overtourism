@@ -10,10 +10,13 @@ import java.util.stream.Collectors;
 import mx.negocio360.compartido.seguridad.PermisoDeclarado;
 
 /**
- * Los ocho roles base y la plantilla de cada giro (D-69, AM-09). Es la fuente de estos datos para la aplicacion; la
+ * Los nueve roles base y la plantilla de cada giro (D-69, AM-09). Es la fuente de estos datos para la aplicacion; la
  * migracion V022 los siembra en la base y una prueba comprueba que los dos coinciden. Los permisos de Inventario se
  * agregan cuando ese modulo este autorizado (IDN-4.4). Los de Negocios siguen la matriz de la seccion 7.7 de
  * {@code docs/diseno/negocios.md} (D-96, cambio 5): todos ven el perfil del negocio y cada rol suma lo suyo.
+ * Los de Restaurantes siguen la matriz de la seccion 11 de {@code docs/diseno/restaurantes.md} (R0, migracion V037);
+ * {@code MESERO_CAJA} (D-171) es el mesero que tambien cobra y, hasta que la Pista A declare los permisos de Ventas y
+ * Caja, tiene los mismos permisos que {@code MESERO}.
  * Un permiso que ningun modulo declara impide el arranque (AZ-03, {@link #verificar}).
  */
 public final class RolesBase {
@@ -36,23 +39,46 @@ public final class RolesBase {
     private static final List<String> NEGOCIOS_GERENTE = List.of("negocios.perfil.ver", "negocios.horario.editar",
             "negocios.disponibilidad.editar", "negocios.empleado.ver", "negocios.resena.ver", "negocios.resena.responder");
 
+    /**
+     * Permisos de Restaurantes (seccion 11 del diseno). El dueno y el administrador los tienen todos; el gerente, todos
+     * menos configurar el salon (crear mesas y regenerar el QR); los demas roles solo lo suyo.
+     */
+    private static final List<String> RESTAURANTES_GERENTE = List.of("restaurantes.menu.ver", "restaurantes.menu.editar",
+            "restaurantes.menu.agotar", "restaurantes.receta.ver", "restaurantes.receta.editar", "restaurantes.costo.ver",
+            "restaurantes.salon.ver", "restaurantes.servicio.operar", "restaurantes.cuenta.ver", "restaurantes.cuenta.abrir",
+            "restaurantes.cuenta.cancelar", "restaurantes.linea.anular", "restaurantes.linea.anular_preparada",
+            "restaurantes.comanda.ver", "restaurantes.comanda.preparar", "restaurantes.comanda.entregar",
+            "restaurantes.consumo.ver");
+    private static final List<String> RESTAURANTES_TODOS = concatenar(RESTAURANTES_GERENTE,
+            List.of("restaurantes.salon.configurar"));
+    private static final List<String> RESTAURANTES_CAJERO = List.of("restaurantes.menu.ver", "restaurantes.salon.ver",
+            "restaurantes.cuenta.ver", "restaurantes.comanda.ver");
+    private static final List<String> RESTAURANTES_MESERO = List.of("restaurantes.menu.ver", "restaurantes.salon.ver",
+            "restaurantes.cuenta.ver", "restaurantes.cuenta.abrir", "restaurantes.cuenta.cancelar",
+            "restaurantes.linea.anular", "restaurantes.comanda.ver", "restaurantes.comanda.entregar");
+    private static final List<String> RESTAURANTES_COCINERO = List.of("restaurantes.menu.ver", "restaurantes.menu.agotar",
+            "restaurantes.receta.ver", "restaurantes.comanda.ver", "restaurantes.comanda.preparar");
+
     private static final List<Rol> TODOS = List.of(
             rol("DUENO", "Dueño", concatenar(EQUIPO_Y_AUDITORIA, OPERACION_DE_CLIENTES, SOLO_RESPONSABLE,
-                    NEGOCIOS_ADMINISTRADOR, NEGOCIOS_SOLO_DUENO)),
+                    NEGOCIOS_ADMINISTRADOR, NEGOCIOS_SOLO_DUENO, RESTAURANTES_TODOS)),
             rol("ADMINISTRADOR", "Administrador", concatenar(EQUIPO_Y_AUDITORIA, OPERACION_DE_CLIENTES,
-                    NEGOCIOS_ADMINISTRADOR)),
+                    NEGOCIOS_ADMINISTRADOR, RESTAURANTES_TODOS)),
             rol("GERENTE", "Gerente", concatenar(List.of("identidad.equipo.ver", "clientes.sugerir", "clientes.lista.ver",
                     "clientes.panorama.ver", "clientes.ficha.ver", "clientes.cliente.registrar", "clientes.cliente.editar",
-                    "clientes.consentimiento.registrar"), NEGOCIOS_GERENTE)),
+                    "clientes.consentimiento.registrar"), NEGOCIOS_GERENTE, RESTAURANTES_GERENTE)),
             rol("CAJERO", "Cajero", concatenar(List.of("clientes.sugerir", "clientes.cliente.registrar",
-                    "clientes.consentimiento.registrar"), NEGOCIOS_VER)),
-            rol("MESERO", "Mesero", concatenar(List.of("clientes.sugerir"), NEGOCIOS_VER)),
-            rol("COCINERO", "Cocinero", NEGOCIOS_VER),
+                    "clientes.consentimiento.registrar"), NEGOCIOS_VER, RESTAURANTES_CAJERO)),
+            rol("MESERO", "Mesero", concatenar(List.of("clientes.sugerir"), NEGOCIOS_VER, RESTAURANTES_MESERO)),
+            rol("MESERO_CAJA", "Mesero con caja",
+                    concatenar(List.of("clientes.sugerir"), NEGOCIOS_VER, RESTAURANTES_MESERO)),
+            rol("COCINERO", "Cocinero", concatenar(NEGOCIOS_VER, RESTAURANTES_COCINERO)),
             rol("TAQUILLERO", "Taquillero", NEGOCIOS_VER),
             rol("GUIA", "Guía", NEGOCIOS_VER));
 
     private static final Map<Giro, List<String>> PLANTILLAS = Map.of(
-            Giro.RESTAURANTE, List.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO", "MESERO", "COCINERO"),
+            Giro.RESTAURANTE, List.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO", "MESERO", "MESERO_CAJA",
+                    "COCINERO"),
             Giro.MISCELANEA, List.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO"),
             Giro.MUSEO, List.of("DUENO", "ADMINISTRADOR", "GERENTE", "TAQUILLERO", "GUIA"));
 

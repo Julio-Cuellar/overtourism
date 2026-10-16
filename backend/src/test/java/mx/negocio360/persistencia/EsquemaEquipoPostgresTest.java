@@ -49,11 +49,12 @@ class EsquemaEquipoPostgresTest {
     // ---- los catalogos son datos y coinciden con el codigo ----
 
     @Test
-    @DisplayName("AZ-02: los permisos sembrados en la base son exactamente los que declaran Identidad, Clientes y Negocios")
+    @DisplayName("AZ-02: los permisos sembrados en la base son exactamente los que declaran Identidad, Clientes, Negocios y Restaurantes")
     void permisos_coincidenConLosCatalogosDeLosModulos() throws Exception {
         var declarados = new java.util.ArrayList<PermisoDeclarado>(new PermisosDeIdentidad().permisos());
         declarados.addAll(new PermisosDeClientes().permisos());
         declarados.addAll(new mx.negocio360.negocios.aplicacion.PermisosDeNegocios().permisos());
+        declarados.addAll(new mx.negocio360.restaurantes.seguridad.PermisosDeRestaurantes().permisos());
 
         try (var sesion = SesionSql.comoAplicacion()) {
             var codigos = sesion.columna("select codigo from identidad.permiso order by codigo", String.class);
@@ -67,7 +68,7 @@ class EsquemaEquipoPostgresTest {
     }
 
     @Test
-    @DisplayName("AM-09: los 8 roles base y sus permisos sembrados coinciden con RolesBase")
+    @DisplayName("AM-09: los 9 roles base y sus permisos sembrados coinciden con RolesBase")
     void roles_coincidenConRolesBase() throws Exception {
         try (var sesion = SesionSql.comoAplicacion()) {
             assertThat(sesion.columna("select codigo from identidad.rol order by codigo", String.class))

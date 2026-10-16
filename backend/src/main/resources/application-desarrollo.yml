@@ -31,3 +31,7 @@ negocio360:
     negocio-id: 0192f000-0000-7000-8000-000000000360
     # Flutter web y el navegador en la misma laptop (la app movil no necesita CORS).
     cors-origenes: http://localhost:*,http://127.0.0.1:*
+
+# Restaurantes (R1): menu y seguimiento de Negocios en memoria hasta que llegue la persistencia (R7). Se pierde al reiniciar.
+restaurantes:
+  almacen: memoria

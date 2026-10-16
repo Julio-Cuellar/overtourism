@@ -23,11 +23,37 @@ class EstructuraModulosTest {
     }
 
     @Test
-    @DisplayName("la plataforma incluye los modulos clientes, compartido, identidad, inventario, negocios, ventas, caja y canal")
+    @DisplayName("la plataforma incluye los modulos clientes, compartido, identidad, inventario, negocios, ventas, caja, canal y restaurantes")
     void modulos_laPlataforma_incluyenLosModulos() {
         var nombres = MODULOS.stream().map(ApplicationModule::getName).collect(Collectors.toSet());
 
         assertThat(nombres).contains("clientes", "compartido", "identidad", "inventario", "negocios", "ventas", "caja",
-                "canal");
+                "canal", "restaurantes");
+    }
+
+    /** D-160 y R4: Restaurantes es vertical, asi que ningun otro modulo puede depender de el. */
+    @Test
+    @DisplayName("R4: ningun modulo depende de restaurantes")
+    void restaurantes_nadieDependeDeEl() {
+        var restaurantes = MODULOS.getModuleByName("restaurantes").orElseThrow();
+
+        var dependientes = MODULOS.stream().filter(m -> !m.getName().equals("restaurantes"))
+                .filter(m -> m.getDirectDependencies(MODULOS).uniqueModules().anyMatch(restaurantes::equals))
+                .map(ApplicationModule::getName)
+                .toList();
+
+        assertThat(dependientes).isEmpty();
+    }
+
+    /** D-160: Restaurantes solo puede depender de la plataforma y de Inventario (D-09, recetas contra InventarioApi). */
+    @Test
+    @DisplayName("D-160: restaurantes solo depende de compartido e inventario")
+    void restaurantes_soloDependeDeCompartidoEInventario() {
+        var restaurantes = MODULOS.getModuleByName("restaurantes").orElseThrow();
+
+        var dependencias = restaurantes.getDirectDependencies(MODULOS).uniqueModules().map(ApplicationModule::getName)
+                .collect(Collectors.toSet());
+
+        assertThat(dependencias).isSubsetOf("compartido", "inventario");
     }
 }
