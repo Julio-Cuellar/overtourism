@@ -96,7 +96,8 @@ public final class PlantillasVentas {
             case VENTA_NO_ENCONTRADA -> "No encontramos esa venta.";
             case VENTA_YA_ANULADA -> "Esa venta ya estaba anulada.";
             case MOTIVO_REQUERIDO -> "Escribe el motivo de la anulación (hasta 200 caracteres).";
-            case SIN_PERMISO_ANULAR -> "No tienes permiso para anular ventas.";
+            case PAGINACION_INVALIDA -> "Pide entre 1 y 100 resultados y usa el cursor que te dimos.";
+            case FILTRO_INVALIDO -> "Revisa los filtros: el rango no puede pasar de 92 días.";
             case TOKEN_INVALIDO -> "La confirmación no es válida. Vuelve a empezar.";
             case TOKEN_EXPIRADO -> "La confirmación venció. Vuelve a empezar.";
             case TOKEN_USADO -> "Esa confirmación ya se usó.";

@@ -7,32 +7,28 @@ import mx.negocio360.caja.aplicacion.CajaServicio;
 import mx.negocio360.caja.aplicacion.ConsumidorVentas;
 import mx.negocio360.caja.aplicacion.ResumenVentasDesdeVentasApi;
 import mx.negocio360.caja.aplicacion.VerificadorDeTurnoDesdeCaja;
-import mx.negocio360.caja.aplicacion.puertos.AutorizacionCaja;
 import mx.negocio360.caja.aplicacion.puertos.ReglasCaja;
 import mx.negocio360.compartido.comandos.PreparacionesEnMemoria;
 import mx.negocio360.ventas.VentasApi;
 import mx.negocio360.ventas.VerificadorDeTurno;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
 /**
- * Enciende Caja al arrancar (F4) con sus tablas en memoria: su API, el verificador de turno que pide Ventas (D-86) y
- * la escucha de {@code venta.registrada} y {@code venta.anulada}. Los permisos llegan como bean de otro modulo (en la
- * demo, simulados por {@code canal.demo}).
- *
- * <p>Solo existe con {@code negocio360.demo.habilitada=true} y nunca con el perfil {@code produccion}. La version
- * persistente es F5.
+ * Enciende Caja al arrancar con sus tablas en memoria, solo con {@code caja.almacen=memoria} (el perfil
+ * {@code desarrollo} lo fija): su API, el verificador de turno que pide Ventas (D-145) y la escucha de
+ * {@code venta.registrada} y {@code venta.anulada}. Los permisos ya no se inyectan: cada llamada recibe la
+ * {@code Autorizacion} de la sesion (D-126). La version persistente es F6.
  */
 @Configuration(proxyBeanMethods = false)
-@Profile("!produccion")
-@ConditionalOnProperty(name = "negocio360.demo.habilitada", havingValue = "true")
+@ConditionalOnProperty(name = "caja.almacen", havingValue = "memoria")
 public class CajaConfiguracion {
 
-    /** Umbral de diferencia del corte en la demo: el valor inicial propuesto en CJ-08 (se leera de reglas en F5). */
-    static final BigDecimal UMBRAL_DE_DEMO = new BigDecimal("50.00");
+    /** Umbral de diferencia del corte por omision: el valor inicial propuesto en CJ-08 (luego vendra de reglas). */
+    static final String UMBRAL_POR_OMISION = "50.00";
 
     /**
      * Tablas de Caja en memoria.
@@ -45,7 +41,7 @@ public class CajaConfiguracion {
     }
 
     /**
-     * Respuesta de Caja a «¿el turno sigue abierto?» (VT-01, D-86).
+     * Respuesta de Caja a «¿el turno sigue abierto?» (VT-01, D-145).
      *
      * @param almacen tablas de Caja
      * @param reloj   reloj de la plataforma
@@ -61,17 +57,17 @@ public class CajaConfiguracion {
      *
      * @param almacen      tablas de Caja
      * @param ventas       API de Ventas, para el corte (J1, CJ-07)
-     * @param autorizacion quien es encargado (CJ-08)
      * @param bus          bus de eventos de Spring
      * @param reloj        reloj de la plataforma
+     * @param umbral       diferencia de efectivo que pide autorizacion (CJ-08), de {@code caja.umbral-diferencia}
      * @return Caja listo para usarse
      */
     @Bean
-    public CajaApi cajaApi(CajaEnMemoria almacen, VentasApi ventas, AutorizacionCaja autorizacion,
-                           ApplicationEventPublisher bus, Clock reloj) {
-        ReglasCaja reglas = negocioId -> UMBRAL_DE_DEMO;
+    public CajaApi cajaApi(CajaEnMemoria almacen, VentasApi ventas, ApplicationEventPublisher bus, Clock reloj,
+                           @Value("${caja.umbral-diferencia:" + UMBRAL_POR_OMISION + "}") BigDecimal umbral) {
+        ReglasCaja reglas = negocioId -> umbral;
         return CajaServicio.armar(almacen, almacen, new PreparacionesEnMemoria(), new PublicadorEventosSpring(bus),
-                new ResumenVentasDesdeVentasApi(ventas), reglas, autorizacion, reloj);
+                new ResumenVentasDesdeVentasApi(ventas), reglas, reloj);
     }
 
     /**

@@ -1,5 +1,6 @@
 package mx.negocio360.caja;
 
+import mx.negocio360.compartido.pruebas.Permisos;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
@@ -31,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Camino dorado de punta a punta con los dos modulos reales y un bus en memoria: abrir turno, cobrar con cupon, anular
- * otra venta y hacer el corte. Caja usa la API real de Ventas (D-76) y lee sus eventos reales (D-77).
+ * otra venta y hacer el corte. Caja usa la API real de Ventas (D-135) y lee sus eventos reales (D-136).
  */
 class VentasYCajaTest {
 
@@ -40,7 +41,7 @@ class VentasYCajaTest {
     private final LibroDeCajaEnMemoria libro = new LibroDeCajaEnMemoria();
     private final CajaApi caja = CajaServicio.armar(cajas, libro, new RepositorioPreparacionesEnMemoria(),
             new Dobles.Eventos(), new ResumenVentasDesdeVentasApi(ventas.api), new Dobles.Reglas(),
-            new Dobles.Autorizacion(), ventas.reloj);
+            ventas.reloj);
     private final ConsumidorVentas consumidor = new ConsumidorVentas(cajas, libro);
     private final ContextoNegocio cajero = ventas.ctxA;
     private final ContextoNegocio encargado = new ContextoNegocio(ventas.negocioA, "encargado-a");
@@ -62,15 +63,15 @@ class VentasYCajaTest {
                 List.of(Fixtures.tarjeta("150.00")), null, null));
         ventas.confirmar(encargado, new AnularVentaComando(anulada, "Cobro duplicado"));
 
-        var saldo = caja.saldoTurno(cajero, turno);
+        var saldo = caja.saldoTurno(cajero, Permisos.de(cajero), turno);
         assertThat(saldo.esperadoPorMetodo()).containsEntry(MetodoPago.EFECTIVO, new BigDecimal("635.00"))
                 .containsEntry(MetodoPago.TARJETA, new BigDecimal("0.00"));
 
         confirmarCaja(cajero, new CerrarTurnoComando(turno,
                 Map.of(MetodoPago.EFECTIVO, new BigDecimal("635.00"), MetodoPago.TARJETA, BigDecimal.ZERO), false));
 
-        assertThat(caja.saldoTurno(cajero, turno).estado()).isEqualTo(EstadoTurno.CERRADO);
-        assertThat(caja.cortes(cajero)).singleElement()
+        assertThat(caja.saldoTurno(cajero, Permisos.de(cajero), turno).estado()).isEqualTo(EstadoTurno.CERRADO);
+        assertThat(caja.cortes(cajero, Permisos.TODOS, null, 20, null).elementos()).singleElement()
                 .satisfies(c -> assertThat(c.diferenciaEfectivo()).isEqualTo(new BigDecimal("0.00")));
     }
 
@@ -82,28 +83,30 @@ class VentasYCajaTest {
         ventas.vender(cajero, new RegistrarVentaComando(turno, Fixtures.dosBoletosYMedioKilo(),
                 List.of(Fixtures.efectivo("150.00", null)), null, null));
 
-        var token = caja.preparar(cajero, new CerrarTurnoComando(turno,
+        var token = caja.preparar(cajero, Permisos.de(cajero), new CerrarTurnoComando(turno,
                 Map.of(MetodoPago.EFECTIVO, new BigDecimal("500.00")), false)).token();
 
-        mx.negocio360.caja.fakes.Escenario.fallaCon(() -> caja.confirmar(cajero, token),
+        mx.negocio360.caja.fakes.Escenario.fallaCon(() -> caja.confirmar(cajero, Permisos.de(cajero), token),
                 CodigoError.CORTE_EVENTOS_PENDIENTES);
     }
 
     @Test
-    @DisplayName("VT-01 y D-81: con el corte preparado, Ventas consulta a Caja y no deja vender en ese turno")
+    @DisplayName("VT-01 y D-140: con el corte preparado, Ventas consulta a Caja y no deja vender en ese turno")
     void turnoEnCorte_ventasNoVende() {
         var cajaId = confirmarCaja(cajero, new CrearCajaComando("Taquilla"));
         var turno = confirmarCaja(cajero, new AbrirTurnoComando(cajaId, new BigDecimal("500.00")));
-        caja.preparar(cajero, new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, new BigDecimal("500.00")),
+        caja.preparar(cajero, Permisos.de(cajero), new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, new BigDecimal("500.00")),
                 false));
         var venta = new RegistrarVentaComando(turno, Fixtures.dosBoletosYMedioKilo(),
                 List.of(Fixtures.efectivo("150.00", null)), null, null);
 
-        Escenario.fallaCon(() -> ventas.api.preparar(cajero, venta),
+        Escenario.fallaCon(() -> ventas.api.preparar(cajero, Permisos.de(cajero), venta),
                 mx.negocio360.ventas.dominio.CodigoError.TURNO_NO_ABIERTO);
     }
 
     private UUID confirmarCaja(ContextoNegocio contexto, Comando comando) {
-        return caja.confirmar(contexto, caja.preparar(contexto, comando).token()).recursoId();
+        // Crear cajas es del administrador y el dueno (D-127): el montaje del escenario usa todos los permisos.
+        return caja.confirmar(contexto, Permisos.TODOS, caja.preparar(contexto, Permisos.TODOS, comando).token())
+                .recursoId();
     }
 }

@@ -67,7 +67,7 @@ class TablaRealDeOperacionesTest {
     @Test
     @DisplayName("las 8 variantes de comando de Clientes y su permiso")
     void variantesDeClientes() {
-        assertThat(tabla.variantes()).isEqualTo(Map.of(
+        assertThat(delModulo("clientes.")).isEqualTo(Map.of(
                 "registrarCliente", "clientes.cliente.registrar",
                 "editarCliente", "clientes.cliente.editar",
                 "registrarConsentimiento", "clientes.consentimiento.registrar",
@@ -76,6 +76,40 @@ class TablaRealDeOperacionesTest {
                 "registrarSolicitudArco", "clientes.arco.gestionar",
                 "ampliarSolicitudArco", "clientes.arco.gestionar",
                 "resolverSolicitudArco", "clientes.arco.gestionar"));
+    }
+
+    @Test
+    @DisplayName("las 7 variantes de comando de Ventas y Caja y su permiso (seccion 7.3 del plan de integracion)")
+    void variantesDeVentasYCaja() {
+        assertThat(delModulo("ventas.")).isEqualTo(Map.of(
+                "registrarVenta", "ventas.venta.registrar",
+                "anularVenta", "ventas.venta.anular"));
+        assertThat(delModulo("caja.")).isEqualTo(Map.of(
+                "crearCaja", "caja.caja.gestionar",
+                "abrirTurno", "caja.turno.abrir",
+                "registrarMovimientoCaja", "caja.movimiento.registrar",
+                "cerrarTurno", "caja.corte.cerrar",
+                "descartarCorte", "caja.corte.cerrar"));
+    }
+
+    @Test
+    @DisplayName("las consultas de Ventas y Caja piden su permiso y ninguna es publica ni de cuenta")
+    void consultasDeVentasYCaja() {
+        var esperado = Map.of("venta", "ventas.venta.ver", "ventas", "ventas.venta.ver",
+                "resumenTurno", "ventas.venta.ver", "productosParaVenta", "ventas.venta.registrar",
+                "cajas", "caja.turno.ver", "turnoActivo", "caja.turno.ver", "saldoTurno", "caja.turno.ver",
+                "cortes", "caja.corte.ver");
+        esperado.forEach((campo, permiso) -> assertThat(tabla.operacion(TipoDeOperacion.QUERY, campo))
+                .as(campo).hasValueSatisfying(o -> {
+                    assertThat(o.permiso()).isEqualTo(permiso);
+                    assertThat(o.acceso()).isEqualTo(Acceso.NEGOCIO);
+                }));
+    }
+
+    /** Las variantes cuyo permiso empieza con ese prefijo de modulo. */
+    private Map<String, String> delModulo(String prefijo) {
+        return tabla.variantes().entrySet().stream().filter(e -> e.getValue().startsWith(prefijo))
+                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Test

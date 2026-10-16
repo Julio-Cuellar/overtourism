@@ -2,11 +2,11 @@ package mx.negocio360.caja.aplicacion;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.util.List;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import mx.negocio360.caja.aplicacion.puertos.AutorizacionCaja;
 import mx.negocio360.caja.aplicacion.puertos.LibroDeCaja;
 import mx.negocio360.caja.aplicacion.puertos.PublicadorEventos;
 import mx.negocio360.caja.aplicacion.puertos.ReglasCaja;
@@ -22,6 +22,7 @@ import mx.negocio360.caja.dominio.MetodoPago;
 import mx.negocio360.caja.dominio.Turno;
 import mx.negocio360.caja.eventos.CorteConfirmado;
 import mx.negocio360.caja.eventos.DiferenciaDetectada;
+import mx.negocio360.caja.seguridad.PermisosDeCaja;
 import mx.negocio360.compartido.comandos.ManejadorComando;
 import mx.negocio360.compartido.comandos.ResultadoComando;
 import mx.negocio360.compartido.comandos.ServicioPreparacion;
@@ -34,7 +35,7 @@ import mx.negocio360.compartido.identidad.UuidV7;
  * CF-12 CerrarTurno, el corte de caja: CJ-06 a CJ-09 y CJ-12.
  *
  * <p>Preparar calcula esperado, contado y diferencia, revisa el umbral (CJ-08) y pone el turno EN_CORTE por la misma
- * vigencia que el token (D-81): desde ahi el canal ya no deja preparar ventas en ese turno. Confirmar exige que no
+ * vigencia que el token (D-140): desde ahi el canal ya no deja preparar ventas en ese turno. Confirmar exige que no
  * haya ventas preparadas y que Caja haya aplicado todas las ventas que reporta Ventas (CJ-07), recalcula y compara el
  * resumen, cierra el turno con bloqueo optimista y publica {@code caja.corte_confirmado} v1 (y
  * {@code caja.diferencia_detectada} v1 si se autorizo una diferencia sobre el umbral).
@@ -48,7 +49,6 @@ public final class ManejadorCerrarTurno implements ManejadorComando<CerrarTurnoC
     private final LibroDeCaja libro;
     private final ResumenVentas ventas;
     private final ReglasCaja reglas;
-    private final AutorizacionCaja autorizacion;
     private final PublicadorEventos eventos;
     private final Clock reloj;
 
@@ -64,17 +64,15 @@ public final class ManejadorCerrarTurno implements ManejadorComando<CerrarTurnoC
      * @param libro        movimientos, ventas aplicadas y cortes
      * @param ventas       conteos de Ventas (CJ-07)
      * @param reglas       umbral de diferencia (CJ-08)
-     * @param autorizacion permisos de encargado (CJ-08)
      * @param eventos      outbox
      * @param reloj        reloj de la plataforma
      */
     public ManejadorCerrarTurno(RepositorioCaja cajas, LibroDeCaja libro, ResumenVentas ventas, ReglasCaja reglas,
-                                AutorizacionCaja autorizacion, PublicadorEventos eventos, Clock reloj) {
+                                PublicadorEventos eventos, Clock reloj) {
         this.cajas = Objects.requireNonNull(cajas, "cajas");
         this.libro = Objects.requireNonNull(libro, "libro");
         this.ventas = Objects.requireNonNull(ventas, "ventas");
         this.reglas = Objects.requireNonNull(reglas, "reglas");
-        this.autorizacion = Objects.requireNonNull(autorizacion, "autorizacion");
         this.eventos = Objects.requireNonNull(eventos, "eventos");
         this.reloj = Objects.requireNonNull(reloj, "reloj");
     }
@@ -89,8 +87,16 @@ public final class ManejadorCerrarTurno implements ManejadorComando<CerrarTurnoC
         return CerrarTurnoComando.class;
     }
 
+    /** D-126: el servicio exige estos permisos al preparar y al confirmar, antes de gastar el token. */
+    @Override
+    public List<String> permisos(CerrarTurnoComando comando) {
+        return comando.autorizar()
+                ? List.of(PermisosDeCaja.CORTE_CERRAR, PermisosDeCaja.CORTE_AUTORIZAR)
+                : List.of(PermisosDeCaja.CORTE_CERRAR);
+    }
+
     /**
-     * Calcula el corte y pone el turno EN_CORTE (D-81).
+     * Calcula el corte y pone el turno EN_CORTE (D-140).
      *
      * @throws CajaException TURNO_NO_ABIERTO, CONTEO_INVALIDO, CORTE_REQUIERE_AUTORIZACION o CONCURRENCIA
      */
@@ -170,11 +176,13 @@ public final class ManejadorCerrarTurno implements ManejadorComando<CerrarTurnoC
     }
 
     /**
-     * CJ-08: una diferencia en efectivo mayor al umbral solo se acepta si quien confirma es encargado y la autoriza.
-     * Al confirmar se revisa despues de comparar el resumen, para que un esperado que cambio responda COMANDO_CAMBIO.
+     * CJ-08: una diferencia en efectivo mayor al umbral solo se acepta si el comando trae {@code autorizar}. Quien lo
+     * pide necesita ademas {@code caja.corte.autorizar} ({@link #permisos}), que el servicio exige al preparar y al
+     * confirmar. Al confirmar se revisa despues de comparar el resumen, para que un esperado que cambio responda
+     * COMANDO_CAMBIO.
      */
     private void exigirAutorizacion(ContextoNegocio contexto, CerrarTurnoComando comando, Calculo calculo) {
-        if (calculo.sobreUmbral() && !(comando.autorizar() && autorizacion.esEncargado(contexto))) {
+        if (calculo.sobreUmbral() && !comando.autorizar()) {
             throw new CajaException(CodigoError.CORTE_REQUIERE_AUTORIZACION, calculo.turno().id());
         }
     }

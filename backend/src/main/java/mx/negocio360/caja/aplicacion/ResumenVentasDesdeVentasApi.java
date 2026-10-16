@@ -9,7 +9,7 @@ import mx.negocio360.ventas.VentasApi;
 
 /**
  * Adaptador del puerto {@link ResumenVentas} sobre la API publica de Ventas (J1 de {@code caja.md}). Es el unico punto
- * donde Caja llama a Ventas, y en un solo sentido (D-76).
+ * donde Caja llama a Ventas, y en un solo sentido (D-135).
  */
 public final class ResumenVentasDesdeVentasApi implements ResumenVentas {
 

@@ -1,5 +1,7 @@
 package mx.negocio360.ventas.aplicacion;
 
+import mx.negocio360.ventas.FiltroVentas;
+import mx.negocio360.compartido.pruebas.Permisos;
 import static mx.negocio360.ventas.fakes.Escenario.fallaCon;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,7 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import mx.negocio360.compartido.pruebas.RelojMutable;
-import mx.negocio360.ventas.aplicacion.puertos.ProductoParaVenta;
+import mx.negocio360.compartido.catalogo.ProductoParaVenta;
 import mx.negocio360.ventas.dominio.CodigoError;
 import mx.negocio360.ventas.dominio.EstadoVenta;
 import mx.negocio360.ventas.fakes.Escenario;
@@ -24,7 +26,7 @@ class RegistrarVentaTest {
     @Test
     @DisplayName("preparar muestra total y cambio y no guarda ninguna venta ni publica eventos")
     void preparar_noEscribe() {
-        var creada = e.api.preparar(e.ctxA, Fixtures.ventaSinCupon());
+        var creada = e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaSinCupon());
 
         assertThat(creada.resumen()).contains("150.00").contains("50.00");
         assertThat(e.ventas.todas()).isEmpty();
@@ -36,7 +38,7 @@ class RegistrarVentaTest {
     void confirmar_guardaLaVenta() {
         var resultado = e.confirmar(e.ctxA, Fixtures.ventaSinCupon());
 
-        var venta = e.api.venta(e.ctxA, resultado.recursoId()).orElseThrow();
+        var venta = e.api.venta(e.ctxA, Permisos.de(e.ctxA), resultado.recursoId()).orElseThrow();
         assertThat(venta.estado()).isEqualTo(EstadoVenta.REGISTRADA);
         assertThat(venta.folio()).isEqualTo(1);
         assertThat(venta.serie()).isEqualTo("A");
@@ -59,21 +61,21 @@ class RegistrarVentaTest {
         var segunda = e.vender(e.ctxA, Fixtures.ventaSinCupon());
         var otroNegocio = e.vender(e.ctxB, Fixtures.ventaSinCupon());
 
-        assertThat(e.api.venta(e.ctxA, primera).orElseThrow().folio()).isEqualTo(1);
-        assertThat(e.api.venta(e.ctxA, segunda).orElseThrow().folio()).isEqualTo(2);
-        assertThat(e.api.venta(e.ctxB, otroNegocio).orElseThrow().folio()).isEqualTo(1);
+        assertThat(e.api.venta(e.ctxA, Permisos.de(e.ctxA), primera).orElseThrow().folio()).isEqualTo(1);
+        assertThat(e.api.venta(e.ctxA, Permisos.de(e.ctxA), segunda).orElseThrow().folio()).isEqualTo(2);
+        assertThat(e.api.venta(e.ctxB, Permisos.de(e.ctxB), otroNegocio).orElseThrow().folio()).isEqualTo(1);
     }
 
     @Test
     @DisplayName("VT-06: una preparacion que vence sin confirmar no consume folio")
     void folios_preparacionVencida_noConsumeFolio() {
-        var vencida = e.api.preparar(e.ctxA, Fixtures.ventaSinCupon()).token();
+        var vencida = e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaSinCupon()).token();
         e.reloj.avanzar(java.time.Duration.ofMinutes(5));
-        fallaCon(() -> e.api.confirmar(e.ctxA, vencida), CodigoError.TOKEN_EXPIRADO);
+        fallaCon(() -> e.api.confirmar(e.ctxA, Permisos.de(e.ctxA), vencida), CodigoError.TOKEN_EXPIRADO);
 
         var vendida = e.vender(e.ctxA, Fixtures.ventaSinCupon());
 
-        assertThat(e.api.venta(e.ctxA, vendida).orElseThrow().folio()).isEqualTo(1);
+        assertThat(e.api.venta(e.ctxA, Permisos.de(e.ctxA), vendida).orElseThrow().folio()).isEqualTo(1);
     }
 
     @Test
@@ -94,11 +96,11 @@ class RegistrarVentaTest {
     @Test
     @DisplayName("VT-05: si el precio cambia entre preparar y confirmar, falla con COMANDO_CAMBIO y no vende")
     void confirmar_precioCambio_comandoCambio() {
-        var token = e.api.preparar(e.ctxA, Fixtures.ventaSinCupon()).token();
+        var token = e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaSinCupon()).token();
         e.catalogo.con(e.negocioA, new ProductoParaVenta(Fixtures.BOLETO, "Boleto general", "pieza",
                 new BigDecimal("50.00"), false, true));
 
-        fallaCon(() -> e.api.confirmar(e.ctxA, token), CodigoError.COMANDO_CAMBIO);
+        fallaCon(() -> e.api.confirmar(e.ctxA, Permisos.de(e.ctxA), token), CodigoError.COMANDO_CAMBIO);
         assertThat(e.ventas.todas()).isEmpty();
         assertThat(e.eventos.todos()).isEmpty();
     }
@@ -108,7 +110,7 @@ class RegistrarVentaTest {
     void confirmar_conCupon_totalNetoYCanje() {
         var resultado = e.confirmar(e.ctxA, Fixtures.ventaConCupon());
 
-        var venta = e.api.venta(e.ctxA, resultado.recursoId()).orElseThrow();
+        var venta = e.api.venta(e.ctxA, Permisos.de(e.ctxA), resultado.recursoId()).orElseThrow();
         assertThat(venta.descuento()).isEqualTo(new BigDecimal("15.00"));
         assertThat(venta.total()).isEqualTo(new BigDecimal("135.00"));
         assertThat(venta.cuponId()).isEqualTo(Fixtures.CUPON);
@@ -128,17 +130,17 @@ class RegistrarVentaTest {
         var comando = new RegistrarVentaComando(Fixtures.TURNO, Fixtures.dosBoletosYMedioKilo(),
                 List.of(Fixtures.efectivo("135.00", null)), "NO-EXISTE", null);
 
-        fallaCon(() -> e.api.preparar(e.ctxA, comando), CodigoError.CUPON_INVALIDO);
+        fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), comando), CodigoError.CUPON_INVALIDO);
     }
 
     @Test
     @DisplayName("VT-07: si el cupon se canjeo en otra venta entre preparar y confirmar, no hay segunda venta")
     void confirmar_cuponYaCanjeado_noVende() {
-        var primero = e.api.preparar(e.ctxA, Fixtures.ventaConCupon()).token();
-        var segundo = e.api.preparar(e.ctxA, Fixtures.ventaConCupon()).token();
-        e.api.confirmar(e.ctxA, primero);
+        var primero = e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaConCupon()).token();
+        var segundo = e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaConCupon()).token();
+        e.api.confirmar(e.ctxA, Permisos.de(e.ctxA), primero);
 
-        fallaCon(() -> e.api.confirmar(e.ctxA, segundo), CodigoError.CUPON_YA_CANJEADO);
+        fallaCon(() -> e.api.confirmar(e.ctxA, Permisos.de(e.ctxA), segundo), CodigoError.CUPON_YA_CANJEADO);
         assertThat(e.ventas.todas()).hasSize(1);
         assertThat(e.eventos.deTipo(VentaRegistrada.TIPO)).hasSize(1);
     }
@@ -146,16 +148,16 @@ class RegistrarVentaTest {
     @Test
     @DisplayName("VT-07: si Pasaporte falla al canjear, no se registra la venta ni se gasta folio")
     void confirmar_canjeFalla_noVende() {
-        var token = e.api.preparar(e.ctxA, Fixtures.ventaConCupon()).token();
+        var token = e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaConCupon()).token();
         e.cupones.fallarAlCanjear = true;
 
-        fallaCon(() -> e.api.confirmar(e.ctxA, token), CodigoError.ERROR_TEMPORAL);
+        fallaCon(() -> e.api.confirmar(e.ctxA, Permisos.de(e.ctxA), token), CodigoError.ERROR_TEMPORAL);
         assertThat(e.ventas.todas()).isEmpty();
         assertThat(e.eventos.todos()).isEmpty();
 
         e.cupones.fallarAlCanjear = false;
         var vendida = e.vender(e.ctxA, Fixtures.ventaConCupon());
-        assertThat(e.api.venta(e.ctxA, vendida).orElseThrow().folio()).isEqualTo(1);
+        assertThat(e.api.venta(e.ctxA, Permisos.de(e.ctxA), vendida).orElseThrow().folio()).isEqualTo(1);
     }
 
     @Test
@@ -165,7 +167,7 @@ class RegistrarVentaTest {
         var comando = new RegistrarVentaComando(Fixtures.TURNO, Fixtures.dosBoletosYMedioKilo(),
                 List.of(Fixtures.efectivo("0.01", null)), "GRANDE", null);
 
-        fallaCon(() -> e.api.preparar(e.ctxA, comando), CodigoError.DESCUENTO_MAYOR_AL_SUBTOTAL);
+        fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), comando), CodigoError.DESCUENTO_MAYOR_AL_SUBTOTAL);
     }
 
     @Test
@@ -174,7 +176,7 @@ class RegistrarVentaTest {
         var comando = new RegistrarVentaComando(null, Fixtures.dosBoletosYMedioKilo(),
                 List.of(Fixtures.efectivo("150.00", null)), null, null);
 
-        fallaCon(() -> e.api.preparar(e.ctxA, comando), CodigoError.TURNO_NO_ABIERTO);
+        fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), comando), CodigoError.TURNO_NO_ABIERTO);
     }
 
     @Test
@@ -187,7 +189,7 @@ class RegistrarVentaTest {
         var ventaId = e.vender(e.ctxA, conCliente);
         e.vender(e.ctxA, Fixtures.ventaSinCupon());
 
-        assertThat(e.api.venta(e.ctxA, ventaId).orElseThrow().clienteId()).isEqualTo(cliente);
+        assertThat(e.api.venta(e.ctxA, Permisos.de(e.ctxA), ventaId).orElseThrow().clienteId()).isEqualTo(cliente);
         var eventos = e.eventos.deTipo(VentaRegistrada.TIPO);
         assertThat(eventos.get(0).datos()).containsEntry("cliente_id", cliente.toString());
         assertThat(eventos.get(1).datos()).doesNotContainKeys("cliente_id", "cupon_id");
@@ -198,9 +200,9 @@ class RegistrarVentaTest {
     void venta_deOtroNegocio_noSeVe() {
         var ventaId = e.vender(e.ctxA, Fixtures.ventaSinCupon());
 
-        assertThat(e.api.venta(e.ctxB, ventaId)).isEmpty();
-        assertThat(e.api.ventasDelTurno(e.ctxB, Fixtures.TURNO)).isEmpty();
-        assertThat(e.api.ventasDelTurno(e.ctxA, Fixtures.TURNO)).hasSize(1);
+        assertThat(e.api.venta(e.ctxB, Permisos.de(e.ctxB), ventaId)).isEmpty();
+        assertThat(e.api.ventas(e.ctxB, Permisos.TODOS, new FiltroVentas(Fixtures.TURNO, null, null, null, null, null), 100, null).elementos()).isEmpty();
+        assertThat(e.api.ventas(e.ctxA, Permisos.TODOS, new FiltroVentas(Fixtures.TURNO, null, null, null, null, null), 100, null).elementos()).hasSize(1);
     }
 
     @Test
@@ -213,6 +215,6 @@ class RegistrarVentaTest {
                 List.of(new LineaSolicitada(soloEnB, BigDecimal.ONE, null)), List.of(Fixtures.efectivo("80.00", null)),
                 null, null);
 
-        fallaCon(() -> e.api.preparar(e.ctxA, comando), CodigoError.PRODUCTO_NO_ENCONTRADO);
+        fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), comando), CodigoError.PRODUCTO_NO_ENCONTRADO);
     }
 }

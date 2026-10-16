@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import mx.negocio360.caja.FiltroCortes;
 import mx.negocio360.caja.aplicacion.puertos.LibroDeCaja;
 import mx.negocio360.caja.aplicacion.puertos.RepositorioCaja;
 import mx.negocio360.caja.dominio.Caja;
@@ -18,6 +19,8 @@ import mx.negocio360.caja.dominio.EstadoVentaAplicada;
 import mx.negocio360.caja.dominio.MovimientoCaja;
 import mx.negocio360.caja.dominio.Turno;
 import mx.negocio360.caja.dominio.VentaAplicada;
+import mx.negocio360.compartido.paginacion.Cursores;
+import mx.negocio360.compartido.paginacion.Pagina;
 
 /**
  * Tablas de Caja en memoria para desarrollo y demo (F4): {@code caja}, {@code turno}, {@code movimiento_caja},
@@ -83,6 +86,12 @@ public final class CajaEnMemoria implements RepositorioCaja, LibroDeCaja {
     }
 
     @Override
+    public synchronized Pagina<MovimientoCaja> movimientos(UUID negocioId, UUID turnoId, int primeros,
+                                                           String despues) {
+        return Cursores.pagina(movimientos(negocioId, turnoId), primeros, despues);
+    }
+
+    @Override
     public synchronized List<MovimientoCaja> movimientos(UUID negocioId, UUID turnoId) {
         return movimientos.stream().filter(m -> m.negocioId().equals(negocioId) && m.turnoId().equals(turnoId))
                 .toList();
@@ -116,7 +125,14 @@ public final class CajaEnMemoria implements RepositorioCaja, LibroDeCaja {
     }
 
     @Override
-    public synchronized List<Corte> cortes(UUID negocioId) {
-        return cortes.stream().filter(c -> c.negocioId().equals(negocioId)).toList();
+    public synchronized Pagina<Corte> cortes(UUID negocioId, FiltroCortes filtro, int primeros, String despues) {
+        var coinciden = cortes.stream()
+                .filter(c -> c.negocioId().equals(negocioId))
+                .filter(c -> filtro.cajaId() == null || filtro.cajaId().equals(c.cajaId()))
+                .filter(c -> filtro.desde() == null || !c.confirmadoEn().isBefore(filtro.desde()))
+                .filter(c -> filtro.hasta() == null || !c.confirmadoEn().isAfter(filtro.hasta()))
+                .sorted(java.util.Comparator.comparing(Corte::confirmadoEn).reversed())
+                .toList();
+        return Cursores.pagina(coinciden, primeros, despues);
     }
 }

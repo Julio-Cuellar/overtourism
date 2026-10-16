@@ -5,7 +5,7 @@ import mx.negocio360.compartido.comandos.Comando;
 import org.springframework.modulith.NamedInterface;
 
 /**
- * VF-11 AnularVenta (D-82). Lo prepara y confirma un actor con permiso de anular (VT-09).
+ * VF-11 AnularVenta (D-141). Lo prepara y confirma un actor con permiso de anular (VT-09).
  *
  * @param ventaId venta a anular
  * @param motivo  por que se anula, de 1 a 200 caracteres

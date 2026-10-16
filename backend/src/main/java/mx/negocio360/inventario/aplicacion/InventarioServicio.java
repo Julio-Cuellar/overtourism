@@ -46,6 +46,11 @@ public final class InventarioServicio implements InventarioApi {
     }
 
     @Override
+    public Optional<String> tipoDeComando(ContextoNegocio contexto, String token) {
+        return preparacion.tipoDeComando(contexto, token);
+    }
+
+    @Override
     public Optional<ArticuloVista> articulo(ContextoNegocio contexto, UUID articuloId) {
         if (articuloId == null) {
             return Optional.empty();

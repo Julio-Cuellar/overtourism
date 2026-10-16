@@ -86,7 +86,8 @@ class BuscarClientesTest {
     void clientesApi_operacionesConTexto_siempreDevuelvenListas() {
         var conTexto = Arrays.stream(ClientesApi.class.getDeclaredMethods())
                 .filter(m -> Arrays.asList(m.getParameterTypes()).contains(String.class))
-                .filter(m -> !m.getName().equals("confirmar")).toList();
+                // confirmar y tipoDeComando reciben un token, no un texto de busqueda.
+                .filter(m -> !m.getName().equals("confirmar") && !m.getName().equals("tipoDeComando")).toList();
 
         assertThat(conTexto).extracting(Method::getName).containsExactlyInAnyOrder("buscar", "sugerir");
         for (var operacion : conTexto) {

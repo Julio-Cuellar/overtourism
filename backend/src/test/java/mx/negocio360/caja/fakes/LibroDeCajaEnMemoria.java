@@ -13,6 +13,9 @@ import mx.negocio360.caja.dominio.Corte;
 import mx.negocio360.caja.dominio.EstadoVentaAplicada;
 import mx.negocio360.caja.dominio.MovimientoCaja;
 import mx.negocio360.caja.dominio.VentaAplicada;
+import mx.negocio360.caja.FiltroCortes;
+import mx.negocio360.compartido.paginacion.Cursores;
+import mx.negocio360.compartido.paginacion.Pagina;
 
 /** Doble de {@code movimiento_caja}, {@code venta_aplicada}, {@code evento_procesado} y {@code corte}. */
 public final class LibroDeCajaEnMemoria implements LibroDeCaja {
@@ -31,6 +34,11 @@ public final class LibroDeCajaEnMemoria implements LibroDeCaja {
     public List<MovimientoCaja> movimientos(UUID negocioId, UUID turnoId) {
         return movimientos.stream().filter(m -> m.negocioId().equals(negocioId) && m.turnoId().equals(turnoId))
                 .toList();
+    }
+
+    @Override
+    public Pagina<MovimientoCaja> movimientos(UUID negocioId, UUID turnoId, int primeros, String despues) {
+        return Cursores.pagina(movimientos(negocioId, turnoId), primeros, despues);
     }
 
     @Override
@@ -61,8 +69,15 @@ public final class LibroDeCajaEnMemoria implements LibroDeCaja {
     }
 
     @Override
-    public List<Corte> cortes(UUID negocioId) {
-        return cortes.stream().filter(c -> c.negocioId().equals(negocioId)).toList();
+    public Pagina<Corte> cortes(UUID negocioId, FiltroCortes filtro, int primeros, String despues) {
+        var coinciden = cortes.stream()
+                .filter(c -> c.negocioId().equals(negocioId))
+                .filter(c -> filtro.cajaId() == null || filtro.cajaId().equals(c.cajaId()))
+                .filter(c -> filtro.desde() == null || !c.confirmadoEn().isBefore(filtro.desde()))
+                .filter(c -> filtro.hasta() == null || !c.confirmadoEn().isAfter(filtro.hasta()))
+                .sorted(java.util.Comparator.comparing(Corte::confirmadoEn).reversed())
+                .toList();
+        return Cursores.pagina(coinciden, primeros, despues);
     }
 
     /** Dice si el consumidor ya marco el evento como procesado. */

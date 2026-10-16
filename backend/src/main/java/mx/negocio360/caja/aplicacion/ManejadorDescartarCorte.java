@@ -1,12 +1,14 @@
 package mx.negocio360.caja.aplicacion;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import mx.negocio360.caja.aplicacion.puertos.RepositorioCaja;
 import mx.negocio360.caja.dominio.CajaException;
 import mx.negocio360.caja.dominio.CodigoError;
 import mx.negocio360.caja.dominio.EstadoTurno;
+import mx.negocio360.caja.seguridad.PermisosDeCaja;
 import mx.negocio360.compartido.comandos.ManejadorComando;
 import mx.negocio360.compartido.comandos.ResultadoComando;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
@@ -39,6 +41,12 @@ public final class ManejadorDescartarCorte implements ManejadorComando<Descartar
     @Override
     public Class<DescartarCorteComando> claseComando() {
         return DescartarCorteComando.class;
+    }
+
+    /** D-126: el servicio exige estos permisos al preparar y al confirmar, antes de gastar el token. */
+    @Override
+    public List<String> permisos(DescartarCorteComando comando) {
+        return List.of(PermisosDeCaja.CORTE_CERRAR);
     }
 
     /** @throws CajaException TURNO_NO_ABIERTO si no existe o ya esta cerrado */

@@ -26,6 +26,7 @@ import mx.negocio360.ventas.dominio.PagoVenta;
 import mx.negocio360.ventas.dominio.Venta;
 import mx.negocio360.ventas.dominio.VentasException;
 import mx.negocio360.ventas.eventos.VentaRegistrada;
+import mx.negocio360.ventas.seguridad.PermisosDeVentas;
 
 /**
  * VF-10 RegistrarVenta: VT-01 a VT-08, VT-12 y VT-13.
@@ -86,6 +87,12 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
     @Override
     public Class<RegistrarVentaComando> claseComando() {
         return RegistrarVentaComando.class;
+    }
+
+    /** D-126: cobrar exige {@code ventas.venta.registrar}, tambien al confirmar y antes de gastar el token. */
+    @Override
+    public List<String> permisos(RegistrarVentaComando comando) {
+        return List.of(PermisosDeVentas.VENTA_REGISTRAR);
     }
 
     /** El turno, para que Caja cuente las ventas preparadas sin confirmar (CJ-07). */

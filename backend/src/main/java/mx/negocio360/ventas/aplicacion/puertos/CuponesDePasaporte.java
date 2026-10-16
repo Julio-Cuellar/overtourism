@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Puerto hacia Pasaporte (J2 y J3, D-34, D-78). Pasaporte aun no existe y no consume eventos de Ventas: Ventas lo
+ * Puerto hacia Pasaporte (J2 y J3, D-34, D-137). Pasaporte aun no existe y no consume eventos de Ventas: Ventas lo
  * llama al preparar (solo lectura) y al confirmar (canje). Los fallos llegan como
  * {@link mx.negocio360.ventas.dominio.VentasException} con {@code CUPON_INVALIDO}, {@code CUPON_YA_CANJEADO},
  * {@code CUPON_NO_APLICA} o {@code ERROR_TEMPORAL}.

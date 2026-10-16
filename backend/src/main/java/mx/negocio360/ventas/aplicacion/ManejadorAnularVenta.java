@@ -1,22 +1,23 @@
 package mx.negocio360.ventas.aplicacion;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import mx.negocio360.compartido.comandos.ManejadorComando;
 import mx.negocio360.compartido.comandos.ResultadoComando;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
-import mx.negocio360.ventas.aplicacion.puertos.AutorizacionVentas;
 import mx.negocio360.ventas.aplicacion.puertos.PublicadorEventos;
 import mx.negocio360.ventas.aplicacion.puertos.RepositorioVentas;
 import mx.negocio360.ventas.dominio.CodigoError;
 import mx.negocio360.ventas.dominio.EstadoVenta;
 import mx.negocio360.ventas.dominio.Venta;
 import mx.negocio360.ventas.dominio.VentasException;
+import mx.negocio360.ventas.seguridad.PermisosDeVentas;
 import mx.negocio360.ventas.eventos.VentaAnulada;
 
 /**
- * VF-11 AnularVenta: VT-09 y VT-11 (D-82). Revisa permiso, motivo y estado al preparar y otra vez al confirmar;
+ * VF-11 AnularVenta: VT-09 y VT-11 (D-141). El permiso lo exige el servicio al preparar y al confirmar ({@link #permisos}); aqui se revisan motivo y estado en los dos pasos;
  * confirmar cambia la venta con bloqueo optimista y publica {@code venta.anulada} v1.
  *
  * <p>Pendiente (VT-10, P2): revertir el canje del cupon en Pasaporte; la operacion aun no esta acordada.
@@ -29,7 +30,6 @@ public final class ManejadorAnularVenta implements ManejadorComando<AnularVentaC
     public static final int MAX_CARACTERES_MOTIVO = 200;
 
     private final RepositorioVentas ventas;
-    private final AutorizacionVentas autorizacion;
     private final PublicadorEventos eventos;
     private final Clock reloj;
 
@@ -37,14 +37,11 @@ public final class ManejadorAnularVenta implements ManejadorComando<AnularVentaC
      * Arma el manejador.
      *
      * @param ventas       repositorio de ventas
-     * @param autorizacion permiso de anular (VT-09)
      * @param eventos      outbox
      * @param reloj        reloj de la plataforma
      */
-    public ManejadorAnularVenta(RepositorioVentas ventas, AutorizacionVentas autorizacion, PublicadorEventos eventos,
-                                Clock reloj) {
+    public ManejadorAnularVenta(RepositorioVentas ventas, PublicadorEventos eventos, Clock reloj) {
         this.ventas = Objects.requireNonNull(ventas, "ventas");
-        this.autorizacion = Objects.requireNonNull(autorizacion, "autorizacion");
         this.eventos = Objects.requireNonNull(eventos, "eventos");
         this.reloj = Objects.requireNonNull(reloj, "reloj");
     }
@@ -59,10 +56,16 @@ public final class ManejadorAnularVenta implements ManejadorComando<AnularVentaC
         return AnularVentaComando.class;
     }
 
+    /** VT-09 y D-126: anular exige {@code ventas.venta.anular}, tambien al confirmar y antes de gastar el token. */
+    @Override
+    public List<String> permisos(AnularVentaComando comando) {
+        return List.of(PermisosDeVentas.VENTA_ANULAR);
+    }
+
     /**
      * Valida y muestra lo que se revertiria.
      *
-     * @throws VentasException SIN_PERMISO_ANULAR, MOTIVO_REQUERIDO, VENTA_NO_ENCONTRADA o VENTA_YA_ANULADA
+     * @throws VentasException MOTIVO_REQUERIDO, VENTA_NO_ENCONTRADA o VENTA_YA_ANULADA
      */
     @Override
     public String preparar(ContextoNegocio contexto, AnularVentaComando comando) {
@@ -91,9 +94,6 @@ public final class ManejadorAnularVenta implements ManejadorComando<AnularVentaC
     }
 
     private Venta ventaAnulable(ContextoNegocio contexto, AnularVentaComando comando) {
-        if (!autorizacion.puedeAnular(contexto)) {
-            throw new VentasException(CodigoError.SIN_PERMISO_ANULAR);
-        }
         var motivo = comando.motivo();
         if (motivo == null || motivo.isBlank() || motivo.strip().length() > MAX_CARACTERES_MOTIVO) {
             throw new VentasException(CodigoError.MOTIVO_REQUERIDO);

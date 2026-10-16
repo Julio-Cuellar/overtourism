@@ -6,7 +6,7 @@ import java.util.UUID;
 import mx.negocio360.ventas.aplicacion.LineaSolicitada;
 import mx.negocio360.ventas.aplicacion.PagoSolicitado;
 import mx.negocio360.ventas.aplicacion.RegistrarVentaComando;
-import mx.negocio360.ventas.aplicacion.puertos.ProductoParaVenta;
+import mx.negocio360.compartido.catalogo.ProductoParaVenta;
 import mx.negocio360.ventas.dominio.MetodoPago;
 
 /**

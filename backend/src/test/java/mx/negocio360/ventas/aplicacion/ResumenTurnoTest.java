@@ -1,5 +1,6 @@
 package mx.negocio360.ventas.aplicacion;
 
+import mx.negocio360.compartido.pruebas.Permisos;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
@@ -50,11 +51,11 @@ class ResumenTurnoTest {
     @Test
     @DisplayName("cuenta las ventas preparadas sin confirmar de ese turno mientras no vencen")
     void resumen_preparacionesVigentes() {
-        e.api.preparar(e.ctxA, Fixtures.ventaSinCupon());
-        e.api.preparar(e.ctxA, Fixtures.ventaSinCupon());
+        e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaSinCupon());
+        e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaSinCupon());
         var otroTurno = UUID.randomUUID();
         e.turnos.abrir(e.negocioA, otroTurno);
-        e.api.preparar(e.ctxA, new RegistrarVentaComando(otroTurno, Fixtures.dosBoletosYMedioKilo(),
+        e.api.preparar(e.ctxA, Permisos.de(e.ctxA), new RegistrarVentaComando(otroTurno, Fixtures.dosBoletosYMedioKilo(),
                 List.of(Fixtures.efectivo("150.00", null)), null, null));
 
         assertThat(e.api.resumenTurno(e.ctxA, Fixtures.TURNO).preparacionesVigentes()).isEqualTo(2);

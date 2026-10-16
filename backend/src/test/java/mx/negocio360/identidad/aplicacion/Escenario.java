@@ -52,12 +52,14 @@ public final class Escenario {
     /** Un caracter mas que el maximo del nombre visible; es literal porque las anotaciones exigen constantes. */
     public static final String NOMBRE_DE_81 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-    /** Permisos de Identidad (reales) y los de Clientes (copiados: un modulo no ve el catalogo del otro en sus pruebas). */
+    /** Permisos de Identidad (reales) y los de Clientes (copiados, junto con los de Negocios, Ventas y Caja: un modulo no ve el catalogo del otro en sus pruebas). */
     public static final List<PermisoDeclarado> CATALOGO = Stream.concat(new PermisosDeIdentidad().permisos().stream(),
             Stream.of("clientes.sugerir", "clientes.lista.ver", "clientes.panorama.ver", "clientes.ficha.ver",
                     "clientes.cliente.registrar", "clientes.cliente.editar", "clientes.consentimiento.registrar",
                     "clientes.aviso.publicar", "clientes.cliente.anonimizar", "clientes.arco.gestionar",
-                    "clientes.datos.exportar", "negocios.perfil.ver", "negocios.perfil.editar", "negocios.sucursal.gestionar", "negocios.horario.editar", "negocios.negocio.publicar", "negocios.disponibilidad.editar", "negocios.negocio.pausar", "negocios.negocio.cerrar", "negocios.empleado.ver", "negocios.empleado.registrar", "negocios.empleado.editar", "negocios.empleado.baja", "negocios.resena.ver", "negocios.resena.responder")
+                    "clientes.datos.exportar", "negocios.perfil.ver", "negocios.perfil.editar", "negocios.sucursal.gestionar", "negocios.horario.editar", "negocios.negocio.publicar", "negocios.disponibilidad.editar", "negocios.negocio.pausar", "negocios.negocio.cerrar", "negocios.empleado.ver", "negocios.empleado.registrar", "negocios.empleado.editar", "negocios.empleado.baja", "negocios.resena.ver", "negocios.resena.responder",
+                    "ventas.venta.ver", "ventas.venta.registrar", "ventas.venta.anular", "caja.caja.gestionar", "caja.turno.ver", "caja.turno.abrir", "caja.movimiento.registrar", "caja.retiro.registrar", "caja.corte.cerrar", "caja.corte.autorizar", "caja.corte.ver",
+                    "inventario.articulo.ver", "inventario.articulo.gestionar", "inventario.movimiento.registrar", "inventario.conteo.ajustar")
                     .map(codigo -> new PermisoDeclarado(codigo, "Permiso de prueba", false))).toList();
 
     public final RelojMutable reloj = new RelojMutable(AHORA);

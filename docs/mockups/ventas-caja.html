@@ -146,7 +146,7 @@ a{color:var(--talavera)}
 
 <section id="decisiones">
   <h2><span class="n">02</span>Decisiones que aplican</h2>
-  <p>Las <code>D-xx</code> remiten a <code>docs/BITACORA.md</code>. Las nuevas de esta sesión son D-76 a D-83. Ninguna nueva está aceptada salvo D-83, que pidió el usuario.</p>
+  <p>Las <code>D-xx</code> remiten a <code>docs/BITACORA.md</code>. Las nuevas de esta sesión son D-135 a D-142. Ninguna nueva está aceptada salvo D-142, que pidió el usuario.</p>
   <div class="scroll"><table>
     <thead><tr><th>ID</th><th>Decisión</th><th>Estado</th><th>Efecto en Ventas y Caja</th></tr></thead>
     <tbody id="t-decisiones"></tbody>
@@ -155,7 +155,7 @@ a{color:var(--talavera)}
 
 <section id="mapa">
   <h2><span class="n">03</span>Mapa de módulos y eventos</h2>
-  <p>Quién llama a quién y quién escucha qué. Ventas no conoce a Caja (D-76): el canal GraphQL obtiene el turno y se lo pasa. Pasaporte no escucha a Ventas (D-34): Ventas lo llama al cobrar.</p>
+  <p>Quién llama a quién y quién escucha qué. Ventas no conoce a Caja (D-135): el canal GraphQL obtiene el turno y se lo pasa. Pasaporte no escucha a Ventas (D-34): Ventas lo llama al cobrar.</p>
   <div class="legend"><span><span class="ln s"></span>Síncrono: llamada a la API Java del otro módulo</span><span><span class="ln a"></span>Asíncrono: evento por el bus con outbox, en la misma transacción</span></div>
   <div class="scroll"><pre class="mermaid">
 flowchart TB
@@ -363,7 +363,7 @@ erDiagram
     <thead><tr><th>ID</th><th>Función</th><th>Tipo</th><th>Entrada</th><th>Salida</th><th>Reglas</th><th>Eventos</th><th>Prioridad</th></tr></thead>
     <tbody id="t-funciones"></tbody>
   </table></div>
-  <p class="mirar"><b>Qué mirar:</b> <code>CerrarTurno</code> es la única preparación que cambia un estado (pone el turno <code>EN_CORTE</code>, D-81). Los listeners de Caja no piden confirmación humana porque son consecuencia de una venta ya confirmada (mismo criterio que D-22).</p>
+  <p class="mirar"><b>Qué mirar:</b> <code>CerrarTurno</code> es la única preparación que cambia un estado (pone el turno <code>EN_CORTE</code>, D-140). Los listeners de Caja no piden confirmación humana porque son consecuencia de una venta ya confirmada (mismo criterio que D-22).</p>
 </section>
 
 <section id="errores">
@@ -382,7 +382,7 @@ erDiagram
     <thead><tr><th>Evento</th><th>Publica</th><th>Escuchan</th><th>Campos de <code>datos</code></th><th>Cuándo</th></tr></thead>
     <tbody id="t-eventos"></tbody>
   </table></div>
-  <div class="note info"><b>Compatibilidad.</b> Clientes ya lee <code>venta.registrada</code> v1 (<code>venta_id</code>, <code>cliente_id</code>, <code>total</code>) y <code>venta.anulada</code> v1 (<code>venta_id</code>) con lector tolerante en <code>clientes/contratos/</code>. El contrato de D-77 solo agrega campos, así que no rompe esas clases ni <code>ContratoVentasConsumidoTest</code>.</div>
+  <div class="note info"><b>Compatibilidad.</b> Clientes ya lee <code>venta.registrada</code> v1 (<code>venta_id</code>, <code>cliente_id</code>, <code>total</code>) y <code>venta.anulada</code> v1 (<code>venta_id</code>) con lector tolerante en <code>clientes/contratos/</code>. El contrato de D-136 solo agrega campos, así que no rompe esas clases ni <code>ContratoVentasConsumidoTest</code>.</div>
   <h3>JSON de ejemplo</h3>
   <p class="mirar">Negocio ficticio «Museo Talavera Viva»: 2 boletos de 45.00 y medio kilo de camote a 120.00 = 150.00; cupón de 10 % = 15.00; total 135.00, pagado con 200.00 en efectivo (cambio 65.00, que no viaja en el evento).</p>
   <div class="grid2">
@@ -441,7 +441,7 @@ sequenceDiagram
   participant B as Bus (outbox)
   Cajero->>G: prepararComando(cerrarTurno)
   G->>C: preparar(CerrarTurno)
-  Note over C: Turno pasa a EN_CORTE (D-81)
+  Note over C: Turno pasa a EN_CORTE (D-140)
   C->>V: resumenTurno(turnoId)
   V-->>C: ventas, totales por metodo, preparaciones vigentes
   C-->>G: token y esperado por metodo
@@ -537,7 +537,7 @@ stateDiagram-v2
       <tr><td>Pasaporte</td><td><code>cotizarCupon</code> (nuevo, solo lectura), <code>canjearCupon</code> (D-34) y una forma de revertir el canje</td><td>VT-07, VT-10</td><td><span class="q">[?] sin dueño</span></td></tr>
       <tr><td>Identidad</td><td>Permisos de anular venta, retirar efectivo y autorizar diferencias</td><td>VT-09, CJ-05, CJ-08</td><td><span class="q">[?]</span></td></tr>
       <tr><td>Clientes</td><td>Nada nuevo: <code>sugerirClientes</code> lo usa el canal; Clientes consume <code>venta.*</code></td><td>VT-13</td><td>Existe (I0 e I2)</td></tr>
-      <tr><td>Inventario</td><td>Nada nuevo: consume <code>venta.*</code> con <code>lineas[]</code> (D-25)</td><td>D-77</td><td>Diseñado, sin autorización de código</td></tr>
+      <tr><td>Inventario</td><td>Nada nuevo: consume <code>venta.*</code> con <code>lineas[]</code> (D-25)</td><td>D-136</td><td>Diseñado, sin autorización de código</td></tr>
       <tr><td>Plataforma</td><td><code>ContextoNegocio</code>, <code>SobreEvento</code>, <code>UuidV7</code>, <code>DecimalPlano</code> y el par <code>prepararComando</code> / <code>confirmarComando</code></td><td>Todo</td><td>Existen en <code>compartido</code> salvo el par de comandos</td></tr>
     </tbody>
   </table></div>
@@ -553,7 +553,7 @@ stateDiagram-v2
 </section>
 
 <section id="javadoc">
-  <h2><span class="n">15</span>Documentación del código con JavaDoc <span class="st A">D-83 ACEPTADA</span></h2>
+  <h2><span class="n">15</span>Documentación del código con JavaDoc <span class="st A">D-142 ACEPTADA</span></h2>
   <p>Pedido del usuario: documentar el código con JavaDoc «para no batallar a la hora de encontrar errores». La idea es que un código de error en el registro lleve directo a su regla en este diseño.</p>
   <ol class="clean">
     <li>Cada clase, record e interfaz pública dice qué representa y, si es agregado, su ciclo de estados.</li>
@@ -607,7 +607,7 @@ stateDiagram-v2
     <thead><tr><th>#</th><th>Pregunta</th><th>Recomendación</th></tr></thead>
     <tbody>
       <tr><td>1</td><td>¿Programar para la demo o mostrarlo como mockup?</td><td>Mockup ahora, código después (opción B)</td></tr>
-      <tr><td>2</td><td>¿Aprueban D-76 a D-82?</td><td>Sí; si una cambia, hay que avisar a Clientes e Inventario porque cambia el contrato de eventos</td></tr>
+      <tr><td>2</td><td>¿Aprueban D-135 a D-141?</td><td>Sí; si una cambia, hay que avisar a Clientes e Inventario porque cambia el contrato de eventos</td></tr>
       <tr><td>3</td><td>¿Quién es dueño de Catálogo y de Pasaporte?</td><td>Quien tome Ventas, para congelar los contratos en una sola conversación</td></tr>
       <tr><td>4</td><td>¿Quién puede anular, hasta cuándo, y cuál es el umbral del corte?</td><td>Encargado o dueño, solo con el turno abierto; umbral de 50.00 como regla versionada <span class="q">[?]</span></td></tr>
       <tr><td>5</td><td>¿Precios finales sin desglose de IVA en el MVP?</td><td>Sí; lo fiscal solo desde una base curada con fuente y fecha (VT-12)</td></tr>
@@ -617,7 +617,7 @@ stateDiagram-v2
 </section>
 
 <footer>
-  <span><b>Fuentes:</b> <code>docs/diseno/ventas.md</code>, <code>docs/diseno/caja.md</code>, <code>docs/planes/ventas-caja-v1.md</code>, <code>docs/BITACORA.md</code> (D-04 a D-83), <code>docs/diseno/inventario.md</code>, <code>docs/diseno/clientes.md</code>, <code>backend/.../clientes/contratos/</code> y <code>compartido/eventos/SobreEvento.java</code>.</span>
+  <span><b>Fuentes:</b> <code>docs/diseno/ventas.md</code>, <code>docs/diseno/caja.md</code>, <code>docs/planes/ventas-caja-v1.md</code>, <code>docs/BITACORA.md</code> (D-04 a D-142), <code>docs/diseno/inventario.md</code>, <code>docs/diseno/clientes.md</code>, <code>backend/.../clientes/contratos/</code> y <code>compartido/eventos/SobreEvento.java</code>.</span>
   <span>Diseño en revisión. Nada de esto está aprobado para programarse. Negocio, montos e identificadores son de ejemplo.</span>
 </footer>
 </main>
@@ -640,7 +640,7 @@ stateDiagram-v2
     ["Token","10 minutos","5 minutos","D-23"],
     ["Hora del evento","Con zona `-06:00`","`ocurrido_en` en UTC","Sobre común e Inventario §7.1"],
     ["REST","Webhook de pagos y PDF como parte del diseño","Sin REST en P1; los dos quedan P3","D-63: el bot no continúa; contratos de pago sin proveedor"],
-    ["Tipo BOLETO en Ventas","Ventas conocía `BOLETO` y unidades de museo","Ventas solo conoce `producto_id`; unidad y fracción vienen de Catálogo","R4: un horizontal no conoce verticales (D-80)"],
+    ["Tipo BOLETO en Ventas","Ventas conocía `BOLETO` y unidades de museo","Ventas solo conoce `producto_id`; unidad y fracción vienen de Catálogo","R4: un horizontal no conoce verticales (D-139)"],
     ["Contrato de respuesta","No se mencionaba","`{ ok, codigo, datos, mensaje_plantilla }` y códigos de error fijos","`CLAUDE.md` e Inventario §6"],
     ["Lo que faltaba","—","Decisiones, códigos de error, contratos con otros módulos, criterios de aceptación, estados, JavaDoc y plan con calendario","Pedido del usuario: agregar lo que faltó según el repositorio"]
   ];
@@ -655,14 +655,14 @@ stateDiagram-v2
     ["D-48 / D-65","`cliente_id` opcional; total neto de cupón","A","Campos de `venta.registrada`"],
     ["D-55","Par de plataforma `prepararComando` / `confirmarComando`","P","Sin mutaciones propias"],
     ["D-63","El bot no continúa","A","Sin REST en P1"],
-    ["D-76","Ventas no conoce a Caja; el canal pasa el `turno_id`; Caja escucha a Ventas","P","Evita el ciclo"],
-    ["D-77","Contrato de `venta.registrada` v1 y `venta.anulada` v1","P","Une lo que piden Inventario, Clientes y Caja"],
-    ["D-78","Cupón cotizado al preparar y canjeado al confirmar, en una transacción","P","Requiere `cotizarCupon` en Pasaporte"],
-    ["D-79","Folio consecutivo asignado al confirmar","P","Sin huecos"],
-    ["D-80","Boletos y venta a granel viven en Catálogo y Museos, no en Ventas","P","Cumple R4"],
-    ["D-81","Preparar el corte pone el turno `EN_CORTE`","P","Única preparación que cambia un estado"],
-    ["D-82","Anular usa preparar → confirmar, con motivo y permiso","P","Quién y hasta cuándo sigue abierto"],
-    ["D-83","Todo el código con JavaDoc que cita funciones, reglas y códigos de error","A","Pedido del usuario el 2026-10-14"],
+    ["D-135","Ventas no conoce a Caja; el canal pasa el `turno_id`; Caja escucha a Ventas","P","Evita el ciclo"],
+    ["D-136","Contrato de `venta.registrada` v1 y `venta.anulada` v1","P","Une lo que piden Inventario, Clientes y Caja"],
+    ["D-137","Cupón cotizado al preparar y canjeado al confirmar, en una transacción","P","Requiere `cotizarCupon` en Pasaporte"],
+    ["D-138","Folio consecutivo asignado al confirmar","P","Sin huecos"],
+    ["D-139","Boletos y venta a granel viven en Catálogo y Museos, no en Ventas","P","Cumple R4"],
+    ["D-140","Preparar el corte pone el turno `EN_CORTE`","P","Única preparación que cambia un estado"],
+    ["D-141","Anular usa preparar → confirmar, con motivo y permiso","P","Quién y hasta cuándo sigue abierto"],
+    ["D-142","Todo el código con JavaDoc que cita funciones, reglas y códigos de error","A","Pedido del usuario el 2026-10-14"],
     ["—","Si Museos y Misceláneos son reales en la demo","Q","Cambia lo que se muestra en el camino dorado"]
   ];
   document.getElementById("t-decisiones").innerHTML=decisiones.map(function(r){return '<tr><td class="id">'+esc(r[0])+"</td><td>"+md(r[1])+"</td><td>"+ESTADO[r[2]]+"</td><td>"+md(r[3])+"</td></tr>";}).join("");
@@ -684,13 +684,13 @@ stateDiagram-v2
   document.getElementById("t-entidades").innerHTML=entidades.map(function(r){return '<tr><td class="mono"><b>'+esc(r[0])+"</b></td><td>"+esc(r[1])+"</td><td>"+md(r[2])+"</td><td>"+md(r[3])+"</td><td>"+md(r[4])+"</td></tr>";}).join("");
 
   var reglas=[
-    ["VT-01","Toda venta lleva `turno_id`. El canal verifica con `CajaApi.turnoActivo` que esté ABIERTO antes de preparar y de confirmar. Ventas lo guarda sin validarlo (D-76).","P1"],
+    ["VT-01","Toda venta lleva `turno_id`. El canal verifica con `CajaApi.turnoActivo` que esté ABIERTO antes de preparar y de confirmar. Ventas lo guarda sin validarlo (D-135).","P1"],
     ["VT-02","Precio, descripción y unidad se toman de Catálogo al preparar y se copian a la línea.","P1"],
-    ["VT-03","Cantidad mayor que 0. Solo admite decimales si Catálogo dice que el producto admite fracción (granel, D-80).","P1"],
+    ["VT-03","Cantidad mayor que 0. Solo admite decimales si Catálogo dice que el producto admite fracción (granel, D-139).","P1"],
     ["VT-04","La suma de pagos es igual al total. En efectivo, recibido ≥ monto y cambio = recibido − monto. Pago mixto permitido.","P1"],
     ["VT-05","`confirmar` revalida todo; si cambió el precio o el cupón responde `COMANDO_CAMBIO` y no escribe.","P1"],
-    ["VT-06","Folio consecutivo y sin huecos por negocio y serie, asignado al confirmar (D-79).","P1"],
-    ["VT-07","Máximo un cupón por venta [?]. Se cotiza al preparar y se canjea al confirmar en la misma transacción; si el canje falla, no hay venta (D-34, D-78).","P1"],
+    ["VT-06","Folio consecutivo y sin huecos por negocio y serie, asignado al confirmar (D-138).","P1"],
+    ["VT-07","Máximo un cupón por venta [?]. Se cotiza al preparar y se canjea al confirmar en la misma transacción; si el canje falla, no hay venta (D-34, D-137).","P1"],
     ["VT-08","Descuento ≤ subtotal y total = subtotal − descuento. El total del evento es neto de cupón (D-65).","P1"],
     ["VT-09","Solo se anula una venta REGISTRADA, con motivo y permiso de Identidad [?]. Límite de tiempo [?].","P1"],
     ["VT-10","Anular una venta con cupón revierte el canje en Pasaporte [?] (operación por acordar).","P2"],
@@ -702,7 +702,7 @@ stateDiagram-v2
     ["CJ-03","`venta.registrada` crea un movimiento VENTA por pago; `venta.anulada` los compensa con ANULACION.","P1"],
     ["CJ-04","Listeners idempotentes por evento y por venta. Si la anulación llega primero, se guarda ANULADO_PREVIO.","P1"],
     ["CJ-05","Un retiro no deja el efectivo esperado por debajo de cero.","P1"],
-    ["CJ-06","Preparar el corte pone el turno EN_CORTE y el canal ya no deja preparar ventas en él. Descartar lo regresa a ABIERTO (D-81).","P1"],
+    ["CJ-06","Preparar el corte pone el turno EN_CORTE y el canal ya no deja preparar ventas en él. Descartar lo regresa a ABIERTO (D-140).","P1"],
     ["CJ-07","Confirmar el corte exige cero preparaciones de venta vigentes y que Caja haya aplicado tantas ventas como reporta `resumenTurno`.","P1"],
     ["CJ-08","Diferencia en efectivo sobre el umbral pide `autorizadoPor` con permiso de encargado. Umbral como regla versionada, valor inicial 50.00 [?].","P1"],
     ["CJ-09","Un corte confirmado es inmutable y cierra el turno; correcciones como AJUSTE en un turno abierto.","P1"],
@@ -798,16 +798,16 @@ stateDiagram-v2
     ["R-2","POST /webhooks/pagos/:proveedor","REST","—","Proveedor de pagos [?]","carga firmada","202","Confirmar cobros con tarjeta; sin proveedor elegido","P3"]
   ];
   var pruebas=[
-    ["Ventas","`ApplicationModules.verify()`: Ventas no depende de Caja, Clientes ni verticales","R1, R4, D-76"],
+    ["Ventas","`ApplicationModules.verify()`: Ventas no depende de Caja, Clientes ni verticales","R1, R4, D-135"],
     ["Ventas","Precio copiado al preparar; cambio entre preparar y confirmar da `COMANDO_CAMBIO`","VT-02, VT-05"],
     ["Ventas","Fracción rechazada en producto por pieza; aceptada a granel","VT-03"],
     ["Ventas","Pagos que no cuadran, efectivo insuficiente, pago mixto correcto","VT-04"],
     ["Ventas","Dos confirmaciones simultáneas no repiten ni saltan folio","VT-06"],
     ["Ventas","Cupón canjeado en la transacción; si Pasaporte falla, no hay venta","VT-07"],
-    ["Ventas","Total neto de cupón en el evento; contrato leído por `VentaRegistradaV1` de Clientes","VT-08, D-77"],
+    ["Ventas","Total neto de cupón en el evento; contrato leído por `VentaRegistradaV1` de Clientes","VT-08, D-136"],
     ["Ventas","Anulación con y sin permiso; segunda anulación da `VENTA_YA_ANULADA`","VT-09"],
     ["Ventas","Token expirado, reutilizado, de otro negocio o con comando alterado","D-23"],
-    ["Caja","`ApplicationModules.verify()`: Caja solo depende de `compartido` y `ventas`","R1, D-76"],
+    ["Caja","`ApplicationModules.verify()`: Caja solo depende de `compartido` y `ventas`","R1, D-135"],
     ["Caja","Segundo turno en la misma caja rechazado; fondo negativo rechazado","CJ-01, CJ-02"],
     ["Caja","Pago mixto crea dos movimientos; anulación los compensa","CJ-03"],
     ["Caja","Mismo evento dos veces, un efecto; anulación antes de la venta","CJ-04"],
@@ -816,7 +816,7 @@ stateDiagram-v2
     ["Caja","Diferencia sobre el umbral sin autorización rechazada","CJ-08"],
     ["Caja","Esperado y diferencia calculados a mano coinciden","CJ-12"],
     ["Ambos","Un negocio no ve ni toca datos de otro (seguridad por fila)","R1"],
-    ["Ambos","`mvn javadoc:javadoc` sin advertencias","D-83"]
+    ["Ambos","`mvn javadoc:javadoc` sin advertencias","D-142"]
   ];
   document.getElementById("t-pruebas").innerHTML=pruebas.map(function(r){return "<tr><td>"+esc(r[0])+"</td><td>"+md(r[1])+'</td><td class="mono">'+esc(r[2])+"</td></tr>";}).join("");
 

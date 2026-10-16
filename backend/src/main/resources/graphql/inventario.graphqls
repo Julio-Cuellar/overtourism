@@ -1,0 +1,141 @@
+# Esquema de Inventario (docs/diseno/inventario.md, seccion 9). Sin negocioId: el negocio sale de la sesion (SG-02).
+# Las escrituras viajan por prepararComando y confirmarComando (D-55, D-125). Los tipos llevan sufijo del modulo (D-130).
+# Pendiente de las prioridades 2 y 3 del diseno (lotes, caducidades, series, consumo por venta): aun no estan en el esquema.
+
+extend type Query {
+  "Articulos del negocio con su saldo y su costo promedio. Hasta 100 por pagina; soloAlertas deja los que estan bajo su minimo."
+  inventario(texto: String, soloAlertas: Boolean! = false, primeros: Int! = 20, despues: String): ArticuloDeInventarioConexion!
+
+  "Un articulo con su saldo; null si no existe en este negocio."
+  articulo(id: ID!): ArticuloDeInventario
+
+  "Movimientos de un articulo en orden de registro. Hasta 100 por pagina."
+  kardex(articuloId: ID!, primeros: Int! = 20, despues: String): MovimientoDeInventarioConexion!
+}
+
+enum TipoMovimientoInventario { ENTRADA SALIDA MERMA AJUSTE_POS AJUSTE_NEG }
+enum CausaMovimientoInventario { VENTA COMPRA CONTEO MERMA MANUAL }
+enum MotivoMermaInventario { CADUCIDAD DANO ROBO }
+
+type ArticuloDeInventario {
+  id: ID!
+  nombre: String!
+  categoria: String
+  "Unidad en la que se lleva el saldo: g, ml, pieza..."
+  unidadBase: String!
+  minimoBase: Decimal
+  unidadesPropias: [UnidadPropiaDeInventario!]!
+  cantidadBase: Decimal!
+  "Costo promedio ponderado por unidad base."
+  cpp: Decimal!
+  valor: Decimal!
+  activo: Boolean!
+  bajoMinimo: Boolean!
+  version: Int!
+}
+
+type UnidadPropiaDeInventario {
+  nombre: String!
+  "Cuantas unidades base trae una de estas."
+  factor: Decimal!
+}
+
+type MovimientoDeInventario {
+  id: ID!
+  tipo: TipoMovimientoInventario!
+  causaTipo: CausaMovimientoInventario!
+  motivo: MotivoMermaInventario
+  cantidadCapturada: Decimal!
+  unidadCapturada: String!
+  factorAplicado: Decimal!
+  cantidadBase: Decimal!
+  costoUnitario: Decimal!
+  costoTotal: Decimal!
+  cppResultante: Decimal!
+  saldoResultante: Decimal!
+  ocurridoEn: DateTime!
+  registradoPor: ID
+}
+
+type ArticuloDeInventarioConexion {
+  nodos: [ArticuloDeInventario!]!
+  pageInfo: PageInfo!
+}
+
+type MovimientoDeInventarioConexion {
+  nodos: [MovimientoDeInventario!]!
+  pageInfo: PageInfo!
+}
+
+extend input ComandoInput {
+  crearArticulo: CrearArticuloInput
+  editarArticulo: EditarArticuloInput
+  definirUnidadPropia: DefinirUnidadPropiaInput
+  bajaArticulo: BajaArticuloInput
+  registrarEntradaInventario: RegistrarEntradaInventarioInput
+  registrarSalidaInventario: RegistrarSalidaInventarioInput
+  registrarMermaInventario: RegistrarMermaInventarioInput
+  ajustarPorConteo: AjustarPorConteoInput
+}
+
+input UnidadPropiaInput {
+  nombre: String!
+  factor: Decimal!
+}
+
+input CrearArticuloInput {
+  nombre: String!
+  categoria: String
+  unidadBase: String!
+  minimo: Decimal
+  unidadMinimo: String
+  unidadesPropias: [UnidadPropiaInput!]
+}
+
+input EditarArticuloInput {
+  articuloId: ID!
+  nombre: String
+  categoria: String
+  minimo: Decimal
+  unidadMinimo: String
+}
+
+input DefinirUnidadPropiaInput {
+  articuloId: ID!
+  nombre: String!
+  factor: Decimal!
+}
+
+"Solo con saldo cero (A-04)."
+input BajaArticuloInput {
+  articuloId: ID!
+}
+
+input RegistrarEntradaInventarioInput {
+  articuloId: ID!
+  cantidad: Decimal!
+  unidad: String!
+  "Costo por unidad capturada (C-08)."
+  costoUnitario: Decimal!
+  "Si se omite, es ahora."
+  ocurridoEn: DateTime
+}
+
+input RegistrarSalidaInventarioInput {
+  articuloId: ID!
+  cantidad: Decimal!
+  unidad: String!
+}
+
+input RegistrarMermaInventarioInput {
+  articuloId: ID!
+  cantidad: Decimal!
+  unidad: String!
+  motivo: MotivoMermaInventario!
+}
+
+input AjustarPorConteoInput {
+  articuloId: ID!
+  cantidadContada: Decimal!
+  unidad: String!
+}

@@ -1,6 +1,7 @@
 package mx.negocio360.caja.aplicacion;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -8,6 +9,7 @@ import mx.negocio360.caja.aplicacion.puertos.RepositorioCaja;
 import mx.negocio360.caja.dominio.Caja;
 import mx.negocio360.caja.dominio.CajaException;
 import mx.negocio360.caja.dominio.CodigoError;
+import mx.negocio360.caja.seguridad.PermisosDeCaja;
 import mx.negocio360.compartido.comandos.ManejadorComando;
 import mx.negocio360.compartido.comandos.ResultadoComando;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
@@ -19,6 +21,8 @@ public final class ManejadorCrearCaja implements ManejadorComando<CrearCajaComan
     /** Nombre estable del comando en {@code preparacion.comando_tipo}. */
     public static final String TIPO = "crear_caja";
     static final int MAX_CARACTERES_NOMBRE = 60;
+    /** Tope de cajas por negocio (D-131). */
+    public static final int MAX_CAJAS = 50;
 
     private final RepositorioCaja cajas;
     private final Clock reloj;
@@ -44,7 +48,13 @@ public final class ManejadorCrearCaja implements ManejadorComando<CrearCajaComan
         return CrearCajaComando.class;
     }
 
-    /** @throws CajaException NOMBRE_CAJA_INVALIDO o CAJA_DUPLICADA */
+    /** D-126: el servicio exige estos permisos al preparar y al confirmar, antes de gastar el token. */
+    @Override
+    public List<String> permisos(CrearCajaComando comando) {
+        return List.of(PermisosDeCaja.CAJA_GESTIONAR);
+    }
+
+    /** @throws CajaException NOMBRE_CAJA_INVALIDO, CAJA_DUPLICADA o DEMASIADAS_CAJAS */
     @Override
     public String preparar(ContextoNegocio contexto, CrearCajaComando comando) {
         return PlantillasCaja.resumenCrearCaja(nombreValido(contexto, comando));
@@ -65,10 +75,13 @@ public final class ManejadorCrearCaja implements ManejadorComando<CrearCajaComan
             throw new CajaException(CodigoError.NOMBRE_CAJA_INVALIDO);
         }
         var clave = nombre.toLowerCase(Locale.ROOT);
-        var repetida = cajas.cajas(contexto.negocioId()).stream()
-                .anyMatch(c -> c.nombre().toLowerCase(Locale.ROOT).equals(clave));
+        var existentes = cajas.cajas(contexto.negocioId());
+        var repetida = existentes.stream().anyMatch(c -> c.nombre().toLowerCase(Locale.ROOT).equals(clave));
         if (repetida) {
             throw new CajaException(CodigoError.CAJA_DUPLICADA);
+        }
+        if (existentes.size() >= MAX_CAJAS) {
+            throw new CajaException(CodigoError.DEMASIADAS_CAJAS);
         }
         return nombre;
     }

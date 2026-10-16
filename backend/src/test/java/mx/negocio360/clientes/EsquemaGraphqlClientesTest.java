@@ -85,14 +85,11 @@ class EsquemaGraphqlClientesTest {
     }
 
     @Test
-    @DisplayName("las consultas son exactamente las del inventario de Clientes mas las de Ventas, Caja y la demo (F4)")
+    @DisplayName("las consultas de Clientes son exactamente las del inventario de operaciones")
     void consultas_deClientes_sonLasDelInventario() {
         assertThat(campos(esquema.getQueryType())).containsExactlyInAnyOrder("clientes", "cliente",
                 "historialCliente", "consentimientosCliente", "sugerirClientes", "panoramaClientes",
-                "avisoPrivacidadVigente", "solicitudesArco",
-                "venta", "ventasDelTurno",
-                "cajas", "turnoActivo", "saldoTurno", "cortes",
-                "productosSimulados", "cuponesSimulados");
+                "avisoPrivacidadVigente", "solicitudesArco");
     }
 
     @Test
@@ -121,7 +118,7 @@ class EsquemaGraphqlClientesTest {
     }
 
     @Test
-    @DisplayName("SG-17: ComandoInput acepta exactamente una variante: las ocho de Clientes y las siete de Ventas y Caja")
+    @DisplayName("SG-17: ComandoInput acepta exactamente una de las ocho variantes de Clientes")
     void comandoInput_esOneOfConLasOchoVariantes() {
         var comando = (GraphQLInputObjectType) esquema.getType("ComandoInput");
 
@@ -129,9 +126,7 @@ class EsquemaGraphqlClientesTest {
         assertThat(comando.getFieldDefinitions().stream().map(GraphQLInputObjectField::getName).toList())
                 .containsExactlyInAnyOrder("registrarCliente", "editarCliente", "registrarConsentimiento",
                         "anonimizarCliente", "publicarAvisoPrivacidad", "registrarSolicitudArco",
-                        "ampliarSolicitudArco", "resolverSolicitudArco",
-                        "registrarVenta", "anularVenta",
-                        "crearCaja", "abrirTurno", "registrarMovimientoCaja", "cerrarTurno", "descartarCorte");
+                        "ampliarSolicitudArco", "resolverSolicitudArco");
     }
 
     @ParameterizedTest
@@ -147,18 +142,14 @@ class EsquemaGraphqlClientesTest {
     }
 
     @Test
-    @DisplayName("SG-07: las listas planas son solo las conocidas; una nueva hace fallar esta prueba")
+    @DisplayName("SG-07: solo dos consultas devuelven una lista plana, y ambas tienen tope en el resolvedor")
     void listasPlanas_soloLasDosAcotadasPorElContrato() {
         var planas = esquema.getQueryType().getFieldDefinitions().stream()
                 .filter(c -> GraphQLTypeUtil.isList(GraphQLTypeUtil.unwrapNonNull(c.getType())))
                 .map(GraphQLFieldDefinition::getName)
                 .toList();
 
-        // Clientes: las dos tienen tope en el resolvedor. F4 (demo): ventasDelTurno y cajas estan acotadas por el
-        // turno y el negocio; productos y cupones simulados son fijos; cortes crece con el tiempo y queda pendiente
-        // de paginar antes de produccion (Bitacora, 2026-10-15).
-        assertThat(planas).containsExactlyInAnyOrder("consentimientosCliente", "sugerirClientes",
-                "ventasDelTurno", "cajas", "cortes", "productosSimulados", "cuponesSimulados");
+        assertThat(planas).containsExactlyInAnyOrder("consentimientosCliente", "sugerirClientes");
     }
 
     static Stream<Arguments> enumsCompartidosConJava() {

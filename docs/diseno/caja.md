@@ -3,7 +3,7 @@
 **Versión:** 0.1 (borrador para revisión del equipo)
 **Fecha:** 2026-10-14
 **Estado:** solo diseño. No hay autorización escrita para programar Caja. Nadie debe programar contra este documento hasta que el equipo lo apruebe (sección 12).
-**Contexto de decisiones:** `docs/BITACORA.md`. Decisiones nuevas: D-76, D-77, D-81 y D-83.
+**Contexto de decisiones:** `docs/BITACORA.md`. Decisiones nuevas: D-135, D-136, D-140 y D-142.
 **Módulo hermano:** `docs/diseno/ventas.md`. **Plan:** `docs/planes/ventas-caja-v1.md`.
 
 Convención de estado: **[A]** aceptado, **[P]** propuesto, **[?]** abierto. Prioridades P1, P2, P3 como en Ventas. Datos de ejemplo **simulados**.
@@ -25,7 +25,7 @@ Qué **no** es de Caja: las ventas y sus líneas (Ventas), los asientos contable
 | Regla | Cómo se aplica |
 |---|---|
 | R1 | Caja es dueño del esquema `caja`. Otros entran por `CajaApi` o por sus eventos. |
-| R2 y R6 | Caja escucha `venta.registrada` y `venta.anulada`, y llama a `VentasApi.resumenTurno` al hacer el corte. Ventas no conoce a Caja (D-76), así que no hay ciclo. |
+| R2 y R6 | Caja escucha `venta.registrada` y `venta.anulada`, y llama a `VentasApi.resumenTurno` al hacer el corte. Ventas no conoce a Caja (D-135), así que no hay ciclo. |
 | R3 | Listeners idempotentes por `evento_id` (`evento_procesado`) y por venta (`venta_aplicada`). |
 | R4 | Horizontal. No conoce a ningún vertical. |
 | R5 | Publica `caja.*` versionados y aditivos. |
@@ -147,11 +147,11 @@ Reglas generales iguales a Ventas: `negocio_id` del contexto, respuesta `{ ok, c
 
 | ID | Operación | Entrada | Salida | La usa | Prioridad |
 |---|---|---|---|---|---|
-| CF-01 | `turnoActivo` | `cajaId?` (si falta, el del actor) | `TurnoVista` o vacío, con el estado efectivo: un corte vencido sale `ABIERTO` (D-81) | Canal (VT-01), panel | P1 |
+| CF-01 | `turnoActivo` | `cajaId?` (si falta, el del actor) | `TurnoVista` o vacío, con el estado efectivo: un corte vencido sale `ABIERTO` (D-140) | Canal (VT-01), panel | P1 |
 | CF-02 | `estadoTurno` | `turnoId` | esperado por método, movimientos, número de ventas aplicadas | Panel | P1 |
 | CF-03 | `cortes` | rango de fechas, `cajaId?`, cursor | página de `CorteVista` con diferencias | Panel (dueño) | P1 |
 | CF-04 | `cajas` | — | cajas del negocio | Panel | P1 |
-| CF-05 | `VerificadorDeTurno.abierto` (implementa la interfaz de Ventas) | `turnoId` | verdadero solo si el turno es del negocio y su estado efectivo es `ABIERTO` | Ventas al preparar y al confirmar ([P] D-86) | P1 |
+| CF-05 | `VerificadorDeTurno.abierto` (implementa la interfaz de Ventas) | `turnoId` | verdadero solo si el turno es del negocio y su estado efectivo es `ABIERTO` | Ventas al preparar y al confirmar ([P] D-145) | P1 |
 
 ### 5.2 Comandos (preparar → confirmar, por `prepararComando` / `confirmarComando`, D-55)
 
@@ -163,7 +163,7 @@ Reglas generales iguales a Ventas: `negocio_id` del contexto, respuesta `{ ok, c
 | CF-13 | `DescartarCorte` | `turnoId` | CJ-06 | Ninguno |
 | CF-14 | `CrearCaja` | `nombre` | — | Ninguno |
 
-Para el corte, `preparar` es lo que pone el turno `EN_CORTE` y devuelve lo esperado. Es la única preparación que cambia un estado; se documenta como excepción [P] D-81 porque sin ella una venta podría entrar entre el conteo y la confirmación.
+Para el corte, `preparar` es lo que pone el turno `EN_CORTE` y devuelve lo esperado. Es la única preparación que cambia un estado; se documenta como excepción [P] D-140 porque sin ella una venta podría entrar entre el conteo y la confirmación.
 
 ### 5.3 Escrituras del sistema (sin confirmación humana, como D-22)
 
@@ -172,7 +172,7 @@ Para el corte, `preparar` es lo que pone el turno `EN_CORTE` y devuelve lo esper
 | CF-20 | `aplicarVenta` | Listener de `venta.registrada` | `APLICADA`, `YA_APLICADA`, `OMITIDA_ANULADO_PREVIO` |
 | CF-21 | `revertirVenta` | Listener de `venta.anulada` | `REVERTIDA`, `YA_REVERTIDA`, `MARCADA_ANULADO_PREVIO` |
 
-Desde la revisión del 2026-10-15 ([P] D-88), las dos funciones también pueden responder `SIN_TURNO_ABIERTO` (el turno no existe en el negocio o ya cerró; CJ-11 sigue pendiente) o `DATOS_INVALIDOS` (el evento no lo publicó Ventas, le faltan datos, trae un método desconocido o montos no positivos, desmedidos o con más de 2 decimales). En esos dos casos el evento **no se marca como procesado**: no se pierde y el adaptador del bus no lo da por entregado (`ResultadoAplicacion.completado()` es falso). La anulación revierte los movimientos que Caja registró para la venta, no los montos que diga el evento.
+Desde la revisión del 2026-10-15 ([P] D-147), las dos funciones también pueden responder `SIN_TURNO_ABIERTO` (el turno no existe en el negocio o ya cerró; CJ-11 sigue pendiente) o `DATOS_INVALIDOS` (el evento no lo publicó Ventas, le faltan datos, trae un método desconocido o montos no positivos, desmedidos o con más de 2 decimales). En esos dos casos el evento **no se marca como procesado**: no se pierde y el adaptador del bus no lo da por entregado (`ResultadoAplicacion.completado()` es falso). La anulación revierte los movimientos que Caja registró para la venta, no los montos que diga el evento.
 
 ### 5.4 Códigos de error
 
@@ -264,7 +264,7 @@ sequenceDiagram
   participant B as Bus (outbox)
   Cajero->>G: prepararComando(cerrarTurno)
   G->>C: preparar(CerrarTurno)
-  Note over C: Turno pasa a EN_CORTE (D-81)
+  Note over C: Turno pasa a EN_CORTE (D-140)
   C->>V: resumenTurno(turnoId)
   V-->>C: ventas, totales por metodo, preparaciones vigentes
   C-->>G: token y esperado por metodo
@@ -312,7 +312,7 @@ Se heredan SG-01 a SG-21 (D-45). Propias de Caja:
 
 | Prueba | Reglas |
 |---|---|
-| `ApplicationModules.verify()`: Caja solo depende de `compartido` y `ventas` | R1, D-76 |
+| `ApplicationModules.verify()`: Caja solo depende de `compartido` y `ventas` | R1, D-135 |
 | Segundo turno en la misma caja rechazado | CJ-01 |
 | Fondo negativo rechazado; fondo crea movimiento | CJ-02 |
 | Venta con pago mixto crea dos movimientos; anulación los compensa | CJ-03 |
@@ -329,7 +329,7 @@ Cobertura mínima: 80 %.
 
 ---
 
-## 11. Convención de documentación del código (D-83)
+## 11. Convención de documentación del código (D-142)
 
 La misma de `ventas.md` §11: JavaDoc en todo tipo y método público, con su ID de función (`CF-12`), las reglas que aplica (`CJ-07`), un `@throws` o código de error por fallo, y escala y redondeo en todo monto. `mvn javadoc:javadoc` sin advertencias.
 
@@ -339,7 +339,7 @@ La misma de `ventas.md` §11: JavaDoc en todo tipo y método público, con su ID
 
 | # | Pregunta | Propuesta |
 |---|---|---|
-| 1 | ¿Aceptan que `preparar` el corte cambie el turno a `EN_CORTE` (D-81)? | Sí [P] |
+| 1 | ¿Aceptan que `preparar` el corte cambie el turno a `EN_CORTE` (D-140)? | Sí [P] |
 | 2 | ¿Umbral de diferencia que pide autorización? | 50.00, como regla versionada [?] |
 | 3 | ¿Quién puede retirar efectivo y autorizar diferencias? | Encargado y dueño [?] |
 | 4 | ¿Un cajero puede tener dos turnos abiertos en cajas distintas? | No [?] |

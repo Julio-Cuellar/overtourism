@@ -1,7 +1,10 @@
 package mx.negocio360.ventas.aplicacion;
 
+import mx.negocio360.compartido.pruebas.Permisos;
+import mx.negocio360.compartido.seguridad.PermisoDenegadoException;
 import static mx.negocio360.ventas.fakes.Escenario.fallaCon;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.util.List;
@@ -20,7 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** VF-11 AnularVenta: VT-09 y VT-11 (D-82). */
+/** VF-11 AnularVenta: VT-09 y VT-11 (D-141). */
 class AnularVentaTest {
 
     private final Escenario e = new Escenario();
@@ -39,7 +42,7 @@ class AnularVentaTest {
         var resultado = e.confirmar(encargado, new AnularVentaComando(ventaId, "Cobro duplicado"));
 
         assertThat(resultado.recursoId()).isEqualTo(ventaId);
-        var venta = e.api.venta(e.ctxA, ventaId).orElseThrow();
+        var venta = e.api.venta(e.ctxA, Permisos.de(e.ctxA), ventaId).orElseThrow();
         assertThat(venta.estado()).isEqualTo(EstadoVenta.ANULADA);
         assertThat(venta.anuladaPor()).isEqualTo("encargado-a");
         assertThat(venta.anuladaEn()).isEqualTo(RelojMutable.AHORA.plus(Duration.ofMinutes(10)));
@@ -51,11 +54,11 @@ class AnularVentaTest {
     @DisplayName("VT-11: anular conserva las lineas, los pagos y los montos de la venta")
     void anular_conservaLaVenta() {
         var ventaId = ventaRegistrada();
-        var antes = e.api.venta(e.ctxA, ventaId).orElseThrow();
+        var antes = e.api.venta(e.ctxA, Permisos.de(e.ctxA), ventaId).orElseThrow();
 
         e.confirmar(encargado, new AnularVentaComando(ventaId, "Error de captura"));
 
-        var despues = e.api.venta(e.ctxA, ventaId).orElseThrow();
+        var despues = e.api.venta(e.ctxA, Permisos.de(e.ctxA), ventaId).orElseThrow();
         assertThat(despues.lineas()).isEqualTo(antes.lineas());
         assertThat(despues.pagos()).isEqualTo(antes.pagos());
         assertThat(despues.total()).isEqualTo(antes.total());
@@ -63,7 +66,7 @@ class AnularVentaTest {
     }
 
     @Test
-    @DisplayName("publica venta.anulada v1 con turno, motivo, lineas y pagos (D-25, D-77)")
+    @DisplayName("publica venta.anulada v1 con turno, motivo, lineas y pagos (D-25, D-136)")
     @SuppressWarnings("unchecked")
     void anular_publicaVentaAnulada() {
         var ventaId = ventaRegistrada();
@@ -84,13 +87,28 @@ class AnularVentaTest {
     }
 
     @Test
-    @DisplayName("VT-09: sin permiso de anular falla con SIN_PERMISO_ANULAR, tambien al preparar")
-    void anular_sinPermiso_sinPermisoAnular() {
+    @DisplayName("VT-09 y D-126: sin ventas.venta.anular falla con PERMISO_DENEGADO, tambien al preparar")
+    void anular_sinPermiso_permisoDenegado() {
         var ventaId = ventaRegistrada();
 
-        fallaCon(() -> e.api.preparar(e.ctxA, new AnularVentaComando(ventaId, "Error")),
-                CodigoError.SIN_PERMISO_ANULAR);
-        assertThat(e.api.venta(e.ctxA, ventaId).orElseThrow().estado()).isEqualTo(EstadoVenta.REGISTRADA);
+        assertThatThrownBy(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), new AnularVentaComando(ventaId, "Error")))
+                .isInstanceOf(PermisoDenegadoException.class);
+        assertThat(e.api.venta(e.ctxA, Permisos.de(e.ctxA), ventaId).orElseThrow().estado()).isEqualTo(EstadoVenta.REGISTRADA);
+    }
+
+    @Test
+    @DisplayName("D-126: si le quitan el permiso entre preparar y confirmar, falla con PERMISO_DENEGADO y el token no se gasta")
+    void anular_permisoRevocadoEntrePasos_noGastaElToken() {
+        var ventaId = ventaRegistrada();
+        var gerente = new ContextoNegocio(e.negocioA, "encargado-a");
+        var token = e.api.preparar(gerente, Permisos.TODOS, new AnularVentaComando(ventaId, "Error")).token();
+
+        assertThatThrownBy(() -> e.api.confirmar(gerente, Permisos.todosMenos("ventas.venta.anular"), token))
+                .isInstanceOf(PermisoDenegadoException.class);
+
+        // El token sigue vivo: con el permiso de vuelta se puede confirmar.
+        e.api.confirmar(gerente, Permisos.TODOS, token);
+        assertThat(e.api.venta(gerente, Permisos.TODOS, ventaId).orElseThrow().estado()).isEqualTo(EstadoVenta.ANULADA);
     }
 
     @Test
@@ -99,7 +117,7 @@ class AnularVentaTest {
         var ventaId = ventaRegistrada();
         e.confirmar(encargado, new AnularVentaComando(ventaId, "Error"));
 
-        fallaCon(() -> e.api.preparar(encargado, new AnularVentaComando(ventaId, "Otra vez")),
+        fallaCon(() -> e.api.preparar(encargado, Permisos.de(encargado), new AnularVentaComando(ventaId, "Otra vez")),
                 CodigoError.VENTA_YA_ANULADA);
         assertThat(e.eventos.deTipo(VentaAnulada.TIPO)).hasSize(1);
     }
@@ -108,11 +126,11 @@ class AnularVentaTest {
     @DisplayName("VT-09: dos anulaciones preparadas a la vez: la segunda confirmacion falla con VENTA_YA_ANULADA")
     void anular_dosPreparadas_segundaFalla() {
         var ventaId = ventaRegistrada();
-        var primera = e.api.preparar(encargado, new AnularVentaComando(ventaId, "Error")).token();
-        var segunda = e.api.preparar(encargado, new AnularVentaComando(ventaId, "Error")).token();
-        e.api.confirmar(encargado, primera);
+        var primera = e.api.preparar(encargado, Permisos.de(encargado), new AnularVentaComando(ventaId, "Error")).token();
+        var segunda = e.api.preparar(encargado, Permisos.de(encargado), new AnularVentaComando(ventaId, "Error")).token();
+        e.api.confirmar(encargado, Permisos.de(encargado), primera);
 
-        fallaCon(() -> e.api.confirmar(encargado, segunda), CodigoError.VENTA_YA_ANULADA);
+        fallaCon(() -> e.api.confirmar(encargado, Permisos.de(encargado), segunda), CodigoError.VENTA_YA_ANULADA);
     }
 
     @Test
@@ -121,9 +139,9 @@ class AnularVentaTest {
         var ventaId = ventaRegistrada();
         var encargadoB = new ContextoNegocio(e.negocioB, "encargado-b");
 
-        fallaCon(() -> e.api.preparar(encargadoB, new AnularVentaComando(ventaId, "Error")),
+        fallaCon(() -> e.api.preparar(encargadoB, Permisos.de(encargadoB), new AnularVentaComando(ventaId, "Error")),
                 CodigoError.VENTA_NO_ENCONTRADA);
-        fallaCon(() -> e.api.preparar(encargado, new AnularVentaComando(UUID.randomUUID(), "Error")),
+        fallaCon(() -> e.api.preparar(encargado, Permisos.de(encargado), new AnularVentaComando(UUID.randomUUID(), "Error")),
                 CodigoError.VENTA_NO_ENCONTRADA);
     }
 
@@ -134,7 +152,7 @@ class AnularVentaTest {
     void anular_sinMotivo_motivoRequerido(String motivo) {
         var ventaId = ventaRegistrada();
 
-        fallaCon(() -> e.api.preparar(encargado, new AnularVentaComando(ventaId, motivo)),
+        fallaCon(() -> e.api.preparar(encargado, Permisos.de(encargado), new AnularVentaComando(ventaId, motivo)),
                 CodigoError.MOTIVO_REQUERIDO);
     }
 
@@ -143,7 +161,7 @@ class AnularVentaTest {
     void anular_motivoLarguisimo_motivoRequerido() {
         var ventaId = ventaRegistrada();
 
-        fallaCon(() -> e.api.preparar(encargado, new AnularVentaComando(ventaId, "x".repeat(201))),
+        fallaCon(() -> e.api.preparar(encargado, Permisos.de(encargado), new AnularVentaComando(ventaId, "x".repeat(201))),
                 CodigoError.MOTIVO_REQUERIDO);
     }
 
@@ -151,10 +169,10 @@ class AnularVentaTest {
     @DisplayName("si otra peticion cambio la venta, falla con CONCURRENCIA y no publica")
     void anular_concurrencia() {
         var ventaId = ventaRegistrada();
-        var token = e.api.preparar(encargado, new AnularVentaComando(ventaId, "Error")).token();
+        var token = e.api.preparar(encargado, Permisos.de(encargado), new AnularVentaComando(ventaId, "Error")).token();
         e.ventas.simularConcurrencia = true;
 
-        fallaCon(() -> e.api.confirmar(encargado, token), CodigoError.CONCURRENCIA);
+        fallaCon(() -> e.api.confirmar(encargado, Permisos.de(encargado), token), CodigoError.CONCURRENCIA);
         assertThat(e.eventos.deTipo(VentaAnulada.TIPO)).isEmpty();
     }
 }

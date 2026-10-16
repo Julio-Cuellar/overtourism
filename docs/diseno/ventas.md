@@ -3,7 +3,7 @@
 **Versión:** 0.1 (borrador para revisión del equipo)
 **Fecha:** 2026-10-14
 **Estado:** solo diseño. No hay autorización escrita para programar Ventas. Nadie debe programar contra este documento hasta que el equipo lo apruebe (sección 13).
-**Contexto de decisiones:** `docs/BITACORA.md` (los identificadores `D-xx` remiten a ahí). Las decisiones nuevas de este documento son D-76 a D-83, todas **PROPUESTA** salvo D-83.
+**Contexto de decisiones:** `docs/BITACORA.md` (los identificadores `D-xx` remiten a ahí). Las decisiones nuevas de este documento son D-135 a D-142, todas **PROPUESTA** salvo D-142.
 **Módulo hermano:** `docs/diseno/caja.md`. **Plan:** `docs/planes/ventas-caja-v1.md`.
 
 Convención de estado: **[A]** aceptado por el equipo, **[P]** propuesto y vigente salvo objeción, **[?]** abierto. Prioridades: **P1** = MVP y demo, **P2** = si alcanza, **P3** = fuera del MVP. Todos los datos de ejemplo son **simulados**.
@@ -37,8 +37,8 @@ Qué **no** es de Ventas:
 | R1 | Ventas es dueño del esquema `ventas`. Los demás entran por `VentasApi` o por sus eventos. Sin joins ni llaves foráneas hacia otros esquemas. |
 | R2 y R6 | Ventas llama de forma síncrona a `CatalogoApi` (precios) y a `PasaporteApi` (cupón, D-34). Publica `venta.registrada` y `venta.anulada`. **No llama** a Caja, Clientes, Inventario ni Contabilidad. |
 | R3 | Todo evento lleva UUIDv7. Ventas no consume eventos en P1. |
-| R4 | Ventas es horizontal y no conoce a ningún vertical. Lo propio del museo (boletos) y del misceláneo (venta a granel) se resuelve con datos de Catálogo, no con tipos en Ventas (D-80). |
-| R5 | `venta.registrada` v1 y `venta.anulada` v1 ya los consume Clientes con lector tolerante. Este documento los congela agregando solo campos (D-77). |
+| R4 | Ventas es horizontal y no conoce a ningún vertical. Lo propio del museo (boletos) y del misceláneo (venta a granel) se resuelve con datos de Catálogo, no con tipos en Ventas (D-139). |
+| R5 | `venta.registrada` v1 y `venta.anulada` v1 ya los consume Clientes con lector tolerante. Este documento los congela agregando solo campos (D-136). |
 
 ### 2.2 Dependencias
 
@@ -47,7 +47,7 @@ Qué **no** es de Ventas:
 | Ventas (horizontal) | Catálogo, Pasaporte | Ninguno (P1) | `venta.*` |
 | Caja (horizontal) | Ventas (`resumenTurno`) | `venta.*` | `caja.*` |
 
-Ventas y Caja no forman ciclo: Caja depende de Ventas y Ventas no conoce a Caja (D-76). El turno lo obtiene el **canal** (resolvedor GraphQL) con `CajaApi.turnoActivo` y lo pasa como dato. El canal no es un módulo, así que puede llamar a ambos (mismo criterio que D-42).
+Ventas y Caja no forman ciclo: Caja depende de Ventas y Ventas no conoce a Caja (D-135). El turno lo obtiene el **canal** (resolvedor GraphQL) con `CajaApi.turnoActivo` y lo pasa como dato. El canal no es un módulo, así que puede llamar a ambos (mismo criterio que D-42).
 
 Spring Modulith lo verifica: `ventas` solo puede depender de `compartido`, `catalogo` y `pasaporte` (`allowedDependencies`). Prueba `ApplicationModules.verify()` en verde desde la primera fase.
 
@@ -142,16 +142,16 @@ No hay estado «preparada» en `venta`: `preparar` no escribe en tablas de negoc
 
 | ID | Regla | Prioridad |
 |---|---|---|
-| VT-01 | Toda venta lleva `turno_id`. El canal lo obtiene de `CajaApi.turnoActivo` y verifica que el turno esté `ABIERTO` antes de preparar y antes de confirmar. Ventas lo guarda como referencia opaca. Además, Ventas pregunta por la interfaz `VerificadorDeTurno` (en su API pública) si el turno sigue abierto, al preparar y al confirmar; Caja la implementa, así Ventas no depende de Caja (D-76). [P] D-86 | P1 |
+| VT-01 | Toda venta lleva `turno_id`. El canal lo obtiene de `CajaApi.turnoActivo` y verifica que el turno esté `ABIERTO` antes de preparar y antes de confirmar. Ventas lo guarda como referencia opaca. Además, Ventas pregunta por la interfaz `VerificadorDeTurno` (en su API pública) si el turno sigue abierto, al preparar y al confirmar; Caja la implementa, así Ventas no depende de Caja (D-135). [P] D-145 | P1 |
 | VT-02 | El precio, la descripción y la unidad de cada línea se toman de Catálogo al preparar y se copian a la línea. Un cambio de precio posterior no afecta la venta. | P1 |
-| VT-03 | La cantidad es mayor que 0. Solo admite decimales si Catálogo dice que el producto admite fracción (venta a granel del misceláneo, D-80); si no, es entera. | P1 |
+| VT-03 | La cantidad es mayor que 0. Solo admite decimales si Catálogo dice que el producto admite fracción (venta a granel del misceláneo, D-139); si no, es entera. | P1 |
 | VT-04 | Al confirmar, la suma de pagos es igual al total. En efectivo, `recibido ≥ monto` y `cambio = recibido − monto`. Se permiten varios pagos (mixto). | P1 |
 | VT-05 | `confirmar` vuelve a validar todo; si una línea, un precio o el cupón cambiaron desde `preparar`, responde `COMANDO_CAMBIO` y no escribe. El resumen lleva cada línea con su precio, para que dos cambios que se compensan en el subtotal también se detecten. | P1 |
-| VT-06 | El folio es consecutivo y sin huecos por negocio y serie, y se asigna en la transacción de confirmar (D-79). | P1 |
-| VT-07 | Máximo un cupón por venta [?]. Al preparar se cotiza con `PasaporteApi` (solo lectura). Al confirmar se canjea con `PasaporteApi.canjearCupon` dentro de la misma transacción (D-34, D-78). Si el canje falla, la venta no se registra. El canje recibe el descuento que vio el cajero; si Pasaporte calcula otro, rechaza con `COMANDO_CAMBIO` sin canjear ([P] D-87). | P1 |
+| VT-06 | El folio es consecutivo y sin huecos por negocio y serie, y se asigna en la transacción de confirmar (D-138). | P1 |
+| VT-07 | Máximo un cupón por venta [?]. Al preparar se cotiza con `PasaporteApi` (solo lectura). Al confirmar se canjea con `PasaporteApi.canjearCupon` dentro de la misma transacción (D-34, D-137). Si el canje falla, la venta no se registra. El canje recibe el descuento que vio el cajero; si Pasaporte calcula otro, rechaza con `COMANDO_CAMBIO` sin canjear ([P] D-146). | P1 |
 | VT-08 | `descuento ≤ subtotal` y `total = subtotal − descuento`. El `total` de `venta.registrada` es neto del cupón (D-65). | P1 |
 | VT-09 | Solo se anula una venta `REGISTRADA`, con motivo y con el permiso de anular de Identidad [?]. La anulación usa preparar → confirmar. El límite de tiempo para anular está abierto [?]. | P1 |
-| VT-10 | Anular una venta con cupón llama a `PasaporteApi` para revertir el canje [?] (operación por acordar con Pasaporte, D-78). | P2 |
+| VT-10 | Anular una venta con cupón llama a `PasaporteApi` para revertir el canje [?] (operación por acordar con Pasaporte, D-137). | P2 |
 | VT-11 | Una venta registrada no cambia salvo su anulación. Cualquier otra corrección es anular y volver a vender. | P1 |
 | VT-12 | Los precios se tratan como finales al público. El desglose de impuestos queda fuera del MVP; los temas fiscales solo salen de una base curada con fuente y fecha [?]. | P1 |
 | VT-13 | `cliente_id` es opcional y opaco. El canal lo elige con `sugerirClientes` de Clientes; Ventas no llama a Clientes (D-48). | P1 |
@@ -195,7 +195,7 @@ Viajan por el par de plataforma `prepararComando` / `confirmarComando` (D-55) co
 | Límites de entrada (agregados el 2026-10-15 tras la revisión) | `DEMASIADAS_LINEAS` (más de 100), `DEMASIADOS_PAGOS` (más de 10), `TEXTO_DEMASIADO_LARGO` (serie o referencia de más de 60 caracteres). Un código de cupón de más de 40 caracteres es `CUPON_INVALIDO` sin consultar a Pasaporte; un monto de más de 999,999,999,999.99 es `METODO_PAGO_INVALIDO` |
 | Pagos | `PAGOS_NO_CUADRAN`, `EFECTIVO_INSUFICIENTE`, `METODO_PAGO_INVALIDO` |
 | Cupón | `CUPON_INVALIDO`, `CUPON_YA_CANJEADO`, `CUPON_NO_APLICA`, `DESCUENTO_MAYOR_AL_SUBTOTAL` |
-| Turno (los devuelve el canal y Ventas, D-86) | `TURNO_NO_ABIERTO` |
+| Turno (los devuelve el canal y Ventas, D-145) | `TURNO_NO_ABIERTO` |
 | Anulación | `VENTA_NO_ENCONTRADA`, `VENTA_YA_ANULADA`, `MOTIVO_REQUERIDO`, `SIN_PERMISO_ANULAR` |
 | Preparar y confirmar | `TOKEN_INVALIDO`, `TOKEN_EXPIRADO`, `TOKEN_USADO`, `COMANDO_CAMBIO` |
 | Reintentables | `CONCURRENCIA`, `ERROR_TEMPORAL` |
@@ -208,7 +208,7 @@ Cada código tiene un texto fijo en español de México en la tabla de plantilla
 
 Sobre común: el de `compartido` (`SobreEvento`): `id` UUIDv7, `tipo`, `version`, `negocio_id`, `origen = "ventas"`, `ocurrido_en` en UTC, `correlacion_id = venta_id`, `causa_id`, `datos`. Se publican en la misma transacción que la escritura (outbox, tabla `event_publication`). Dinero y cantidades como cadena decimal. Un opcional que no aplica se omite (no va en `null`).
 
-### 6.1 `venta.registrada` v1 (congelar, D-77)
+### 6.1 `venta.registrada` v1 (congelar, D-136)
 
 Une lo que ya piden Inventario (§7.2), Clientes (D-48, D-65) y lo que necesita Caja.
 
@@ -226,7 +226,7 @@ Une lo que ya piden Inventario (§7.2), Clientes (D-48, D-65) y lo que necesita 
 | `lineas[]` | lista | Sí | `linea` (entero), `producto_id`, `cantidad`, `unidad`, `precio_unitario`, `importe`, `serie?` — Inventario, Restaurantes, Museos |
 | `pagos[]` | lista | Sí | `metodo`, `monto` — Caja |
 
-### 6.2 `venta.anulada` v1 (congelar, D-77)
+### 6.2 `venta.anulada` v1 (congelar, D-136)
 
 | Campo | Tipo | Obligatorio | Lo usa |
 |---|---|---|---|
@@ -299,7 +299,7 @@ Tienda de un museo ficticio («Museo Talavera Viva»): 2 boletos generales y med
 | G7 | GraphQL (suscripción, WebSocket) | `ventaRegistrada` | Panel (dueño) | — → resumen de cada venta del negocio | Tablero en vivo | P2 |
 | J1 | Java | `CatalogoApi.preciosParaVenta(ids)` | Ventas | ids → precio, unidad, fracción, activo | VT-02, VT-03 | P1 |
 | J2 | Java | `PasaporteApi.cotizarCupon(codigo, subtotal)` [?] | Ventas | código → cupón y descuento, sin canjear | VT-07 al preparar | P1 |
-| J3 | Java | `PasaporteApi.canjearCupon(codigo, ventaId, subtotal, descuentoEsperado)` | Ventas | → canje, o `COMANDO_CAMBIO` sin canjear si el descuento ya no es el esperado | VT-07 al confirmar (D-34, [P] D-87) | P1 |
+| J3 | Java | `PasaporteApi.canjearCupon(codigo, ventaId, subtotal, descuentoEsperado)` | Ventas | → canje, o `COMANDO_CAMBIO` sin canjear si el descuento ya no es el esperado | VT-07 al confirmar (D-34, [P] D-146) | P1 |
 | J4 | Java | `VentasApi.resumenTurno(turnoId)` | Caja | → `ResumenTurnoVista` | Corte (CJ-06) | P1 |
 | B1 | Bus | `venta.registrada` | Ventas → Caja, Inventario, Restaurantes, Clientes, Contabilidad | | | P1 |
 | B2 | Bus | `venta.anulada` | Ventas → los mismos | | | P1 |
@@ -396,7 +396,7 @@ Cada fila es una prueba que nombra su regla. Se escriben antes que la implementa
 
 | Prueba | Reglas |
 |---|---|
-| `ApplicationModules.verify()` en verde: Ventas no depende de Caja, Clientes ni verticales | R1, R4, D-76 |
+| `ApplicationModules.verify()` en verde: Ventas no depende de Caja, Clientes ni verticales | R1, R4, D-135 |
 | Precio copiado al preparar; cambio de precio entre preparar y confirmar da `COMANDO_CAMBIO` | VT-02, VT-05 |
 | Fracción rechazada en producto por pieza; aceptada a granel | VT-03 |
 | Pagos que no cuadran, efectivo insuficiente, pago mixto correcto | VT-04 |
@@ -412,7 +412,7 @@ Cobertura mínima: 80 %.
 
 ---
 
-## 11. Convención de documentación del código (D-83)
+## 11. Convención de documentación del código (D-142)
 
 Todo el código de Ventas se documenta con **JavaDoc** para encontrar errores rápido:
 1. Cada clase, record e interfaz pública dice qué representa y, si es agregado, su ciclo de estados.
@@ -440,9 +440,9 @@ Todo el código de Ventas se documenta con **JavaDoc** para encontrar errores r�
 
 | # | Pregunta | Propuesta |
 |---|---|---|
-| 1 | ¿Aceptan que Ventas no conozca a Caja y que el canal pase el `turno_id` (D-76)? | Sí [P] |
-| 2 | ¿Aceptan el contrato de `venta.registrada` y `venta.anulada` de §6 (D-77)? | Sí [P] |
-| 3 | ¿Cotizar el cupón al preparar y canjearlo al confirmar, en la misma transacción (D-78)? | Sí [P] |
+| 1 | ¿Aceptan que Ventas no conozca a Caja y que el canal pase el `turno_id` (D-135)? | Sí [P] |
+| 2 | ¿Aceptan el contrato de `venta.registrada` y `venta.anulada` de §6 (D-136)? | Sí [P] |
+| 3 | ¿Cotizar el cupón al preparar y canjearlo al confirmar, en la misma transacción (D-137)? | Sí [P] |
 | 4 | ¿Quién puede anular, y hasta cuándo? | Encargado o dueño, solo con el turno abierto [?] |
 | 5 | ¿Precios finales sin desglose de IVA en el MVP (VT-12)? | Sí [P] |
 | 6 | ¿Quién es dueño de Catálogo y de Pasaporte para acordar J1 a J3? | Abierta [?] |

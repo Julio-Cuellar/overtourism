@@ -8,10 +8,10 @@
 
 1. Como cajero, quiero cobrar una venta con precios de Catálogo, ver total y cambio antes de confirmar y que nada se guarde hasta que confirme (VT-01 a VT-06).
 2. Como cajero, quiero vender a granel (0.5 kg) pero no medio boleto (VT-03).
-3. Como turista, quiero que mi cupón del Pasaporte se canjee al cobrar y que no se use dos veces (VT-07, VT-08, D-34, D-78).
-4. Como encargado, quiero anular una venta con motivo y que Caja, Inventario y Clientes se enteren (VT-09, VT-11, D-82).
+3. Como turista, quiero que mi cupón del Pasaporte se canjee al cobrar y que no se use dos veces (VT-07, VT-08, D-34, D-137).
+4. Como encargado, quiero anular una venta con motivo y que Caja, Inventario y Clientes se enteren (VT-09, VT-11, D-141).
 5. Como cajero, quiero abrir turno con fondo, meter y sacar efectivo y ver cuánto debería haber por método (CJ-01, CJ-02, CJ-05, CJ-12).
-6. Como cajero, quiero hacer el corte y que no cierre si faltan ventas por llegar o si la diferencia es grande y nadie la autoriza (CJ-06 a CJ-09, D-81).
+6. Como cajero, quiero hacer el corte y que no cierre si faltan ventas por llegar o si la diferencia es grande y nadie la autoriza (CJ-06 a CJ-09, D-140).
 7. Como equipo, quiero que Caja reciba cada venta una sola vez aunque el evento llegue repetido o la anulación llegue primero (CJ-03, CJ-04, R3, D-19).
 
 ## Ciclo RED → GREEN
@@ -27,7 +27,7 @@
 | Corrección | Al confirmar el corte se compara primero el resumen y después el umbral: si llegó una venta entre los dos pasos, la persona contó contra otro esperado y la respuesta es `COMANDO_CAMBIO` | Caja **41 de 41** |
 | Verificación completa | `mvn -B verify` | 951 pruebas, **0 fallas y 146 errores**. Los 146 errores son de 10 clases que necesitan Docker (8 de `persistencia` más `ArranqueYSeguridadTest`, `AuthControllerTest` y `RegistrosSinSecretosTest`). Docker Desktop está apagado: `docker info` no encuentra el motor. Ningún error es de Ventas, Caja ni `compartido` |
 | Verificación sin Docker | `mvn -B verify` excluyendo esas 10 clases | **805 de 805**, `BUILD SUCCESS`, «All coverage checks have been met» |
-| JavaDoc (D-83) | `mvn javadoc:javadoc -Ddoclint=all` sobre `ventas`, `caja`, `compartido.comandos` y `compartido.dinero` | Primera corrida: 83 advertencias (79 del código nuevo). Tras completar el JavaDoc: **0 en el código nuevo**; quedan 4 en `DecimalPlano.java`, que ya existía y no se tocó |
+| JavaDoc (D-142) | `mvn javadoc:javadoc -Ddoclint=all` sobre `ventas`, `caja`, `compartido.comandos` y `compartido.dinero` | Primera corrida: 83 advertencias (79 del código nuevo). Tras completar el JavaDoc: **0 en el código nuevo**; quedan 4 en `DecimalPlano.java`, que ya existía y no se tocó |
 
 **Cobertura de líneas (JaCoCo, corrida sin Docker):** Ventas 87.8 %, Caja 92.8 %, `compartido.comandos` 94.0 %, `compartido.dinero` 100 %.
 
@@ -50,19 +50,19 @@
 | 7 | Folios consecutivos por negocio; una preparación vencida o un canje fallido no gastan folio | `RegistrarVentaTest` | VT-06 |
 | 8 | Cupón: total neto 135.00, canjeado con la venta; no se usa dos veces; si Pasaporte falla no hay venta | `RegistrarVentaTest` | VT-07, VT-08, D-65 |
 | 9 | Anular con permiso y motivo, una sola vez y con bloqueo optimista | `AnularVentaTest` (12) | VT-09, VT-11 |
-| 10 | Forma exacta de `venta.registrada` y `venta.anulada`, sin datos personales, legible por el lector de Clientes ya programado | `EventosVentasContratoTest` (4) | D-77, D-48, R5 |
+| 10 | Forma exacta de `venta.registrada` y `venta.anulada`, sin datos personales, legible por el lector de Clientes ya programado | `EventosVentasContratoTest` (4) | D-136, D-48, R5 |
 | 11 | Resumen del turno: registradas, anuladas, totales por método y preparaciones vigentes | `ResumenTurnoTest` (4) | VF-03, CJ-07 |
 | 12 | Una caja, un turno abierto; fondo válido; entradas y retiros; un retiro no deja el efectivo bajo cero | `TurnoYMovimientosTest` (14) | CJ-01, CJ-02, CJ-05, CJ-10 |
 | 13 | Cada pago de una venta es un movimiento y la anulación lo compensa; un evento repetido, una venta repetida o una anulación que llega antes no suman | `ConsumidorVentasTest` (8) | CJ-03, CJ-04, R3, D-19 |
-| 14 | Corte: EN_CORTE al preparar; no cierra con ventas pendientes ni eventos faltantes; umbral con autorización de encargado; inmutable, descartable y con vencimiento | `CorteTest` (14) | CJ-06 a CJ-10, CJ-12, D-81 |
+| 14 | Corte: EN_CORTE al preparar; no cierra con ventas pendientes ni eventos faltantes; umbral con autorización de encargado; inmutable, descartable y con vencimiento | `CorteTest` (14) | CJ-06 a CJ-10, CJ-12, D-140 |
 | 15 | Consultas aisladas por negocio | `ConsultasCajaTest` (3) | R1 |
-| 16 | Camino dorado real (turno, venta con cupón, anulación, corte sin diferencia) y un corte que no cierra si se perdió un evento | `VentasYCajaTest` (2) | D-76, D-77, CJ-07 |
-| 17 | Ventas solo depende de `compartido`; Caja, de `compartido` y `ventas` | `EstructuraModulosTest` (2) | R1, R4, D-76 |
+| 16 | Camino dorado real (turno, venta con cupón, anulación, corte sin diferencia) y un corte que no cierra si se perdió un evento | `VentasYCajaTest` (2) | D-135, D-136, CJ-07 |
+| 17 | Ventas solo depende de `compartido`; Caja, de `compartido` y `ventas` | `EstructuraModulosTest` (2) | R1, R4, D-135 |
 
 ## Decisiones tomadas al programar (a confirmar por el equipo)
 
-- **D-84** (propuesta): el patrón preparar → confirmar vive en `compartido.comandos` y lo usan Ventas y Caja; Clientes conserva el suyo hasta que alguien lo migre.
-- **D-85** (propuesta): al confirmar, si el cálculo deja de cuadrar porque el mundo cambió (precio, cupón, ventas del turno), la respuesta es `COMANDO_CAMBIO` y no el error de validación.
+- **D-143** (propuesta): el patrón preparar → confirmar vive en `compartido.comandos` y lo usan Ventas y Caja; Clientes conserva el suyo hasta que alguien lo migre.
+- **D-144** (propuesta): al confirmar, si el cálculo deja de cuadrar porque el mundo cambió (precio, cupón, ventas del turno), la respuesta es `COMANDO_CAMBIO` y no el error de validación.
 - Códigos nuevos de Caja: `CAJA_DUPLICADA`, `NOMBRE_CAJA_INVALIDO` y `TURNO_NO_ENCONTRADO` (ya están en `caja.md`).
 - Un fondo de 0.00 no crea movimiento (precisado en CJ-02).
 - Una venta para un turno ya cerrado se reporta como `SIN_TURNO_ABIERTO` y no se aplica: CJ-11 (ajuste en el siguiente turno) sigue pendiente, P2.

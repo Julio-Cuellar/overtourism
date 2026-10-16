@@ -2,6 +2,7 @@ package mx.negocio360.caja.aplicacion;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import mx.negocio360.caja.aplicacion.puertos.LibroDeCaja;
@@ -12,6 +13,7 @@ import mx.negocio360.caja.dominio.CodigoError;
 import mx.negocio360.caja.dominio.MetodoPago;
 import mx.negocio360.caja.dominio.MovimientoCaja;
 import mx.negocio360.caja.dominio.TipoMovimiento;
+import mx.negocio360.caja.seguridad.PermisosDeCaja;
 import mx.negocio360.compartido.comandos.ManejadorComando;
 import mx.negocio360.compartido.comandos.ResultadoComando;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
@@ -53,6 +55,14 @@ public final class ManejadorMovimientoCaja implements ManejadorComando<Registrar
     @Override
     public Class<RegistrarMovimientoCajaComando> claseComando() {
         return RegistrarMovimientoCajaComando.class;
+    }
+
+    /** D-126: el servicio exige estos permisos al preparar y al confirmar, antes de gastar el token. */
+    @Override
+    public List<String> permisos(RegistrarMovimientoCajaComando comando) {
+        return comando.tipo() == TipoMovimientoManual.RETIRO
+                ? List.of(PermisosDeCaja.MOVIMIENTO_REGISTRAR, PermisosDeCaja.RETIRO_REGISTRAR)
+                : List.of(PermisosDeCaja.MOVIMIENTO_REGISTRAR);
     }
 
     /**

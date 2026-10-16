@@ -41,3 +41,19 @@ type PageInfo {
   hayMas: Boolean!
   cursorFinal: String
 }
+
+# Lo que comparten Ventas, Caja y los verticales que cobren (D-136, D-130).
+
+"Forma de pago. Es el mismo contrato en Ventas, Caja y cualquier vertical que lo muestre (D-136)."
+enum MetodoPago { EFECTIVO TARJETA TRANSFERENCIA }
+
+"Un monto por método de pago, con escala 2."
+type MontoPorMetodo {
+  metodo: MetodoPago!
+  monto: Decimal!
+}
+
+input MontoPorMetodoInput {
+  metodo: MetodoPago!
+  monto: Decimal!
+}

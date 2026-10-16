@@ -20,7 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * D-77: forma exacta de {@code venta.registrada} v1 y {@code venta.anulada} v1, y compatibilidad con el lector que
+ * D-136: forma exacta de {@code venta.registrada} v1 y {@code venta.anulada} v1, y compatibilidad con el lector que
  * Clientes ya tiene programado (D-48, D-65, R5).
  */
 class EventosVentasContratoTest {

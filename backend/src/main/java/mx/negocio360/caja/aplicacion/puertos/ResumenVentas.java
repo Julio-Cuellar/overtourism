@@ -5,7 +5,7 @@ import mx.negocio360.compartido.contexto.ContextoNegocio;
 
 /**
  * Puerto hacia Ventas para el corte (J1 de {@code caja.md}). La implementacion real es
- * {@code ResumenVentasDesdeVentasApi}, que llama a {@code VentasApi.resumenTurno} en el mismo proceso (D-76).
+ * {@code ResumenVentasDesdeVentasApi}, que llama a {@code VentasApi.resumenTurno} en el mismo proceso (D-135).
  */
 public interface ResumenVentas {
 

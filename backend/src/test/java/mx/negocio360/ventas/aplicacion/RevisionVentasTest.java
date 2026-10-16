@@ -1,5 +1,6 @@
 package mx.negocio360.ventas.aplicacion;
 
+import mx.negocio360.compartido.pruebas.Permisos;
 import static mx.negocio360.ventas.fakes.Escenario.fallaCon;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -12,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import mx.negocio360.ventas.aplicacion.puertos.ProductoParaVenta;
+import mx.negocio360.compartido.catalogo.ProductoParaVenta;
 import mx.negocio360.ventas.dominio.CodigoError;
 import mx.negocio360.ventas.dominio.MetodoPago;
 import mx.negocio360.ventas.fakes.Escenario;
@@ -43,7 +44,7 @@ class RevisionVentasTest {
     void preparar_turnoNoAbierto() {
         e.turnos.cerrar(e.negocioA, Fixtures.TURNO);
 
-        fallaCon(() -> e.api.preparar(e.ctxA, Fixtures.ventaSinCupon()), CodigoError.TURNO_NO_ABIERTO);
+        fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaSinCupon()), CodigoError.TURNO_NO_ABIERTO);
     }
 
     @Test
@@ -52,16 +53,16 @@ class RevisionVentasTest {
         var comando = new RegistrarVentaComando(UUID.randomUUID(), Fixtures.dosBoletosYMedioKilo(),
                 List.of(Fixtures.efectivo("150.00", null)), null, null);
 
-        fallaCon(() -> e.api.preparar(e.ctxA, comando), CodigoError.TURNO_NO_ABIERTO);
+        fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), comando), CodigoError.TURNO_NO_ABIERTO);
     }
 
     @Test
     @DisplayName("VT-01: si el turno entra en corte entre preparar y confirmar, no hay venta ni evento")
     void confirmar_turnoCerroEntrePasos() {
-        var token = e.api.preparar(e.ctxA, Fixtures.ventaSinCupon()).token();
+        var token = e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaSinCupon()).token();
         e.turnos.cerrar(e.negocioA, Fixtures.TURNO);
 
-        fallaCon(() -> e.api.confirmar(e.ctxA, token), CodigoError.TURNO_NO_ABIERTO);
+        fallaCon(() -> e.api.confirmar(e.ctxA, Permisos.de(e.ctxA), token), CodigoError.TURNO_NO_ABIERTO);
         assertThat(e.ventas.todas()).isEmpty();
         assertThat(e.eventos.todos()).isEmpty();
     }
@@ -74,7 +75,7 @@ class RevisionVentasTest {
         var lineas = Collections.nCopies(CalculadoraVenta.MAX_LINEAS + 1,
                 new LineaSolicitada(Fixtures.BOLETO, BigDecimal.ONE, null));
 
-        fallaCon(() -> e.api.preparar(e.ctxA, venta(lineas, List.of(Fixtures.efectivo("45.00", null)), null)),
+        fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), venta(lineas, List.of(Fixtures.efectivo("45.00", null)), null)),
                 CodigoError.DEMASIADAS_LINEAS);
         assertThat(e.catalogo.consultas()).isZero();
     }
@@ -84,7 +85,7 @@ class RevisionVentasTest {
     void preparar_demasiadosPagos() {
         var pagos = Collections.nCopies(CalculadoraVenta.MAX_PAGOS + 1, Fixtures.tarjeta("10.00"));
 
-        fallaCon(() -> e.api.preparar(e.ctxA, venta(Fixtures.dosBoletosYMedioKilo(), pagos, null)),
+        fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), venta(Fixtures.dosBoletosYMedioKilo(), pagos, null)),
                 CodigoError.DEMASIADOS_PAGOS);
         assertThat(e.catalogo.consultas()).isZero();
     }
@@ -95,7 +96,7 @@ class RevisionVentasTest {
         var comando = venta(Fixtures.dosBoletosYMedioKilo(), List.of(Fixtures.efectivo("150.00", null)),
                 "X".repeat(ManejadorRegistrarVenta.MAX_CARACTERES_CUPON + 1));
 
-        fallaCon(() -> e.api.preparar(e.ctxA, comando), CodigoError.CUPON_INVALIDO);
+        fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), comando), CodigoError.CUPON_INVALIDO);
         assertThat(e.cupones.cotizaciones()).isZero();
     }
 
@@ -139,10 +140,10 @@ class RevisionVentasTest {
     @Test
     @DisplayName("VT-07: si al canjear el descuento ya no es el esperado, el cupon no se gasta y no hay venta")
     void confirmar_descuentoCambiaAlCanjear_cuponIntacto() {
-        var token = e.api.preparar(e.ctxA, Fixtures.ventaConCupon()).token();
+        var token = e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaConCupon()).token();
         e.cupones.descuentoAlCanjear = new BigDecimal("20.00");
 
-        fallaCon(() -> e.api.confirmar(e.ctxA, token), CodigoError.COMANDO_CAMBIO);
+        fallaCon(() -> e.api.confirmar(e.ctxA, Permisos.de(e.ctxA), token), CodigoError.COMANDO_CAMBIO);
         assertThat(e.cupones.canjes()).isEmpty();
         assertThat(e.ventas.todas()).isEmpty();
         assertThat(e.eventos.todos()).isEmpty();
@@ -153,7 +154,7 @@ class RevisionVentasTest {
     @Test
     @DisplayName("VT-05: el resumen muestra cada linea con descripcion, cantidad, precio e importe")
     void preparar_resumenConLineas() {
-        var resumen = e.api.preparar(e.ctxA, Fixtures.ventaSinCupon()).resumen();
+        var resumen = e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaSinCupon()).resumen();
 
         assertThat(resumen).contains("Boleto general").contains("2 pieza").contains("45.00").contains("90.00")
                 .contains("Camote poblano").contains("0.5 kg").contains("120.00").contains("60.00");
@@ -162,13 +163,13 @@ class RevisionVentasTest {
     @Test
     @DisplayName("VT-05: si dos precios cambian y se compensan (el subtotal sigue igual), confirmar da COMANDO_CAMBIO")
     void confirmar_preciosQueSeCompensan_comandoCambio() {
-        var token = e.api.preparar(e.ctxA, Fixtures.ventaSinCupon()).token();
+        var token = e.api.preparar(e.ctxA, Permisos.de(e.ctxA), Fixtures.ventaSinCupon()).token();
         e.catalogo.con(e.negocioA, new ProductoParaVenta(Fixtures.BOLETO, "Boleto general", "pieza",
                 new BigDecimal("40.00"), false, true));
         e.catalogo.con(e.negocioA, new ProductoParaVenta(Fixtures.CAMOTE, "Camote poblano", "kg",
                 new BigDecimal("140.00"), true, true));
 
-        fallaCon(() -> e.api.confirmar(e.ctxA, token), CodigoError.COMANDO_CAMBIO);
+        fallaCon(() -> e.api.confirmar(e.ctxA, Permisos.de(e.ctxA), token), CodigoError.COMANDO_CAMBIO);
         assertThat(e.ventas.todas()).isEmpty();
     }
 
@@ -200,7 +201,7 @@ class RevisionVentasTest {
         var ventaId = e.vender(e.ctxA, comando);
         var anular = new AnularVentaComando(ventaId, motivo);
         e.confirmar(new mx.negocio360.compartido.contexto.ContextoNegocio(e.negocioA, "encargado-a"), anular);
-        var venta = e.api.venta(e.ctxA, ventaId).orElseThrow();
+        var venta = e.api.venta(e.ctxA, Permisos.de(e.ctxA), ventaId).orElseThrow();
 
         assertThat(comando.toString()).doesNotContain(Fixtures.CODIGO_CUPON).doesNotContain(cliente.toString());
         assertThat(anular.toString()).doesNotContain(motivo);

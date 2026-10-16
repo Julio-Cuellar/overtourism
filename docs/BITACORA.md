@@ -219,21 +219,21 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-110 | **Sin moderación de reseñas por ahora.** La ruta para ocultar existe; en el futuro la usarán un modelo de IA y moderadores desde el servicio de administración | ACEPTADA | 2026-10-15 | Respuesta 8 de la v0.2: «por el momento nadie, en el futuro un modelo de IA y moderadores desde el servicio de administración». Riesgo: comentarios libres de desconocidos en el stand |
 | D-111 | **El texto legal y la retención de la ficha del ex-empleado se ven después.** Ahora solo importa la funcionalidad: el texto de la responsabilidad del patrón es provisional y la retención es P2 | ACEPTADA | 2026-10-15 | Respuestas 6 y 7 de la v0.2: «esto posteriormente lo colocaremos, ahora solo importa funcionalidad» y «esto se ve en P2». Sigue siendo necesario antes de un piloto con personal real |
 | D-112 | **El puerto de preparaciones lleva el negocio y el token se quema al vaciar.** `porHash`, `marcarUsada` y `vaciar` reciben `negocioId`; el hash del comando es canónico (ordena claves, ignora espacios); `marcarUsada` vacía el comando en la misma sentencia y `vaciar` de una preparación sin usar la marca como usada | ACEPTADA | 2026-10-15 | Confirmada por el usuario (la llamó D-104 al confirmar; se renumeró a D-112 porque otra sesión ya usó D-104 a D-111 para Negocios). La seguridad por fila no muestra la fila sin negocio; `jsonb` reordena el comando y rompía el hash; la base exige comando o uso. Efecto visible: una segunda confirmación de un token vencido o alterado da `TOKEN_USADO` y no `TOKEN_EXPIRADO` ni `COMANDO_CAMBIO` |
-| D-76 | Ventas y Caja son dos módulos horizontales separados (`ventas`, `caja`). Ventas no conoce a Caja: el canal obtiene el turno con `CajaApi.turnoActivo` y pasa el `turno_id`. Caja escucha `venta.*` y llama a `VentasApi.resumenTurno` en el corte | PROPUESTA | 2026-10-14 | Evita un ciclo. `docs/diseno/ventas.md` y `caja.md`. La separación la pidió el usuario; el reparto de dependencias es mío |
-| D-77 | Contrato de `venta.registrada` v1 (`venta_id`, `folio`, `serie`, `turno_id`, `cliente_id?`, `cupon_id?`, `subtotal`, `descuento`, `total`, `lineas[]`, `pagos[]`) y `venta.anulada` v1 (`venta_id`, `turno_id`, `motivo?`, `lineas[]`, `pagos[]`) | PROPUESTA | 2026-10-14 | Une lo que piden Inventario (§7.2, D-25), Clientes (D-48, D-65) y Caja. Compatible con `VentaRegistradaV1` y `VentaAnuladaV1` de Clientes (lector tolerante). Falta acordarlo con quien programa Inventario y Clientes |
-| D-78 | Cupón: Ventas lo cotiza con `PasaporteApi.cotizarCupon` (nuevo, solo lectura) al preparar y lo canjea con `canjearCupon` al confirmar, en la misma transacción | PROPUESTA | 2026-10-14 | Precisa D-34. Revertir el canje al anular está abierto (VT-10) |
-| D-79 | El folio de venta es consecutivo por negocio y serie y se asigna al confirmar | PROPUESTA | 2026-10-14 | Sin huecos por preparaciones que expiran |
-| D-80 | Ventas no conoce boletos ni venta a granel: la unidad y si un producto admite fracción vienen de Catálogo; lo propio del museo vive en Museos | PROPUESTA | 2026-10-14 | Cumple R4 |
-| D-81 | Preparar el corte de caja pone el turno `EN_CORTE` (única preparación que cambia un estado); descartar o expirar lo regresa a `ABIERTO` | PROPUESTA | 2026-10-14 | Excepción a «preparar no escribe» de Inventario §6.2, para que no entren ventas entre el conteo y la confirmación |
-| D-82 | Anular una venta usa preparar → confirmar, con motivo y permiso de Identidad; una venta registrada no se edita | PROPUESTA | 2026-10-14 | Quién puede anular y hasta cuándo está abierto |
-| D-83 | Todo el código se documenta con **JavaDoc**: cada tipo y método público, con `@param`, `@return`, fallos (`@throws` o código de error), el ID de función y las reglas que aplica (`VT-04`, `CJ-07`), y escala y redondeo en todo monto. `mvn javadoc:javadoc` sin advertencias entra en la verificación | ACEPTADA | 2026-10-14 | Dicho por el usuario: «el codigo debe de ser documentado con JavaDoc para no batallar a la hora de encontrar errores». Falta reflejarlo en la skill `negocio360-reglas` (§7) si el equipo lo pide |
-| D-84 | El patrón preparar → confirmar genérico vive en `compartido.comandos` (`ServicioPreparacion`, `ManejadorComando`, `ResultadoComando` con `datos`); lo usan Ventas y Caja. Clientes conserva el suyo hasta que se migre | PROPUESTA | 2026-10-15 | Evita copiar 180 líneas por módulo. Agrega el ámbito de la preparación para contar ventas preparadas por turno (CJ-07) |
-| D-85 | Al confirmar, si el cálculo deja de cuadrar porque el mundo cambió entre los dos pasos (precio, cupón, ventas del turno), la respuesta es `COMANDO_CAMBIO` y no el error de validación | PROPUESTA | 2026-10-15 | Encontrado al programar: sin esto salían `PAGOS_NO_CUADRAN` o `CORTE_REQUIERE_AUTORIZACION`, que confunden a la persona |
-| D-86 | Ventas verifica que el turno siga abierto al preparar y al confirmar, preguntando por la interfaz `VerificadorDeTurno` de su propia API pública; Caja la implementa (`VerificadorDeTurnoDesdeCaja`, estado efectivo de D-81). Ventas sigue sin depender de Caja | PROPUESTA | 2026-10-15 | Revisión de seguridad A1: antes Ventas confiaba solo en el canal y una venta en un turno cerrado o en corte se registraba igual |
-| D-87 | `canjearCupon` recibe el descuento que vio el cajero; si Pasaporte calcula otro, rechaza con `COMANDO_CAMBIO` sin canjear | PROPUESTA | 2026-10-15 | Revisión de calidad (medio 2): evita que un cupón quede gastado en una venta que no se registra. Cambia el contrato J3 que hay que acordar con el dueño de Pasaporte |
-| D-88 | El consumidor de Caja marca un evento como procesado solo si lo aplicó. Si el turno no existe o cerró responde `SIN_TURNO_ABIERTO`, y si el evento no cumple el contrato o no viene de Ventas responde `DATOS_INVALIDOS`; en los dos casos el evento no se pierde. La anulación revierte lo que Caja registró, no los montos del evento | PROPUESTA | 2026-10-15 | Revisión de seguridad y calidad (A1, M3, M4): antes la venta se descartaba y quedaba marcada, y un método desconocido lanzaba excepción en cada reintento |
-| D-89 | El frontend se hace en **Dart y Flutter**, pensado sobre todo como app móvil, en la carpeta `frontend/` junto a `backend/`. Habla con el servidor por GraphQL (y REST para el inicio de sesión) | ACEPTADA | 2026-10-15 | Lo pidió el usuario: «comienza a maquetar el front con dart y flutter ya que mayormente sera app movil». Reemplaza la opción Next.js de `CLAUDE.md` |
-| D-90 | Mientras no exista el módulo de negocios, en la demo las sesiones sin negocio usan un **negocio de demostración** fijado en la configuración del servidor (`negocio360.demo.negocio-id`). El cliente nunca elige el negocio. Solo con `negocio360.demo.habilitada=true` y nunca con el perfil `produccion` | PROPUESTA | 2026-10-15 | F4: Identidad todavía no asigna negocio a la sesión, y sin negocio no hay contexto para Ventas ni Caja |
+| D-135 | Ventas y Caja son dos módulos horizontales separados (`ventas`, `caja`). Ventas no conoce a Caja: el canal obtiene el turno con `CajaApi.turnoActivo` y pasa el `turno_id`. Caja escucha `venta.*` y llama a `VentasApi.resumenTurno` en el corte | PROPUESTA | 2026-10-14 | Evita un ciclo. `docs/diseno/ventas.md` y `caja.md`. La separación la pidió el usuario; el reparto de dependencias es mío |
+| D-136 | Contrato de `venta.registrada` v1 (`venta_id`, `folio`, `serie`, `turno_id`, `cliente_id?`, `cupon_id?`, `subtotal`, `descuento`, `total`, `lineas[]`, `pagos[]`) y `venta.anulada` v1 (`venta_id`, `turno_id`, `motivo?`, `lineas[]`, `pagos[]`) | PROPUESTA | 2026-10-14 | Une lo que piden Inventario (§7.2, D-25), Clientes (D-48, D-65) y Caja. Compatible con `VentaRegistradaV1` y `VentaAnuladaV1` de Clientes (lector tolerante). Falta acordarlo con quien programa Inventario y Clientes |
+| D-137 | Cupón: Ventas lo cotiza con `PasaporteApi.cotizarCupon` (nuevo, solo lectura) al preparar y lo canjea con `canjearCupon` al confirmar, en la misma transacción | PROPUESTA | 2026-10-14 | Precisa D-34. Revertir el canje al anular está abierto (VT-10) |
+| D-138 | El folio de venta es consecutivo por negocio y serie y se asigna al confirmar | PROPUESTA | 2026-10-14 | Sin huecos por preparaciones que expiran |
+| D-139 | Ventas no conoce boletos ni venta a granel: la unidad y si un producto admite fracción vienen de Catálogo; lo propio del museo vive en Museos | PROPUESTA | 2026-10-14 | Cumple R4 |
+| D-140 | Preparar el corte de caja pone el turno `EN_CORTE` (única preparación que cambia un estado); descartar o expirar lo regresa a `ABIERTO` | PROPUESTA | 2026-10-14 | Excepción a «preparar no escribe» de Inventario §6.2, para que no entren ventas entre el conteo y la confirmación |
+| D-141 | Anular una venta usa preparar → confirmar, con motivo y permiso de Identidad; una venta registrada no se edita | PROPUESTA | 2026-10-14 | Quién puede anular y hasta cuándo está abierto |
+| D-142 | Todo el código se documenta con **JavaDoc**: cada tipo y método público, con `@param`, `@return`, fallos (`@throws` o código de error), el ID de función y las reglas que aplica (`VT-04`, `CJ-07`), y escala y redondeo en todo monto. `mvn javadoc:javadoc` sin advertencias entra en la verificación | ACEPTADA | 2026-10-14 | Dicho por el usuario: «el codigo debe de ser documentado con JavaDoc para no batallar a la hora de encontrar errores». Falta reflejarlo en la skill `negocio360-reglas` (§7) si el equipo lo pide |
+| D-143 | El patrón preparar → confirmar genérico vive en `compartido.comandos` (`ServicioPreparacion`, `ManejadorComando`, `ResultadoComando` con `datos`); lo usan Ventas y Caja. Clientes conserva el suyo hasta que se migre | PROPUESTA | 2026-10-15 | Evita copiar 180 líneas por módulo. Agrega el ámbito de la preparación para contar ventas preparadas por turno (CJ-07) |
+| D-144 | Al confirmar, si el cálculo deja de cuadrar porque el mundo cambió entre los dos pasos (precio, cupón, ventas del turno), la respuesta es `COMANDO_CAMBIO` y no el error de validación | PROPUESTA | 2026-10-15 | Encontrado al programar: sin esto salían `PAGOS_NO_CUADRAN` o `CORTE_REQUIERE_AUTORIZACION`, que confunden a la persona |
+| D-145 | Ventas verifica que el turno siga abierto al preparar y al confirmar, preguntando por la interfaz `VerificadorDeTurno` de su propia API pública; Caja la implementa (`VerificadorDeTurnoDesdeCaja`, estado efectivo de D-140). Ventas sigue sin depender de Caja | PROPUESTA | 2026-10-15 | Revisión de seguridad A1: antes Ventas confiaba solo en el canal y una venta en un turno cerrado o en corte se registraba igual |
+| D-146 | `canjearCupon` recibe el descuento que vio el cajero; si Pasaporte calcula otro, rechaza con `COMANDO_CAMBIO` sin canjear | PROPUESTA | 2026-10-15 | Revisión de calidad (medio 2): evita que un cupón quede gastado en una venta que no se registra. Cambia el contrato J3 que hay que acordar con el dueño de Pasaporte |
+| D-147 | El consumidor de Caja marca un evento como procesado solo si lo aplicó. Si el turno no existe o cerró responde `SIN_TURNO_ABIERTO`, y si el evento no cumple el contrato o no viene de Ventas responde `DATOS_INVALIDOS`; en los dos casos el evento no se pierde. La anulación revierte lo que Caja registró, no los montos del evento | PROPUESTA | 2026-10-15 | Revisión de seguridad y calidad (A1, M3, M4): antes la venta se descartaba y quedaba marcada, y un método desconocido lanzaba excepción en cada reintento |
+| D-148 | El frontend se hace en **Dart y Flutter**, pensado sobre todo como app móvil, en la carpeta `frontend/` junto a `backend/`. Habla con el servidor por GraphQL (y REST para el inicio de sesión) | ACEPTADA | 2026-10-15 | Lo pidió el usuario: «comienza a maquetar el front con dart y flutter ya que mayormente sera app movil». Reemplaza la opción Next.js de `CLAUDE.md` |
+| D-149 | Mientras no exista el módulo de negocios, en la demo las sesiones sin negocio usan un **negocio de demostración** fijado en la configuración del servidor (`negocio360.demo.negocio-id`). El cliente nunca elige el negocio. Solo con `negocio360.demo.habilitada=true` y nunca con el perfil `produccion` | PROPUESTA | 2026-10-15 | F4: Identidad todavía no asigna negocio a la sesión, y sin negocio no hay contexto para Ventas ni Caja |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -1411,33 +1411,33 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 
 **Qué se vio:**
 1. Un primer borrador se hizo antes de clonar el repositorio (página publicada, ver «Documentos relacionados»). Al leer la Bitácora y los diseños se encontraron choques y se corrigieron en los documentos nuevos: los eventos se llaman `venta.registrada` y `venta.anulada` (Clientes ya los consume); el cupón va por D-34 (Ventas llama a Pasaporte, no al revés); `C-xx` ya lo usa Inventario y `V-xx` Clientes, así que Ventas usa `VT-xx` y Caja `CJ-xx`; las mutaciones van por `prepararComando` / `confirmarComando` (D-55); redondeo HALF_UP (D-20); sin REST de bot (D-63).
-2. `preparar` no escribe en las tablas de negocio, como en Inventario: no existen ventas «preparadas». La única excepción propuesta es el corte de caja (D-81).
-3. Ventas no conoce a Caja para no crear un ciclo: el canal pasa el `turno_id` (D-76).
+2. `preparar` no escribe en las tablas de negocio, como en Inventario: no existen ventas «preparadas». La única excepción propuesta es el corte de caja (D-140).
+3. Ventas no conoce a Caja para no crear un ciclo: el canal pasa el `turno_id` (D-135).
 4. El plan da ≈ 9.9 días-persona contra un día disponible: **no cabe** antes del evento. Recomendación: mostrar Ventas y Caja como mockup en la demo y programar después.
 
-**Decisiones:** D-76 a D-82 (PROPUESTA). D-83, JavaDoc obligatorio (ACEPTADA, dicho por el usuario).
+**Decisiones:** D-135 a D-141 (PROPUESTA). D-142, JavaDoc obligatorio (ACEPTADA, dicho por el usuario).
 
 **Pendiente:**
 - Que el equipo responda §13 de `ventas.md`, §12 de `caja.md` y §13 del plan (programar o mockup, dueños de Catálogo y Pasaporte, quién anula, umbral del corte).
-- Acordar D-77 con quien programa Clientes e Inventario, y `cotizarCupon` / `canjearCupon` con el dueño de Pasaporte.
-- Si se acepta D-83 para todo el proyecto, agregarlo a la skill `negocio360-reglas` y a `.agent/rules/negocio360.md` (no se tocaron).
+- Acordar D-136 con quien programa Clientes e Inventario, y `cotizarCupon` / `canjearCupon` con el dueño de Pasaporte.
+- Si se acepta D-142 para todo el proyecto, agregarlo a la skill `negocio360-reglas` y a `.agent/rules/negocio360.md` (no se tocaron).
 - **No hay autorización para programar Ventas ni Caja.**
 
 **No verificado:** los diagramas Mermaid no se renderizaron. No se hizo commit ni se cambió de rama (los archivos quedan sin confirmar en `main`; el flujo de D-32 pide trabajar en la rama personal).
 
 **Archivos creados:** `docs/diseno/ventas.md`, `docs/diseno/caja.md`, `docs/planes/ventas-caja-v1.md`.
-**Archivos modificados:** `docs/BITACORA.md` (decisiones D-76 a D-83, documentos relacionados y esta entrada).
+**Archivos modificados:** `docs/BITACORA.md` (decisiones D-135 a D-142, documentos relacionados y esta entrada).
 
 ### 2026-10-14 — Página de Ventas y Caja, versión 2
 **Pedido del usuario:** «Crea el artefacto como te lo pedi anteriormente, con la diferencia que corrigas y agreges lo que falto basandote en el repositorio y su contenido».
 
 **Qué se hizo:**
 1. Se republicó la página https://claude.ai/artifact/FVtCcUoJHC8A48rUcJ17xE (misma URL, versión 2) con el contenido de `docs/diseno/ventas.md`, `docs/diseno/caja.md` y `docs/planes/ventas-caja-v1.md`. Sigue la skill `generar-mockup-html`: chips de borrador y datos inventados, identidad talavera y cempasúchil, azul punteado = síncrono y dorado continuo = asíncrono, «Qué mirar» en cada figura y fuentes al pie.
-2. Lo pedido originalmente (entidad-relación, diagrama de eventos, secuencias, tablas de entidades, funciones, reglas y eventos con JSON, y tabla de comunicación con la API) más lo que faltaba: tabla de qué se corrigió de la versión 1, decisiones con su estado, códigos de error, contratos con otros módulos, estados, criterios de aceptación, convención JavaDoc (D-83), plan con veredicto de calendario y preguntas.
+2. Lo pedido originalmente (entidad-relación, diagrama de eventos, secuencias, tablas de entidades, funciones, reglas y eventos con JSON, y tabla de comunicación con la API) más lo que faltaba: tabla de qué se corrigió de la versión 1, decisiones con su estado, códigos de error, contratos con otros módulos, estados, criterios de aceptación, convención JavaDoc (D-142), plan con veredicto de calendario y preguntas.
 3. Copia local en `docs/mockups/ventas-caja.html`, con Mermaid 11.4.1 desde jsDelivr (se comprobó que la URL responde 200).
 4. Al publicar se vio que la página ya está **compartida con cualquiera que tenga el enlace** (lo cambió el usuario). La versión 2 se publicó en esa misma URL, así que quien tenga el enlace ve los cambios.
 
-**Decisiones:** ninguna nueva. Se mantienen D-76 a D-82 (PROPUESTA) y D-83 (ACEPTADA).
+**Decisiones:** ninguna nueva. Se mantienen D-135 a D-141 (PROPUESTA) y D-142 (ACEPTADA).
 
 **No verificado:** no se abrió la página ni la copia local en un navegador, así que no se revisó a 400 y 1280 px, en tema claro y oscuro, ni que los 8 diagramas Mermaid se dibujen sin error. Solo se comprobó que el JavaScript de la página no tiene errores de sintaxis (`node --check`). No se hizo commit.
 
@@ -1448,20 +1448,20 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 **Autorización escrita (cita textual del usuario):** «Autorizo programar Ventas y Caja en la rama uriel».
 
 **Alcance que le doy (interpretación mía):**
-- Código de los módulos `ventas` y `caja` según `docs/diseno/ventas.md`, `docs/diseno/caja.md` y `docs/planes/ventas-caja-v1.md`, empezando por las fases F2 (Ventas) y F3 (Caja) **en memoria**, como Clientes I2: dominio, comandos con preparar → confirmar, eventos y listeners, con pruebas primero (TDD) y JavaDoc (D-83).
+- Código de los módulos `ventas` y `caja` según `docs/diseno/ventas.md`, `docs/diseno/caja.md` y `docs/planes/ventas-caja-v1.md`, empezando por las fases F2 (Ventas) y F3 (Caja) **en memoria**, como Clientes I2: dominio, comandos con preparar → confirmar, eventos y listeners, con pruebas primero (TDD) y JavaDoc (D-142).
 - Catálogo y Pasaporte no existen: Ventas los usa por puertos propios con dobles en las pruebas. No se crean esos módulos.
 - **No incluye** migraciones de Flyway ni repositorios JDBC (F5), ni el esquema GraphQL (F4), salvo que el usuario lo pida. Tampoco cambia los contratos ya programados de Clientes.
-- D-76 a D-82 siguen como PROPUESTA: se programan tal cual están en el diseño y, si el equipo cambia alguna, se ajusta el código.
+- D-135 a D-141 siguen como PROPUESTA: se programan tal cual están en el diseño y, si el equipo cambia alguna, se ajusta el código.
 - Trabajo en la rama local `uriel`, creada desde `main` (la remota `origin/uriel` estaba 4 commits atrás y sin nada propio). No se hace `git push` sin confirmar.
 
 ### 2026-10-15 — Ventas y Caja programados en memoria (F2 y F3)
 **Pedido del usuario:** «Autorizo programar Ventas y Caja en la rama uriel» (entrada del 2026-10-14), con el flujo TDD.
 
 **Qué se hizo:**
-1. **`compartido.comandos`** (nuevo, D-84): preparar → confirmar genérico para Ventas y Caja. **`compartido.dinero.Redondeo`** (nuevo): la utilidad única de D-20.
-2. **Módulo `ventas`**: `VentasApi`, `RegistrarVenta` y `AnularVenta` con preparar → confirmar, folios por negocio y serie, cupón cotizado y canjeado en la misma confirmación (D-78), eventos `venta.registrada` v1 y `venta.anulada` v1 con el contrato de D-77, y `resumenTurno`. Catálogo, Pasaporte y permisos son puertos con dobles en las pruebas. Solo depende de `compartido`.
-3. **Módulo `caja`**: `CajaApi`, crear caja, abrir turno con fondo, entradas y retiros, corte con EN_CORTE al preparar (D-81) y conciliación contra Ventas (CJ-07), descartar corte, y `ConsumidorVentas` idempotente por evento y por venta, con marca de anulación previa. Depende de `compartido` y `ventas` en un solo sentido (D-76).
-4. Todo el código nuevo lleva JavaDoc que cita funciones, reglas y códigos (D-83). `mvn javadoc:javadoc -Ddoclint=all` da 0 advertencias en el código nuevo.
+1. **`compartido.comandos`** (nuevo, D-143): preparar → confirmar genérico para Ventas y Caja. **`compartido.dinero.Redondeo`** (nuevo): la utilidad única de D-20.
+2. **Módulo `ventas`**: `VentasApi`, `RegistrarVenta` y `AnularVenta` con preparar → confirmar, folios por negocio y serie, cupón cotizado y canjeado en la misma confirmación (D-137), eventos `venta.registrada` v1 y `venta.anulada` v1 con el contrato de D-136, y `resumenTurno`. Catálogo, Pasaporte y permisos son puertos con dobles en las pruebas. Solo depende de `compartido`.
+3. **Módulo `caja`**: `CajaApi`, crear caja, abrir turno con fondo, entradas y retiros, corte con EN_CORTE al preparar (D-140) y conciliación contra Ventas (CJ-07), descartar corte, y `ConsumidorVentas` idempotente por evento y por venta, con marca de anulación previa. Depende de `compartido` y `ventas` en un solo sentido (D-135).
+4. Todo el código nuevo lleva JavaDoc que cita funciones, reglas y códigos (D-142). `mvn javadoc:javadoc -Ddoclint=all` da 0 advertencias en el código nuevo.
 5. `caja.md`: tres códigos nuevos (`CAJA_DUPLICADA`, `NOMBRE_CAJA_INVALIDO`, `TURNO_NO_ENCONTRADO`) y la precisión de CJ-02 (fondo 0.00 sin movimiento).
 
 **Verificación hecha:** RED real dos veces (no compilaba por las clases faltantes). GREEN: Ventas 54/54, Caja 41/41 y compartido 32 nuevas. `mvn -B verify` sin las 10 clases que necesitan Docker: **805/805, BUILD SUCCESS, cobertura cumplida** (Ventas 87.8 %, Caja 92.8 %, `compartido.comandos` 94.0 % de líneas). Detalle en `docs/pruebas/ventas-caja-f2-f3.tdd.md`.
@@ -1471,7 +1471,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 - No hubo revisión de agentes de Java ni de seguridad, ni ronda de mutaciones.
 - **No hay commits**: la máquina no tiene identidad de Git (`user.name` y `user.email`). Todo está sin confirmar en la rama local `uriel`.
 
-**Decisiones:** D-84 y D-85 (PROPUESTA).
+**Decisiones:** D-143 y D-144 (PROPUESTA).
 
 **Pendiente:** identidad de Git y commits; verify completo con Docker; revisión de agentes; JavaDoc de `DecimalPlano` (4 advertencias, anterior a esta etapa); adaptadores reales y JDBC (F5) y GraphQL (F4), ambos sin autorización; VT-10 y CJ-11 (P2).
 
@@ -1482,25 +1482,25 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 **Pedido del usuario:** «realiza los 6 puntos como dices» (los seis puntos propuestos tras las revisiones de `ecc:security-reviewer` y `ecc:code-reviewer`). Dentro de la autorización del 2026-10-14; sin base de datos, GraphQL ni push.
 
 **Qué se hizo (con pruebas primero):**
-1. **Caja no pierde eventos** (D-88): un evento solo se marca como procesado si se aplicó. `SIN_TURNO_ABIERTO` y `DATOS_INVALIDOS` dejan el evento pendiente (`ResultadoAplicacion.completado()`). Exige origen `ventas`, método conocido y montos positivos, acotados y con 2 decimales. La anulación revierte los movimientos que Caja registró, no los montos del evento. Ya no lanza excepción en cada reintento.
-2. **Ventas verifica el turno** (D-86): interfaz `ventas.VerificadorDeTurno` que Caja implementa con `VerificadorDeTurnoDesdeCaja` (estado efectivo de D-81). Ventas sigue sin depender de Caja (`EstructuraModulosTest` en verde).
+1. **Caja no pierde eventos** (D-147): un evento solo se marca como procesado si se aplicó. `SIN_TURNO_ABIERTO` y `DATOS_INVALIDOS` dejan el evento pendiente (`ResultadoAplicacion.completado()`). Exige origen `ventas`, método conocido y montos positivos, acotados y con 2 decimales. La anulación revierte los movimientos que Caja registró, no los montos del evento. Ya no lanza excepción en cada reintento.
+2. **Ventas verifica el turno** (D-145): interfaz `ventas.VerificadorDeTurno` que Caja implementa con `VerificadorDeTurnoDesdeCaja` (estado efectivo de D-140). Ventas sigue sin depender de Caja (`EstructuraModulosTest` en verde).
 3. **`turnoActivo` devuelve el estado efectivo** (`Turno.vigenteEn`): un corte vencido sale ABIERTO.
 4. **Límites con código propio:** `DEMASIADAS_LINEAS`, `DEMASIADOS_PAGOS`, `TEXTO_DEMASIADO_LARGO`; cupón de más de 40 caracteres es `CUPON_INVALIDO` sin llamar a Pasaporte; `Redondeo.dineroValido` (tope `NUMERIC(14, 2)`) rechaza `1E+999999999` sin calcular, en Ventas y en Caja. Los límites se revisan antes de consultar a Caja, Catálogo o Pasaporte.
-5. **El cupón no se gasta si la venta falla** (D-87): `canjear` recibe el descuento esperado y el puerto rechaza sin canjear.
+5. **El cupón no se gasta si la venta falla** (D-146): `canjear` recibe el descuento esperado y el puerto rechaza sin canjear.
 6. **Detalles:** el resumen de la venta lleva cada línea con su precio (detecta cambios que se compensan); copias defensivas en `RegistrarVentaComando` y `CerrarTurnoComando`; `toString` sin cupón, cliente, actores, motivo ni nota; los textos de `CONCURRENCIA`, `ERROR_TEMPORAL` y `CORTE_EVENTOS_PENDIENTES` piden volver a empezar porque el token ya se gastó; pruebas renombradas (`folios_preparacionVencida_noConsumeFolio` ahora sí deja vencer el token; `eventoMalFormado_falla` pasó a `metodoDesconocido_datosInvalidos`).
 
 **Verificación hecha:** RED en compilación (faltaban `VerificadorDeTurno` y su implementación) y luego RED en ejecución con firmas vacías: 37 fallas por la razón esperada. GREEN: `mvn -B verify` sin las 10 clases que necesitan Docker: **848/848, BUILD SUCCESS, cobertura cumplida** (Ventas 96.6 %, Caja 97.6 %, `compartido.comandos` 94.0 %, `compartido.dinero` 100 %). JavaDoc con `-Ddoclint=all`: 0 advertencias en los paquetes tocados.
 
 **No verificado:** `verify` completo con Docker (sigue apagado). No se repitió la revisión de agentes sobre estas correcciones.
 
-**Decisiones:** D-86, D-87 y D-88 (PROPUESTA). Siguen abiertas para el equipo: venta con total 0.00 (cupón del 100 %), quién puede retirar efectivo y preparar el corte, si quien autoriza una diferencia debe ser otra persona, y quitar el texto libre (`motivo`, `serie`) de los eventos (cambia D-77).
+**Decisiones:** D-145, D-146 y D-147 (PROPUESTA). Siguen abiertas para el equipo: venta con total 0.00 (cupón del 100 %), quién puede retirar efectivo y preparar el corte, si quien autoriza una diferencia debe ser otra persona, y quitar el texto libre (`motivo`, `serie`) de los eventos (cambia D-136).
 
 **Pendiente para F5 (base de datos):** bloqueos del turno al cerrar y retirar, una sola transacción para marcar el evento y aplicarlo, limpieza de preparaciones viejas, firma del comando guardado y cola de revisión para `DATOS_INVALIDOS`.
 
 **Además:** documento para el equipo en lenguaje simple (qué se hizo, qué falta, dónde va el frontend y qué será funcional, demo o simulación en el concurso): https://claude.ai/code/artifact/b1efa956-2b71-48d5-b553-e81d2a9c6a67 (privado hasta que se comparta).
 
 **Archivos creados:** `ventas/VerificadorDeTurno.java`, `caja/aplicacion/VerificadorDeTurnoDesdeCaja.java`; pruebas `RevisionVentasTest`, `RevisionCajaTest` y `ventas/fakes/TurnosEnMemoria`.
-**Archivos modificados:** Ventas (manejador de venta, calculadora, plantillas, códigos, comandos, `Venta`, servicio, puerto de cupones), Caja (consumidor, resultado, servicio, API, `Turno`, validaciones, plantillas, códigos, comandos), `compartido/dinero/Redondeo`, dobles y pruebas existentes, `docs/diseno/ventas.md`, `docs/diseno/caja.md`, `docs/pruebas/ventas-caja-f2-f3.tdd.md` y esta Bitácora (D-86 a D-88).
+**Archivos modificados:** Ventas (manejador de venta, calculadora, plantillas, códigos, comandos, `Venta`, servicio, puerto de cupones), Caja (consumidor, resultado, servicio, API, `Turno`, validaciones, plantillas, códigos, comandos), `compartido/dinero/Redondeo`, dobles y pruebas existentes, `docs/diseno/ventas.md`, `docs/diseno/caja.md`, `docs/pruebas/ventas-caja-f2-f3.tdd.md` y esta Bitácora (D-145 a D-147).
 
 ### 2026-10-15 — Rama `uriel` unida a `main`; autorización de F4 y del frontend en Flutter
 **Pedido del usuario (cita textual):** «los cambios qu ya hayas realizado y se encuentren bien y correctos [ ] Subir la rama uriel a GitHub y unirla a main, para que el equipo trabaje sobre Ventas y Caja. Dame opciones de datos publicos del gobierno del estado de puebla que se pueden colocar en la app, abrir las puertas de Ventas y Caja (fase F4) y crear la carpeta frontend/. que quede anotado en la Bitácora. Finalmente una vez creada la carpeta del front, comienza a maquetar el front con dart y flutter ya que mayormente sera app movil».
@@ -1510,13 +1510,13 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 **Autorización escrita y alcance que le doy (interpretación mía):**
 - **F4 de Ventas y Caja:** exponer sus comandos y consultas por GraphQL (D-55: `prepararComando` y `confirmarComando`, más consultas propias), encender los módulos al arrancar con Spring y permitir CORS para el frontend. Catálogo y Pasaporte siguen sin existir: se cargan productos y cupones de demostración **rotulados como simulados**. Los repositorios siguen en memoria (F5, JDBC, **no** está autorizada).
 - **Carpeta `frontend/`** en la raíz, junto a `backend/`.
-- **Frontend en Dart y Flutter**, pensado sobre todo para móvil. Esto cierra la decisión abierta «Frontend» de la sección 4 (antes Next.js sin confirmar): **D-89 ACEPTADA**.
+- **Frontend en Dart y Flutter**, pensado sobre todo para móvil. Esto cierra la decisión abierta «Frontend» de la sección 4 (antes Next.js sin confirmar): **D-148 ACEPTADA**.
 
 ### 2026-10-15 — F4 de Ventas y Caja por GraphQL y maqueta de la app en Flutter
 **Pedido del usuario:** la entrada anterior (autorización de F4, carpeta `frontend/` y Flutter).
 
 **Qué se hizo:**
-1. **F4 (commit `3c9419f`, sin push):** módulo nuevo `canal` con `prepararComando` y `confirmarComando` (D-55) para Ventas y Caja; el token lleva al frente su módulo (`ventas.` o `caja.`). Consultas `venta`, `ventasDelTurno`, `cajas`, `turnoActivo`, `saldoTurno` y `cortes`. Los errores de dominio salen con `codigo`, `regla` y el texto fijo. El negocio sale de la sesión de Identidad (D-90 para la demo).
+1. **F4 (commit `3c9419f`, sin push):** módulo nuevo `canal` con `prepararComando` y `confirmarComando` (D-55) para Ventas y Caja; el token lleva al frente su módulo (`ventas.` o `caja.`). Consultas `venta`, `ventasDelTurno`, `cajas`, `turnoActivo`, `saldoTurno` y `cortes`. Los errores de dominio salen con `codigo`, `regla` y el texto fijo. El negocio sale de la sesión de Identidad (D-149 para la demo).
 2. Ventas y Caja se encienden al arrancar con repositorios **en memoria** y el bus de Spring (sin outbox: F5). `canal.demo` simula Catálogo (6 productos), Pasaporte (cupones `PASAPORTE-20` y `PASAPORTE-50`, reutilizables en la demo) y permisos (toda cuenta puede anular y autorizar); todo va rotulado como simulado.
 3. Todo detrás de `negocio360.demo.habilitada=true`, encendido en `application-desarrollo.yml` con CORS para `localhost`. Nunca con el perfil `produccion`.
 4. Spring Modulith: interfaces con nombre `puertos`, `dominio`, `comandos` y `textos` en Ventas y Caja para que `canal` use solo lo expuesto.
@@ -1536,7 +1536,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 - Gobierno del Estado: boletines trimestrales de turismo del CEIGEP/SEI (`sei.puebla.gob.mx/docs/boletines/turismo-*.pdf`; ocupación hotelera, llegada de turistas, derrama), indicadores del Observatorio Turístico de la Secretaría de Turismo (`sectur.puebla.gob.mx/observatorioturistico`), «Información estadística general» por municipio del SEI (CSV, replicada en datamx.io; última actualización 2019) y la Estrategia Estatal de Pueblos Mágicos (12 Pueblos Mágicos). El portal `datos.puebla.gob.mx` no respondió (DNS) el 2026-10-15.
 - Federales con detalle de Puebla: DENUE de INEGI (negocios con ubicación y giro) y DataTur (monitoreo hotelero por destino).
 
-**Decisiones:** D-89 (ACEPTADA), D-90 (PROPUESTA).
+**Decisiones:** D-148 (ACEPTADA), D-149 (PROPUESTA).
 
 **Archivos creados:** `backend/src/main/java/mx/negocio360/canal/**`, `ventas/infraestructura/*`, `caja/infraestructura/*`, `compartido/comandos/PreparacionesEnMemoria.java`, `package-info` de puertos y dominio, `graphql/{ventas,caja,canal}.graphqls`, pruebas de `canal`; `frontend/**`.
 **Archivos modificados:** comandos y plantillas de Ventas y Caja (anotaciones), `compartido.graphqls` (`Resultado.datos`), `application-desarrollo.yml`, `EstructuraModulosTest`, `EsquemaGraphqlClientesTest`, `PostgresDePruebasInicializador` y esta Bitácora.
@@ -1808,3 +1808,51 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 **Decisiones propuestas:** D-110 a D-124 (las de `uriel`, renumeradas) y D-125 a D-134 (despachador único de comandos, permiso al preparar y al confirmar, 11 permisos, SPI de productos en `compartido.catalogo`, revocar el negocio de demostración, prefijo de tipos GraphQL, paginación, outbox, reparto de migraciones, cupones inválidos sin Pasaporte). **Todas PROPUESTA.**
 
 **Pendiente (preguntas P-1 a P-10 del documento):** quitar `canal` y `frontend` de `julio`; aprobar la renumeración, los permisos y la matriz, las queries, el SPI de productos; si la persistencia entra ahora o después; quién mantiene Negocios y quién toma Misceláneos y Restaurantes.
+
+### 2026-10-16 — Autorización: integración de Ventas y Caja con Identidad (Etapa 1, F0 a F4)
+**Autorización escrita (cita textual del usuario):** «dentro hay un plan, siguelo. el objetivo es ya de una vez comunicar todos los modulos con el modulo de identidad para que ya podamos hacer consultas a la API e integrar el front». El plan es `docs/planes/integracion-ventas-caja.md`, que pide «un sí» para aceptar sus recomendaciones P-1 a P-10.
+
+**Alcance que le doy (interpretación mía):**
+- **Etapa 1 del plan, F0 a F4:** higiene de la mezcla, permisos y roles de Ventas y Caja, `Autorizacion` en los comandos, despachador único de `prepararComando` y `confirmarComando`, GraphQL final con la tabla de operaciones, SPI de productos y cupones inválidos sin Pasaporte.
+- **Recomendaciones P-1 a P-10 aceptadas**, con una excepción mía: **no borro `frontend/`** (paso 0.2 / P-1). El objetivo de hoy incluye integrar el front y la carpeta es inofensiva para el backend; sigue siendo reversible. `canal` sí se quita.
+- **Alcance ampliado por el usuario en la misma sesión** (cita: «el objetivo general es la comunicación de todos los modulos entre si y con identidad»; al preguntarle hasta dónde, eligió «Todos los módulos»): además de F0 a F4, los **resolvedores GraphQL de Clientes** (CLI-I6), el **GraphQL y los permisos de Inventario** (IDN-4.4) y los **consumidores de `venta.registrada` y `venta.anulada`** que falten. Cada pieza nueva sigue con TDD y se anota aquí al terminar.
+- **No incluye** F5 (outbox real), F6 (Postgres de Ventas y Caja) ni F7 (mutaciones y revisores), que el propio plan deja para después (P-5). Sin commit ni push salvo que lo pida.
+
+
+### 2026-10-16 — Integración de Ventas, Caja, Clientes e Inventario con Identidad (F0 a F4 y más, hecho)
+**Pedido del usuario:** «dentro hay un plan, siguelo. el objetivo es ya de una vez comunicar todos los modulos con el modulo de identidad para que ya podamos hacer consultas a la API e integrar el front», y después «el objetivo general es la comunicación de todos los modulos entre si y con identidad» (eligió «Todos los módulos»). Autorización escrita en la entrada anterior. El plan es `docs/planes/integracion-ventas-caja.md`.
+
+**Qué se hizo, con pruebas primero:**
+1. **F0 higiene.** Se quitó el módulo `canal` (13 clases, 2 pruebas, `canal.graphqls`) y el bloque `negocio360.demo.*`. Ventas y Caja arrancan con `ventas.almacen=memoria` y `caja.almacen=memoria` (el perfil `desarrollo` los fija). Se renumeraron las 15 decisiones de `uriel` (**ver la corrección de abajo**). `frontend/` **no se borró** (excepción mía a P-1: el objetivo de hoy incluye integrar el front).
+2. **F1 permisos y roles.** 11 permisos de Ventas y Caja (`PermisosDeVentas`, `PermisosDeCaja`), la matriz de la sección 8.2 en `RolesBase` y la migración `V035`. Una prueba compara `RolesBase` contra la tabla de la sección 8.2 y otra contra PostgreSQL real.
+3. **F2 `Autorizacion` en los comandos.** `ManejadorComando.permisos(comando)`; `ServicioPreparacion` exige todos al preparar y otra vez al confirmar, **antes de gastar el token** (D-126). `VentasApi` y `CajaApi` con las firmas de la sección 9.1, `ventas(filtro, …)`, `cortes(filtro, …)` y `movimientos(…)` paginados con cursor (`compartido.paginacion`), `DEMASIADAS_CAJAS`, y se borraron `AutorizacionVentas`, `AutorizacionCaja` y `SIN_PERMISO_ANULAR`. Ya no existe un «encargado» simulado: retirar, anular y autorizar son de gerente, administrador y dueño.
+4. **F3 despachador y GraphQL final.** `compartido.graphql.comandos`: un solo dueño de `prepararComando` y `confirmarComando` (D-125) con `ModuloDeComandos` por módulo; `confirmarComando` exige sesión con negocio salvo Negocios (reseñas). Esquemas finales de Ventas y Caja (sección 7.2), `OperacionesDeVentas` y `OperacionesDeCaja` (tabla SG-21), traductores de error y resolvedores. Negocios migró a `ComandosDeNegocios` sin cambiar una aserción de sus pruebas.
+5. **F4 SPI de productos.** `compartido.catalogo.FuenteDeProductos`, `CatalogoCompuesto`, `CuponesNoDisponibles` (todo cupón es inválido, D-134) y `FuenteDeProductosSimulada` (seis productos rotulados `[SIMULADO]`, solo con `ventas.productos-simulados=true`).
+6. **Clientes.** Resolvedores de `sugerirClientes` y `avisoPrivacidadVigente`, y las variantes `registrarCliente`, `editarCliente` y `publicarAvisoPrivacidad` por el despachador. El permiso del token se exige al confirmar con el nuevo `ClientesApi.tipoDeComando`. Las consultas que dependen de lo no programado (`clientes`, `cliente`, `historialCliente`, `consentimientosCliente`, `panoramaClientes`, `solicitudesArco`) responden `OPERACION_NO_DISPONIBLE`: **no se inventaron cifras**.
+7. **Inventario.** 4 permisos (`PermisosDeInventario`), matriz en `RolesBase` y migración `V038`; almacén en memoria (`inventario.almacen=memoria`); esquema GraphQL (`inventario`, `articulo`, `kardex` y ocho variantes de comando) con el mismo patrón de permiso por token.
+8. **Guía para el front:** `docs/api/graphql-integracion-front.md`.
+
+**Verificación hecha:**
+- `mvn -B verify` (JDK 21, PostgreSQL de Docker): **2313 pruebas, 1 falla, `All coverage checks have been met`**. La falla era `ResenasTest.ocultarYRestituir`, una prueba de Negocios **intermitente que ya estaba así** (el reloj de la prueba está fijo, las dos filas del historial tienen el mismo `ocurrido_en` y `ORDER BY` no define el orden; falló en 3 de 4 corridas completas y pasa sola). Se cambió su aserción a `containsExactlyInAnyOrder` y la clase se corrió sola en verde; **no se repitió la suite completa después de ese cambio**.
+- Pruebas de punta a punta por HTTP con sesiones reales de los roles base: `GraphQlVentasCajaTest` (9), `GraphQlClientesTest` (6), `GraphQlInventarioTest` (6): camino completo del dueño, cajero que cobra pero no anula, roles que no cobran, anónimo y sin negocio, dos negocios que no se ven, token ajeno o con prefijo desconocido, permiso revocado entre preparar y confirmar (el token no se gasta).
+- **Arranque real** con `mvn spring-boot:run -Dspring-boot.run.profiles=desarrollo` en el puerto 8091: registro → código → sesión → crear caja → abrir turno → cobrar (folio 1, cambio 34.00) → anular → saldo de caja → artículo y entrada de Inventario → `miNegocio`, todo por HTTP. Ya había una instancia del usuario en el 8080 (compilación anterior); no se tocó.
+
+**Corrección de numeración (hallazgo mío):** el plan proponía `D-110` a `D-124` para las decisiones de `uriel`, pero Negocios ya había usado `D-110`, `D-111` y `D-112`. Quedaron en **`D-135` a `D-149`** (en código, pruebas, `docs/diseno/ventas.md`, `caja.md`, el plan, el mockup, la evidencia y esta Bitácora; los rangos de B y C pasan a `D-150` a `D-169` y `D-170` a `D-189`). Sin identificadores repetidos en la tabla de decisiones.
+
+**Decisiones:** `D-125` a `D-134` del plan, **ACEPTADAS** con el «síguelo» del usuario (corrígelo aquí si no es lo que quiso decir). Nuevas, **PROPUESTA**:
+- **D-190** Permisos de Inventario (`inventario.articulo.ver`, `.articulo.gestionar`, `.movimiento.registrar`, `.conteo.ajustar`) y matriz: dueño, administrador y gerente todo; el cocinero ve y registra movimientos; los demás nada.
+- **D-191** Los tokens llevan prefijo de módulo (`ventas.`, `caja.`, `clientes.`, `inventario.`); **Negocios conserva el prefijo vacío** porque sus pruebas fijan un token de 43 caracteres.
+- **D-192** Clientes e Inventario conservan su propio preparar → confirmar (HTC-89 sigue pendiente) y el permiso al confirmar se exige con `tipoDeComando` antes de gastar el token.
+- **D-193** Una consulta del esquema cuyo módulo no la implementa responde `OPERACION_NO_DISPONIBLE`, nunca una cifra inventada.
+
+**No hecho / no verificado:**
+- **Ventas → Clientes y Ventas → Inventario por eventos:** Clientes no tiene el historial de compras (CLI-I3) e Inventario no tiene consumo por venta ni quien enlace productos con artículos (necesita Misceláneos o Restaurantes). Hoy solo Caja consume `venta.registrada`. Falta decidirlo y diseñarlo.
+- **F5 (outbox real) y F6 (PostgreSQL de Ventas, Caja e Inventario) no se hicieron:** esos tres módulos se pierden al reiniciar y con el perfil `produccion` no se encienden. Tampoco F7 (mutaciones y revisores `ecc`).
+- **CORS para Flutter web:** el módulo `canal` tenía CORS y se fue con él. La app móvil no lo necesita; un navegador sí. Tocarlo afecta a SG-09 y SG-14, así que no lo hice sin que lo decidan.
+- No se probó la app de Flutter contra este backend.
+- `docs/diseno/ventas.md` y `caja.md` siguen en v0.1 (todavía hablan de `SIN_PERMISO_ANULAR`, de `ventasDelTurno` y del canal): su actualización a v0.2 es parte de F7.
+- **Efecto en la base de desarrollo:** al probar el arranque, Flyway aplicó en la base de `localhost:5433` las migraciones `V030` a `V038` (son aditivas) y quedó una cuenta de prueba `humo.*@example.com` con su negocio. Es la misma base que usa la instancia del 8080.
+- Sin commit ni push.
+
+**Archivos creados (principales):** `compartido/paginacion/*`, `compartido/catalogo/*`, `compartido/graphql/comandos/*`, `ventas/{seguridad,graphql}/*`, `ventas/infraestructura/{CatalogoCompuesto,CuponesNoDisponibles,FuenteDeProductosSimulada}`, `ventas/FiltroVentas`, `caja/{seguridad,graphql}/*`, `caja/FiltroCortes`, `clientes/graphql/{ComandosDeClientes,ClientesGraphQlController}`, `inventario/{seguridad,graphql,infraestructura}/*`, `negocios/web/ComandosDeNegocios`, `resources/graphql/inventario.graphqls`, migraciones `V035` y `V038`, `docs/api/graphql-integracion-front.md`, `docs/pruebas/ventas-caja-integracion.tdd.md`.
+**Archivos borrados:** `canal/**`, `canal.graphqls`, `AutorizacionVentas`, `AutorizacionCaja`, `AutorizacionFija`.

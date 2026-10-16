@@ -23,11 +23,10 @@ class EstructuraModulosTest {
     }
 
     @Test
-    @DisplayName("la plataforma incluye los modulos clientes, compartido, identidad, inventario, negocios, ventas, caja y canal")
+    @DisplayName("la plataforma incluye los modulos clientes, compartido, identidad, inventario, negocios, ventas y caja")
     void modulos_laPlataforma_incluyenLosModulos() {
         var nombres = MODULOS.stream().map(ApplicationModule::getName).collect(Collectors.toSet());
 
-        assertThat(nombres).contains("clientes", "compartido", "identidad", "inventario", "negocios", "ventas", "caja",
-                "canal");
+        assertThat(nombres).contains("clientes", "compartido", "identidad", "inventario", "negocios", "ventas", "caja");
     }
 }

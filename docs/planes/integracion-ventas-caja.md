@@ -81,7 +81,7 @@ Cada fila es algo que encontré leyendo el código y que un plan hecho a ciegas 
 
 | # | Hallazgo | Por qué importa | Qué hace el plan |
 |---|---|---|---|
-| H-01 | **Los identificadores `D-76` a `D-90` están usados dos veces**: Identidad y Negocios (en `julio`) y Ventas y Caja (en `uriel`) eligieron los mismos números. Ya hay 15 repetidos en la Bitácora, por ejemplo `D-76` es «Registro de personal…» y también «Ventas y Caja son dos módulos…». | Cualquier cita a una decisión es ambigua | Se renumeran las de Ventas y Caja a `D-110`…`D-124` (sección 5.1) |
+| H-01 | **Los identificadores `D-76` a `D-90` están usados dos veces**: Identidad y Negocios (en `julio`) y Ventas y Caja (en `uriel`) eligieron los mismos números. Ya hay 15 repetidos en la Bitácora, por ejemplo `D-76` es «Registro de personal…» y también «Ventas y Caja son dos módulos…». | Cualquier cita a una decisión es ambigua | Se renumeran las de Ventas y Caja a `D-135`…`D-149` (sección 5.1) |
 | H-02 | El canal trae **su propio interceptor de sesión** (`InterceptorDeSesion`, `ContextoGraphQl`) que autentica el Bearer por su cuenta, además del filtro de entrada (IDN-4). | Tres formas de saber quién eres | El módulo `canal` no entra; Ventas y Caja leen `EntradaGraphQl` |
 | H-03 | `ContextoDeSesion` asigna un **negocio de demostración fijo** a toda sesión sin negocio. | Con ese fallback, una cuenta recién registrada vería y escribiría en el negocio de otra gente | Se elimina. Una sesión sin negocio recibe `SIN_NEGOCIO_ACTIVO` |
 | H-04 | `PermisosSimulados` devuelve `true` a todo: cualquier cuenta anula ventas y autoriza diferencias de caja. | Control de dinero sin control | Se reemplaza por permisos reales (sección 8) |
@@ -108,23 +108,25 @@ Las decisiones de `julio` ya están citadas en código, pruebas y documentos que
 
 | Antes (uriel) | Ahora | Tema |
 |---|---|---|
-| D-76 | **D-110** | Ventas y Caja separados; Ventas no conoce a Caja; el turno lo pasa quien llama |
-| D-77 | **D-111** | Contrato de `venta.registrada` v1 y `venta.anulada` v1 |
-| D-78 | **D-112** | Cupón: cotizar al preparar, canjear al confirmar, en la misma transacción |
-| D-79 | **D-113** | Folio consecutivo por negocio y serie, asignado al confirmar |
-| D-80 | **D-114** | Ventas no conoce boletos ni venta a granel; viene de Catálogo |
-| D-81 | **D-115** | Preparar el corte pone el turno `EN_CORTE` |
-| D-82 | **D-116** | Anular usa preparar → confirmar, con motivo y permiso |
-| D-83 | **D-117** | Todo el código se documenta con JavaDoc que cita reglas y códigos |
-| D-84 | **D-118** | El patrón preparar → confirmar genérico vive en `compartido.comandos` |
-| D-85 | **D-119** | Si el cálculo deja de cuadrar entre los pasos, `COMANDO_CAMBIO` |
-| D-86 | **D-120** | Ventas verifica que el turno siga abierto (`VerificadorDeTurno`) |
-| D-87 | **D-121** | `canjearCupon` recibe el descuento que vio el cajero |
-| D-88 | **D-122** | El consumidor de Caja marca el evento como procesado solo si lo aplicó |
-| D-89 | **D-123** | El frontend se hace en Dart y Flutter, en `frontend/` |
-| D-90 | **D-124** | Negocio de demostración fijo para sesiones sin negocio |
+| D-76 | **D-135** | Ventas y Caja separados; Ventas no conoce a Caja; el turno lo pasa quien llama |
+| D-77 | **D-136** | Contrato de `venta.registrada` v1 y `venta.anulada` v1 |
+| D-78 | **D-137** | Cupón: cotizar al preparar, canjear al confirmar, en la misma transacción |
+| D-79 | **D-138** | Folio consecutivo por negocio y serie, asignado al confirmar |
+| D-80 | **D-139** | Ventas no conoce boletos ni venta a granel; viene de Catálogo |
+| D-81 | **D-140** | Preparar el corte pone el turno `EN_CORTE` |
+| D-82 | **D-141** | Anular usa preparar → confirmar, con motivo y permiso |
+| D-83 | **D-142** | Todo el código se documenta con JavaDoc que cita reglas y códigos |
+| D-84 | **D-143** | El patrón preparar → confirmar genérico vive en `compartido.comandos` |
+| D-85 | **D-144** | Si el cálculo deja de cuadrar entre los pasos, `COMANDO_CAMBIO` |
+| D-86 | **D-145** | Ventas verifica que el turno siga abierto (`VerificadorDeTurno`) |
+| D-87 | **D-146** | `canjearCupon` recibe el descuento que vio el cajero |
+| D-88 | **D-147** | El consumidor de Caja marca el evento como procesado solo si lo aplicó |
+| D-89 | **D-148** | El frontend se hace en Dart y Flutter, en `frontend/` |
+| D-90 | **D-149** | Negocio de demostración fijo para sesiones sin negocio |
 
-**Notas:** `D-123` y `D-124` quedan como historia: este plan no integra el frontend y **revoca** `D-124` (ver D-129). Las decisiones antiguas compartidas (`D-20`, `D-22`, `D-23`, `D-34`, `D-45`, `D-48`, `D-55`, `D-63`, `D-65`) no cambian. La renumeración se hace con un guion que lleva una lista explícita de archivos y se verifica con `grep` (criterio en la sección 16).
+**Corrección del 2026-10-16 (al ejecutar F0):** el plan proponía `D-110` a `D-124`, pero Negocios ya había usado `D-110`, `D-111` y `D-112`. Las 15 decisiones de `uriel` quedaron en **`D-135` a `D-149`** (el número original de `uriel` más 59); las tablas, los rangos y el resto de este documento ya usan los números corregidos. Las nuevas de este plan siguen en `D-125` a `D-134`.
+
+**Notas:** `D-148` y `D-149` quedan como historia: este plan no integra el frontend y **revoca** `D-149` (ver D-129). Las decisiones antiguas compartidas (`D-20`, `D-22`, `D-23`, `D-34`, `D-45`, `D-48`, `D-55`, `D-63`, `D-65`) no cambian. La renumeración se hace con un guion que lleva una lista explícita de archivos y se verifica con `grep` (criterio en la sección 16).
 
 ### 5.2 Decisiones nuevas de este plan (todas **PROPUESTA**)
 
@@ -134,7 +136,7 @@ Las decisiones de `julio` ya están citadas en código, pruebas y documentos que
 | **D-126** | Los comandos de Ventas y Caja exigen su permiso **dos veces**: en la puerta de la plataforma (por variante) y dentro del manejador, también al **confirmar**, antes de gastar el token. | Si le quitan el rol entre los dos pasos, no confirma |
 | **D-127** | **Permisos de Ventas y Caja** (11) y su matriz de roles (sección 8). Ninguno sensible por ahora. | H-04, H-16 |
 | **D-128** | El **SPI de productos** (`FuenteDeProductos`) vive en `compartido.catalogo`. Misceláneos y Restaurantes lo implementan; Ventas lo consume sin conocer a ningún vertical (R4). Cuando exista Catálogo, será otra implementación. | H-13 |
-| **D-129** | Se **revoca D-124** (negocio de demostración): una sesión sin negocio no opera en ninguno. Los datos de demostración salen de los verticales o de un perfil de desarrollo rotulado, nunca de un negocio fijo en el código. | H-03 |
+| **D-129** | Se **revoca D-149** (negocio de demostración): una sesión sin negocio no opera en ninguno. Los datos de demostración salen de los verticales o de un perfil de desarrollo rotulado, nunca de un negocio fijo en el código. | H-03 |
 | **D-130** | **Prefijo de tipos GraphQL** por módulo cuando el nombre es genérico; los tipos que dos horizontales comparten (`MetodoPago`, `MontoPorMetodo`) van en `compartido.graphqls`. | H-08 |
 | **D-131** | **Paginación por cursor** (máximo 100, 20 por omisión) en `ventas`, `cortes` y `movimientos`; `cajas` con tope de 50 por negocio. | H-09, SG-07 |
 | **D-132** | Los eventos de Ventas y Caja salen por **outbox** (`PublicadorEnBus` y `FronteraTransaccional`) y Caja los consume con `@ApplicationModuleListener`. | H-10, D-103 de Negocios |
@@ -178,7 +180,7 @@ flowchart LR
   ID -. permisos y sesión .-> Plataforma
 ```
 
-Línea sólida: llamada síncrona permitida (R2, R4, R6). Línea punteada: evento por el bus (R3, R5). **Ventas no conoce a Caja** (D-110); Caja depende de Ventas en un solo sentido. **Los verticales no llaman a Ventas para escribir ventas**: la app llama a GraphQL; los verticales ofrecen productos y reaccionan a eventos.
+Línea sólida: llamada síncrona permitida (R2, R4, R6). Línea punteada: evento por el bus (R3, R5). **Ventas no conoce a Caja** (D-135); Caja depende de Ventas en un solo sentido. **Los verticales no llaman a Ventas para escribir ventas**: la app llama a GraphQL; los verticales ofrecen productos y reaccionan a eventos.
 
 ### 6.2 Reglas de módulos (verificadas por `ApplicationModules.verify()`)
 
@@ -234,7 +236,7 @@ public interface ModuloDeComandos {
 # Se mantienen: Decimal, Date, DateTime, Query, Mutation, Preparacion, Resultado, Dato, PageInfo.
 # Nuevo: lo que comparten Ventas, Caja y los verticales que cobren.
 
-"Forma de pago. Es el mismo contrato en Ventas, Caja y cualquier vertical que lo muestre (D-111)."
+"Forma de pago. Es el mismo contrato en Ventas, Caja y cualquier vertical que lo muestre (D-136)."
 enum MetodoPago { EFECTIVO TARJETA TRANSFERENCIA }
 
 "Un monto por método de pago, con escala 2."
@@ -395,7 +397,7 @@ extend type Query {
   "CF-04. Cajas del negocio (máximo 50)."
   cajas: [Caja!]!
 
-  "CF-01. Turno abierto o en corte de una caja, con su estado efectivo (D-115); null si no hay."
+  "CF-01. Turno abierto o en corte de una caja, con su estado efectivo (D-140); null si no hay."
   turnoActivo(cajaId: ID!): Turno
 
   "CF-02. Esperado por método de un turno. Los movimientos van paginados."
@@ -422,7 +424,7 @@ type Turno {
   fondoInicial: Decimal!
   abiertoEn: DateTime!
   cerradoEn: DateTime
-  "Cuándo vence el corte preparado y el turno regresa a ABIERTO (D-115). Solo EN_CORTE."
+  "Cuándo vence el corte preparado y el turno regresa a ABIERTO (D-140). Solo EN_CORTE."
   corteVenceEn: DateTime
   "Cuenta que abrió el turno (id opaco)."
   abiertoPor: ID!
@@ -510,7 +512,7 @@ input MovimientoCajaInput {
   nota: String!
 }
 
-"CF-12. Preparar pone el turno EN_CORTE (D-115). Un método que falta cuenta como 0.00."
+"CF-12. Preparar pone el turno EN_CORTE (D-140). Un método que falta cuenta como 0.00."
 input CerrarTurnoInput {
   turnoId: ID!
   contado: [MontoPorMetodoInput!]!
@@ -741,12 +743,12 @@ public interface FuenteDeProductos {
 }
 ```
 
-- `ProductoParaVenta(productoId, descripcion, unidad, precio, admiteFraccion, activo)` pasa a `compartido.catalogo`. Lo propio del giro llega como **datos**: unidad y si admite fracción (D-114).
+- `ProductoParaVenta(productoId, descripcion, unidad, precio, admiteFraccion, activo)` pasa a `compartido.catalogo`. Lo propio del giro llega como **datos**: unidad y si admite fracción (D-139).
 - Ventas inyecta `List<FuenteDeProductos>` y las compone (`CatalogoCompuesto`): para cada id, la primera fuente que lo conoce. Un id que ninguna conoce es `PRODUCTO_NO_ENCONTRADO`. Dos fuentes que reclamen el mismo id con datos distintos es un error de programación y se registra.
 - El `negocioId` **siempre** viene del contexto; nunca de un argumento (misma regla que `CatalogoDeVentas`).
 - **Cupones:** el puerto `CuponesDePasaporte` se queda; el adaptador por omisión es `CuponesNoDisponibles` (todo código → `CUPON_INVALIDO`, D-134).
 - **Reglas de Caja:** `ReglasCaja.umbralDiferencia` se queda; el valor inicial 50.00 viene de configuración (`caja.umbral-diferencia`) hasta que existan las reglas versionadas.
-- **Verificador de turno:** `VerificadorDeTurno` sigue como pregunta de Ventas que contesta Caja (D-120).
+- **Verificador de turno:** `VerificadorDeTurno` sigue como pregunta de Ventas que contesta Caja (D-145).
 
 ### 9.3 La verificación de permiso en `compartido.comandos`
 
@@ -764,7 +766,7 @@ default String permiso(C comando) { return null; }   // null = ninguno; el manej
 
 Sobre común: `SobreEvento` de `compartido` (`id` UUIDv7, `tipo`, `version`, `negocio_id`, `origen`, `ocurrido_en` UTC, `correlacion_id`, `causa_id`, `datos`). Dinero y cantidades como cadena decimal. **Sin datos personales.** Solo se agregan campos opcionales (R5). Todo consumidor es idempotente (R3) y lee con **lector tolerante**.
 
-### 10.1 Los que publica Ventas (contrato congelado, D-111)
+### 10.1 Los que publica Ventas (contrato congelado, D-136)
 
 | Evento | Cuándo | `datos` |
 |---|---|---|
@@ -799,7 +801,7 @@ Sobre común: `SobreEvento` de `compartido` (`id` UUIDv7, `tipo`, `version`, `ne
 1. Define su **propio** lector (`contratos/VentaRegistradaV1`), sin importar tipos de `ventas`. Ignora campos que no conoce y tolera los opcionales ausentes.
 2. Idempotente por `(consumidor, evento_id)` y, cuando aplica, por `venta_id`.
 3. `venta.anulada` que llega **antes** de `venta.registrada` deja una marca `ANULADO_PREVIO` y la venta tardía no suma (D-19).
-4. Un evento que no se pudo aplicar **no** se marca como procesado (D-122) y deja un aviso con tipo e id, nunca con sus datos.
+4. Un evento que no se pudo aplicar **no** se marca como procesado (D-147) y deja un aviso con tipo e id, nunca con sus datos.
 5. Debe existir una **prueba de contrato** que construya el evento con `VentaRegistrada(...).datos()` real y compruebe que el lector lo entiende (patrón de `ContratoVentasConsumidoTest`).
 
 ---
@@ -881,7 +883,7 @@ Cada fase: pruebas primero (RED con motivo correcto), código mínimo (GREEN), `
 | 0.2 | Quitar el frontend (si usted acepta, sección 18 P-1) | `frontend/**` (95) |
 | 0.3 | Quitar el bloque `negocio360.demo.*` | `application-desarrollo.yml` |
 | 0.4 | Mover `ventas.graphqls` y `caja.graphqls` a `resources/graphql-pendiente/` (no se cargan) y quitar `canal.graphqls` | `resources/graphql/` |
-| 0.5 | Renumerar `D-76…D-90` → `D-110…D-124` en los archivos de Ventas y Caja | sección 5.1 y anexo A |
+| 0.5 | Renumerar `D-76…D-90` → `D-135…D-149` en los archivos de Ventas y Caja | sección 5.1 y anexo A |
 | 0.6 | Ajustar `EstructuraModulosTest` (sin `canal`) y `EsquemaGraphqlClientesTest` | pruebas |
 | 0.7 | Condicionar los beans de Ventas/Caja a `ventas.almacen=memoria` / `caja.almacen=memoria` (en vez de `demo.habilitada`) y fijar `memoria` en el perfil `desarrollo` | `VentasConfiguracion`, `CajaConfiguracion` |
 
@@ -977,7 +979,7 @@ Cada fase: pruebas primero (RED con motivo correcto), código mínimo (GREEN), `
 | `miscelaneos/**` y su `graphqls` | Pista B | — |
 | `restaurantes/**` y su `graphqls` | Pista C | — |
 | `identidad/dominio/RolesBase.java` | **Compartido, serializado** | Cada pista agrega sus propias constantes en líneas separadas y su migración; el último en mezclar resuelve el conflicto textual |
-| `docs/BITACORA.md` | Todos | Solo se **agrega al final**; los identificadores de decisión nuevos se piden por rango (A: D-110 a D-139; B: D-140 a D-159; C: D-160 a D-179) |
+| `docs/BITACORA.md` | Todos | Solo se **agrega al final**; los identificadores de decisión nuevos se piden por rango (A: D-125 a D-149; B: D-150 a D-169; C: D-170 a D-189) |
 | `negocios/**` | Su dueño | A toca solo el adaptador de comandos y avisa |
 
 ### 13.4 Reparto de migraciones (D-133)
@@ -1019,7 +1021,7 @@ Cada fase: pruebas primero (RED con motivo correcto), código mínimo (GREEN), `
 | Postgres real | Testcontainers; sin Docker las pruebas de persistencia no corren | F5, F6 |
 | Mutaciones | Una por cada barrera: permiso, aislamiento, folio, cupón, corte, prefijo del token, sesión | F7 |
 | Revisión | `ecc:java-reviewer` y `ecc:security-reviewer` | F7 |
-| JavaDoc (D-117) | `mvn javadoc:javadoc` sin advertencias en lo nuevo | F7 |
+| JavaDoc (D-142) | `mvn javadoc:javadoc` sin advertencias en lo nuevo | F7 |
 | Cobertura | JaCoCo: se mantiene el umbral del proyecto; Ventas ≥ 80 % y Caja ≥ 80 % | F7 |
 
 Comandos:
@@ -1053,7 +1055,7 @@ mvn -B test -Dtest='*Ventas*,*Caja*,Despachador*,EstructuraModulosTest'
 ## 16. Criterios de aceptación
 
 - [ ] `mvn -B clean verify` en verde con JDK 21 y la cobertura exigida; ningún dato de prueba sensible en los registros.
-- [ ] `grep` de `D-76…D-90` en los archivos de Ventas y Caja: sin resultados; las 15 decisiones aparecen como `D-110…D-124` en la Bitácora, sin repetidos.
+- [ ] `grep` de `D-76…D-90` en los archivos de Ventas y Caja: sin resultados; las 15 decisiones aparecen como `D-135…D-149` en la Bitácora, sin repetidos.
 - [ ] Ventas y Caja **no** exponen GraphQL hasta que lo hagan con tabla de operaciones, permisos y resolvedores (F3).
 - [ ] Los 11 permisos están en el catálogo, en `RolesBase` y en la migración V035, y coinciden contra Postgres real.
 - [ ] Cada comando exige su permiso en la puerta **y** en el manejador, también al confirmar; revocar entre pasos no gasta el token.
@@ -1095,7 +1097,7 @@ Con 6 horas efectivas al día son unos **5 días**; la Etapa 1 son unos **3 día
 | # | Pregunta | Mi recomendación |
 |---|---|---|
 | **P-1** | ¿Quito `canal` y `frontend` de `julio` en un commit aparte (sección 3.3, opción A)? | Sí. Siguen en `uriel`. |
-| **P-2** | ¿Aprueba la renumeración `D-76…D-90` → `D-110…D-124` para Ventas y Caja? | Sí. |
+| **P-2** | ¿Aprueba la renumeración `D-76…D-90` → `D-135…D-149` para Ventas y Caja? | Sí. |
 | **P-3** | ¿Aprueba los 11 permisos y la matriz de roles (sección 8)? En especial: ¿anular, retirar y autorizar diferencias solo para gerente, administrador y dueño? ¿El mesero no cobra? | Sí. |
 | **P-4** | ¿Acepta las queries de la sección 7: sin `ventasDelTurno`, con `ventas(filtro)`, tipos con prefijo, `MetodoPago` en `compartido`? | Sí. |
 | **P-5** | ¿Persistencia ahora (F6) o la dejamos para después de la Etapa 1? | Después: los verticales no la necesitan para integrarse. |

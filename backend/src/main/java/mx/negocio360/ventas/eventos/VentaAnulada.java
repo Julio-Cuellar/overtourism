@@ -8,7 +8,7 @@ import mx.negocio360.compartido.dinero.DecimalPlano;
 import mx.negocio360.ventas.dominio.Venta;
 
 /**
- * {@code venta.anulada} v1 (D-77). Se publica al confirmar AnularVenta, en la misma transaccion.
+ * {@code venta.anulada} v1 (D-136). Se publica al confirmar AnularVenta, en la misma transaccion.
  *
  * <p>Campos de {@code datos}: {@code venta_id}, {@code turno_id}, {@code motivo} (opcional), {@code lineas[]} con
  * {@code linea} y {@code producto_id} (D-25, para Inventario) y {@code pagos[]} con {@code metodo} y {@code monto}

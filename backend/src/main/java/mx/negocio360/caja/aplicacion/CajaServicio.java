@@ -6,8 +6,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import mx.negocio360.caja.CajaApi;
+import mx.negocio360.caja.FiltroCortes;
 import mx.negocio360.caja.SaldoTurno;
-import mx.negocio360.caja.aplicacion.puertos.AutorizacionCaja;
 import mx.negocio360.caja.aplicacion.puertos.LibroDeCaja;
 import mx.negocio360.caja.aplicacion.puertos.PublicadorEventos;
 import mx.negocio360.caja.aplicacion.puertos.ReglasCaja;
@@ -19,13 +19,18 @@ import mx.negocio360.caja.dominio.CalculoCaja;
 import mx.negocio360.caja.dominio.CodigoError;
 import mx.negocio360.caja.dominio.Corte;
 import mx.negocio360.caja.dominio.EstadoVentaAplicada;
+import mx.negocio360.caja.dominio.MovimientoCaja;
 import mx.negocio360.caja.dominio.Turno;
+import mx.negocio360.caja.seguridad.PermisosDeCaja;
 import mx.negocio360.compartido.comandos.Comando;
 import mx.negocio360.compartido.comandos.PreparacionCreada;
 import mx.negocio360.compartido.comandos.RepositorioPreparaciones;
 import mx.negocio360.compartido.comandos.ResultadoComando;
 import mx.negocio360.compartido.comandos.ServicioPreparacion;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
+import mx.negocio360.compartido.paginacion.Cursores;
+import mx.negocio360.compartido.paginacion.Pagina;
+import mx.negocio360.compartido.seguridad.Autorizacion;
 
 /** Implementacion de {@link CajaApi}: comandos por preparar -&gt; confirmar y consultas por negocio. */
 public final class CajaServicio implements CajaApi {
@@ -51,13 +56,12 @@ public final class CajaServicio implements CajaApi {
      * @param eventos       outbox
      * @param ventas        conteos de Ventas para el corte
      * @param reglas        umbral de diferencia
-     * @param autorizacion  permisos de Identidad
      * @param reloj         reloj de la plataforma
      * @return el servicio listo
      */
     public static CajaServicio armar(RepositorioCaja cajas, LibroDeCaja libro, RepositorioPreparaciones preparaciones,
                                      PublicadorEventos eventos, ResumenVentas ventas, ReglasCaja reglas,
-                                     AutorizacionCaja autorizacion, Clock reloj) {
+                                     Clock reloj) {
         Objects.requireNonNull(cajas, "cajas");
         Objects.requireNonNull(libro, "libro");
         Objects.requireNonNull(reloj, "reloj");
@@ -65,7 +69,7 @@ public final class CajaServicio implements CajaApi {
                 new ManejadorCrearCaja(cajas, reloj),
                 new ManejadorAbrirTurno(cajas, libro, eventos, reloj),
                 new ManejadorMovimientoCaja(cajas, libro, reloj),
-                new ManejadorCerrarTurno(cajas, libro, ventas, reglas, autorizacion, eventos, reloj),
+                new ManejadorCerrarTurno(cajas, libro, ventas, reglas, eventos, reloj),
                 new ManejadorDescartarCorte(cajas, reloj));
         var preparacion = new ServicioPreparacion(preparaciones, manejadores, reloj,
                 fallo -> new CajaException(CodigoError.valueOf(fallo.name())));
@@ -73,23 +77,25 @@ public final class CajaServicio implements CajaApi {
     }
 
     @Override
-    public PreparacionCreada preparar(ContextoNegocio contexto, Comando comando) {
-        return preparacion.preparar(contexto, comando);
+    public PreparacionCreada preparar(ContextoNegocio contexto, Autorizacion autorizacion, Comando comando) {
+        return preparacion.preparar(contexto, autorizacion, comando);
     }
 
     @Override
-    public ResultadoComando confirmar(ContextoNegocio contexto, String token) {
-        return preparacion.confirmar(contexto, token);
+    public ResultadoComando confirmar(ContextoNegocio contexto, Autorizacion autorizacion, String token) {
+        return preparacion.confirmar(contexto, autorizacion, token);
     }
 
     @Override
-    public Optional<Turno> turnoActivo(ContextoNegocio contexto, UUID cajaId) {
+    public Optional<Turno> turnoActivo(ContextoNegocio contexto, Autorizacion autorizacion, UUID cajaId) {
+        autorizacion.exigir(PermisosDeCaja.TURNO_VER);
         var ahora = reloj.instant();
         return cajas.turnoNoCerradoDeCaja(contexto.negocioId(), cajaId).map(turno -> turno.vigenteEn(ahora));
     }
 
     @Override
-    public SaldoTurno saldoTurno(ContextoNegocio contexto, UUID turnoId) {
+    public SaldoTurno saldoTurno(ContextoNegocio contexto, Autorizacion autorizacion, UUID turnoId) {
+        autorizacion.exigir(PermisosDeCaja.TURNO_VER);
         var turno = cajas.turno(contexto.negocioId(), turnoId)
                 .orElseThrow(() -> new CajaException(CodigoError.TURNO_NO_ENCONTRADO, turnoId));
         var movimientos = libro.movimientos(contexto.negocioId(), turnoId);
@@ -99,12 +105,32 @@ public final class CajaServicio implements CajaApi {
     }
 
     @Override
-    public List<Corte> cortes(ContextoNegocio contexto) {
-        return libro.cortes(contexto.negocioId());
+    public Pagina<MovimientoCaja> movimientos(ContextoNegocio contexto, Autorizacion autorizacion, UUID turnoId,
+                                              int primeros, String despues) {
+        autorizacion.exigir(PermisosDeCaja.TURNO_VER);
+        if (!Cursores.valido(primeros, despues)) {
+            throw new CajaException(CodigoError.PAGINACION_INVALIDA);
+        }
+        return libro.movimientos(contexto.negocioId(), turnoId, primeros, despues);
     }
 
     @Override
-    public List<Caja> cajas(ContextoNegocio contexto) {
+    public Pagina<Corte> cortes(ContextoNegocio contexto, Autorizacion autorizacion, FiltroCortes filtro,
+                                int primeros, String despues) {
+        autorizacion.exigir(PermisosDeCaja.CORTE_VER);
+        if (!Cursores.valido(primeros, despues)) {
+            throw new CajaException(CodigoError.PAGINACION_INVALIDA);
+        }
+        var buscado = filtro == null ? FiltroCortes.TODOS : filtro;
+        if (!buscado.valido()) {
+            throw new CajaException(CodigoError.FILTRO_INVALIDO);
+        }
+        return libro.cortes(contexto.negocioId(), buscado, primeros, despues);
+    }
+
+    @Override
+    public List<Caja> cajas(ContextoNegocio contexto, Autorizacion autorizacion) {
+        autorizacion.exigir(PermisosDeCaja.TURNO_VER);
         return cajas.cajas(contexto.negocioId());
     }
 }

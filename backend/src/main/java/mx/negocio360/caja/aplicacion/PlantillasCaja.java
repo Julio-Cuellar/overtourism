@@ -67,7 +67,10 @@ public final class PlantillasCaja {
             case CAJA_INACTIVA -> "Esa caja está desactivada.";
             case CAJA_DUPLICADA -> "Ya tienes una caja con ese nombre.";
             case NOMBRE_CAJA_INVALIDO -> "El nombre de la caja debe tener entre 1 y 60 caracteres.";
+            case DEMASIADAS_CAJAS -> "Un negocio puede tener hasta 50 cajas.";
             case TURNO_NO_ENCONTRADO -> "No encontramos ese turno.";
+            case PAGINACION_INVALIDA -> "Pide entre 1 y 100 resultados y usa el cursor que te dimos.";
+            case FILTRO_INVALIDO -> "Revisa los filtros: el rango no puede pasar de 92 días.";
             case TURNO_YA_ABIERTO -> "Esa caja ya tiene un turno abierto.";
             case TURNO_NO_ABIERTO -> "El turno no está abierto.";
             case TURNO_EN_CORTE -> "El turno está en corte. Termina o descarta el corte primero.";

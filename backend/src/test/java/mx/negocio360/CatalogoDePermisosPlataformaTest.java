@@ -28,13 +28,13 @@ class CatalogoDePermisosPlataformaTest {
     }
 
     @Test
-    @DisplayName("Identidad, Clientes y Negocios declaran sus permisos y cada uno solo declara los de su modulo")
+    @DisplayName("Identidad, Clientes, Negocios, Ventas, Caja e Inventario declaran sus permisos y cada uno solo declara los de su modulo")
     void catalogos_cadaModuloDeclaraLosSuyos() {
         Map<String, Long> porModulo = todos().stream()
                 .collect(Collectors.groupingBy(PermisoDeclarado::modulo, Collectors.counting()));
 
         assertThat(porModulo).containsEntry("identidad", 5L).containsEntry("clientes", 11L)
-                .containsEntry("negocios", 14L).hasSize(3);
+                .containsEntry("negocios", 14L).containsEntry("ventas", 3L).containsEntry("caja", 8L).containsEntry("inventario", 4L).hasSize(6);
         for (var catalogo : catalogos) {
             assertThat(catalogo.permisos().stream().map(PermisoDeclarado::modulo).distinct()).hasSize(1);
         }

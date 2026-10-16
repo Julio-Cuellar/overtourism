@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Periodo en que un cajero opera una caja con un fondo inicial. ABIERTO → EN_CORTE → CERRADO (D-81).
+ * Periodo en que un cajero opera una caja con un fondo inicial. ABIERTO → EN_CORTE → CERRADO (D-140).
  *
  * <p>EN_CORTE tiene vencimiento: si el corte preparado no se confirma a tiempo, el turno vuelve a operar como ABIERTO
  * sin que corra ninguna tarea ({@link #estadoEn}).
@@ -68,7 +68,7 @@ public record Turno(UUID id, UUID negocioId, UUID cajaId, String cajero, EstadoT
     }
 
     /**
-     * Copia en corte hasta un vencimiento (D-81).
+     * Copia en corte hasta un vencimiento (D-140).
      *
      * @param vence fin del corte preparado
      * @return turno EN_CORTE con la version siguiente

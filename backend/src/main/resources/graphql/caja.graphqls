@@ -1,19 +1,21 @@
-# Esquema del modulo de Caja (docs/diseno/caja.md, F4). Sin negocioId: el negocio sale de la sesion (SG-02).
-# Usa MetodoPago de ventas.graphqls: es el mismo contrato de pagos (D-77).
+# Esquema de Caja (docs/diseno/caja.md, v0.2). Sin negocioId: el negocio sale de la sesión (SG-02).
 
 extend type Query {
-  "CF-04: cajas del negocio."
+  "CF-04. Cajas del negocio (máximo 50)."
   cajas: [Caja!]!
-  "CF-01: turno abierto o en corte de una caja, con su estado efectivo (D-81); null si no hay."
+
+  "CF-01. Turno abierto o en corte de una caja, con su estado efectivo (D-140); null si no hay."
   turnoActivo(cajaId: ID!): Turno
-  "CF-02: esperado por metodo y movimientos de un turno."
+
+  "CF-02. Esperado por método de un turno. Los movimientos van paginados."
   saldoTurno(turnoId: ID!): SaldoTurno!
-  "CF-03: cortes del negocio."
-  cortes: [Corte!]!
+
+  "CF-03. Cortes del negocio, del más reciente al más antiguo. Máximo 100 por página."
+  cortes(filtro: FiltroCortes, primeros: Int! = 20, despues: String): CorteConexion!
 }
 
 enum EstadoTurno { ABIERTO EN_CORTE CERRADO }
-enum TipoMovimiento { FONDO VENTA ANULACION ENTRADA RETIRO AJUSTE }
+enum TipoMovimientoCaja { FONDO VENTA ANULACION ENTRADA RETIRO AJUSTE }
 enum TipoMovimientoManual { ENTRADA RETIRO }
 
 type Caja {
@@ -29,22 +31,26 @@ type Turno {
   fondoInicial: Decimal!
   abiertoEn: DateTime!
   cerradoEn: DateTime
+  "Cuándo vence el corte preparado y el turno regresa a ABIERTO (D-140). Solo EN_CORTE."
   corteVenceEn: DateTime
-}
-
-type MontoPorMetodo {
-  metodo: MetodoPago!
-  monto: Decimal!
+  "Cuenta que abrió el turno (id opaco)."
+  abiertoPor: ID!
 }
 
 type MovimientoCaja {
   id: ID!
-  tipo: TipoMovimiento!
+  tipo: TipoMovimientoCaja!
   metodo: MetodoPago!
+  "Con signo: las anulaciones y los retiros son negativos."
   monto: Decimal!
   ventaId: ID
   nota: String
   registradoEn: DateTime!
+}
+
+type MovimientoCajaConexion {
+  movimientos: [MovimientoCaja!]!
+  pageInfo: PageInfo!
 }
 
 type SaldoTurno {
@@ -52,11 +58,12 @@ type SaldoTurno {
   cajaId: ID!
   estado: EstadoTurno!
   esperadoPorMetodo: [MontoPorMetodo!]!
-  movimientos: [MovimientoCaja!]!
   ventasAplicadas: Int!
+  "Libro del turno, en orden. Máximo 100 por página."
+  movimientos(primeros: Int! = 50, despues: String): MovimientoCajaConexion!
 }
 
-type Corte {
+type CorteDeCaja {
   id: ID!
   turnoId: ID!
   cajaId: ID!
@@ -65,28 +72,46 @@ type Corte {
   diferenciaEfectivo: Decimal!
   abiertoEn: DateTime!
   confirmadoEn: DateTime!
+  "Quién autorizó una diferencia sobre el umbral (CJ-08); null si no hizo falta."
+  autorizadoPor: ID
+}
+
+type CorteConexion {
+  cortes: [CorteDeCaja!]!
+  pageInfo: PageInfo!
+}
+
+input FiltroCortes {
+  cajaId: ID
+  desde: DateTime
+  hasta: DateTime
 }
 
 extend input ComandoInput {
+  "CF-14."
   crearCaja: CrearCajaInput
+  "CF-10."
   abrirTurno: AbrirTurnoInput
+  "CF-11."
   registrarMovimientoCaja: MovimientoCajaInput
+  "CF-12."
   cerrarTurno: CerrarTurnoInput
+  "CF-13."
   descartarCorte: DescartarCorteInput
 }
 
-"CF-14."
+"CF-14. Nombre de 1 a 60 caracteres, único por negocio sin importar mayúsculas."
 input CrearCajaInput {
   nombre: String!
 }
 
-"CF-10: fondo de cero o mas (CJ-02)."
+"CF-10. Fondo de cero o más con 2 decimales (CJ-02)."
 input AbrirTurnoInput {
   cajaId: ID!
   fondoInicial: Decimal!
 }
 
-"CF-11: entrada o retiro de efectivo con nota (CJ-05)."
+"CF-11. Entrada o retiro de efectivo con nota (CJ-05, CJ-10)."
 input MovimientoCajaInput {
   turnoId: ID!
   tipo: TipoMovimientoManual!
@@ -94,15 +119,11 @@ input MovimientoCajaInput {
   nota: String!
 }
 
-input MontoPorMetodoInput {
-  metodo: MetodoPago!
-  monto: Decimal!
-}
-
-"CF-12: el corte. Preparar pone el turno EN_CORTE (D-81); un metodo que falta cuenta como 0.00."
+"CF-12. Preparar pone el turno EN_CORTE (D-140). Un método que falta cuenta como 0.00."
 input CerrarTurnoInput {
   turnoId: ID!
   contado: [MontoPorMetodoInput!]!
+  "Para confirmar una diferencia sobre el umbral hace falta el permiso caja.corte.autorizar (CJ-08)."
   autorizar: Boolean! = false
 }
 
