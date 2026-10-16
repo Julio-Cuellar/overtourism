@@ -56,7 +56,8 @@ class OutboxPostgresTest {
 
     private static Boolean completado(UUID id) throws Exception {
         try (var sesion = SesionSql.comoDueno()) {
-            var filas = sesion.columna("select completion_date is not null from plataforma.event_publication "
+            // Cada modulo que escucha el bus deja su propia fila por evento: «completado» es que todas lo estan.
+            var filas = sesion.columna("select bool_and(completion_date is not null) from plataforma.event_publication "
                     + "where serialized_event like '%' || ? || '%'", Boolean.class, id.toString());
             return filas.isEmpty() ? null : filas.get(0);
         }

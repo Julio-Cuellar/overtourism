@@ -28,12 +28,13 @@ class CatalogoDePermisosPlataformaTest {
     }
 
     @Test
-    @DisplayName("Identidad y Clientes declaran sus permisos y cada uno solo declara los de su modulo")
+    @DisplayName("Identidad, Clientes y Negocios declaran sus permisos y cada uno solo declara los de su modulo")
     void catalogos_cadaModuloDeclaraLosSuyos() {
         Map<String, Long> porModulo = todos().stream()
                 .collect(Collectors.groupingBy(PermisoDeclarado::modulo, Collectors.counting()));
 
-        assertThat(porModulo).containsEntry("identidad", 5L).containsEntry("clientes", 11L).hasSize(2);
+        assertThat(porModulo).containsEntry("identidad", 5L).containsEntry("clientes", 11L)
+                .containsEntry("negocios", 14L).hasSize(3);
         for (var catalogo : catalogos) {
             assertThat(catalogo.permisos().stream().map(PermisoDeclarado::modulo).distinct()).hasSize(1);
         }
@@ -52,12 +53,13 @@ class CatalogoDePermisosPlataformaTest {
     }
 
     @Test
-    @DisplayName("los permisos sensibles son los de los derechos del responsable y los de administrar al equipo")
+    @DisplayName("los permisos sensibles son los de los derechos del responsable, los de administrar al equipo y los de cerrar un negocio o dar de baja a un empleado")
     void catalogos_permisosSensibles() {
         var sensibles = todos().stream().filter(PermisoDeclarado::sensible).map(PermisoDeclarado::codigo).toList();
 
         assertThat(sensibles).containsExactlyInAnyOrder("identidad.miembro.invitar", "identidad.miembro.cambiar_rol",
                 "identidad.miembro.revocar", "clientes.aviso.publicar", "clientes.cliente.anonimizar",
-                "clientes.arco.gestionar", "clientes.datos.exportar");
+                "clientes.arco.gestionar", "clientes.datos.exportar", "negocios.negocio.cerrar",
+                "negocios.empleado.baja");
     }
 }

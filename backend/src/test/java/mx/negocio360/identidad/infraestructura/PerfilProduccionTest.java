@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionOperations;
 
 /** IDN-1.6 · AS-10, SI-13: en produccion no existe ningun atajo de desarrollo, y la politica se lee de la configuracion. */
 class PerfilProduccionTest {
@@ -25,7 +26,7 @@ class PerfilProduccionTest {
     private static final CatalogoDePermisos CLIENTES_DE_PRUEBA = () -> java.util.stream.Stream.of("clientes.sugerir",
             "clientes.lista.ver", "clientes.panorama.ver", "clientes.ficha.ver", "clientes.cliente.registrar",
             "clientes.cliente.editar", "clientes.consentimiento.registrar", "clientes.aviso.publicar",
-            "clientes.cliente.anonimizar", "clientes.arco.gestionar", "clientes.datos.exportar")
+            "clientes.cliente.anonimizar", "clientes.arco.gestionar", "clientes.datos.exportar", "negocios.perfil.ver", "negocios.perfil.editar", "negocios.sucursal.gestionar", "negocios.horario.editar", "negocios.negocio.publicar", "negocios.disponibilidad.editar", "negocios.negocio.pausar", "negocios.negocio.cerrar", "negocios.empleado.ver", "negocios.empleado.registrar", "negocios.empleado.editar", "negocios.empleado.baja", "negocios.resena.ver", "negocios.resena.responder")
             .map(codigo -> new PermisoDeclarado(codigo, "Permiso de prueba", false)).toList();
 
     /** El repositorio de pre-registros vive en Postgres (D-86): este contexto aislado no tiene base, asi que le da un cliente vacio. */
@@ -35,6 +36,7 @@ class PerfilProduccionTest {
             .withUserConfiguration(IdentidadConfiguracion.class, IdentidadDesarrolloConfiguracion.class)
             .withBean("clientesDePrueba", CatalogoDePermisos.class, () -> CLIENTES_DE_PRUEBA)
             .withBean(JdbcClient.class, () -> SIN_BASE)
+            .withBean(TransactionOperations.class, TransactionOperations::withoutTransaction)
             .withPropertyValues(HABILITAR_CANAL_SIMULADO);
 
     private final ApplicationContextRunner soloDesarrollo = new ApplicationContextRunner()
@@ -74,6 +76,7 @@ class PerfilProduccionTest {
                 .withUserConfiguration(IdentidadConfiguracion.class, IdentidadDesarrolloConfiguracion.class)
                 .withBean("clientesDePrueba", CatalogoDePermisos.class, () -> CLIENTES_DE_PRUEBA)
                 .withBean(JdbcClient.class, () -> SIN_BASE)
+                .withBean(TransactionOperations.class, TransactionOperations::withoutTransaction)
                 .run(contexto -> assertThat(contexto).hasFailed().getFailure()
                         .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class));
     }

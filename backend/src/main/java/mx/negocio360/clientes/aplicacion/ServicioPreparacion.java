@@ -1,7 +1,10 @@
 package mx.negocio360.clientes.aplicacion;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * El comando tambien se vacia cuando el token vencio o el comando cambio. Las preparaciones que nunca se confirman
  * conservan su comando hasta la purga de 24 horas, que es la historia HTC-38 y todavia no existe.
  *
- * <p><b>Contrato transaccional (propuesto, a confirmar con HTC-24):</b> {@code marcarUsada} y {@code vaciar} deben
+ * <p><b>Contrato transaccional (lo cumple el repositorio JDBC, D-103):</b> {@code marcarUsada} y {@code vaciar} deben
  * confirmarse en su propia transaccion, aparte de la del manejador, para que un fallo del comando no devuelva el
  * token a la vida ni deje el comando vivo; y cada {@code confirmar} de un manejador debe ser una sola transaccion
  * que incluya sus eventos (outbox). Si se unen en una sola transaccion, el comportamiento que prueban
@@ -44,6 +47,9 @@ public final class ServicioPreparacion {
     private static final int BYTES_DEL_TOKEN = 32;
     private static final int MAX_CARACTERES_DEL_TOKEN = 64;
     private static final Logger LOG = LoggerFactory.getLogger(ServicioPreparacion.class);
+    private static final ObjectMapper CANONICO = JsonMapper.builder()
+            .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+            .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS).build();
 
     private final RepositorioPreparaciones repositorio;
     private final Map<Class<?>, ManejadorComando<?>> porClase = new HashMap<>();
@@ -78,7 +84,7 @@ public final class ServicioPreparacion {
         var token = nuevoToken();
         var expiraEn = reloj.instant().plus(VIGENCIA_TOKEN);
         repositorio.guardar(new Preparacion(hash(token), contexto.negocioId(), contexto.actor(), manejador.tipo(),
-                hash(json), json, resumen, expiraEn, null));
+                hashDelComando(json), json, resumen, expiraEn, null));
         return new PreparacionCreada(token, resumen, expiraEn, List.of());
     }
 
@@ -88,7 +94,7 @@ public final class ServicioPreparacion {
             throw new ClientesException(CodigoError.TOKEN_INVALIDO);
         }
         var tokenHash = hash(token);
-        var fila = repositorio.porHash(tokenHash)
+        var fila = repositorio.porHash(contexto.negocioId(), tokenHash)
                 .filter(f -> f.negocioId().equals(contexto.negocioId()) && f.actor().equals(contexto.actor()))
                 .orElseThrow(() -> new ClientesException(CodigoError.TOKEN_INVALIDO));
         if (fila.usadoEn() != null) {
@@ -96,23 +102,23 @@ public final class ServicioPreparacion {
         }
         var ahora = reloj.instant();
         if (!ahora.isBefore(fila.expiraEn())) {
-            throw vaciandoAntesDeFallar(tokenHash, new ClientesException(CodigoError.TOKEN_EXPIRADO));
+            throw vaciandoAntesDeFallar(contexto, tokenHash, new ClientesException(CodigoError.TOKEN_EXPIRADO));
         }
         var json = fila.comando();
         var manejador = porTipo.get(fila.comandoTipo());
-        if (json == null || manejador == null || !hash(json).equals(fila.comandoHash())) {
-            throw vaciandoAntesDeFallar(tokenHash, new ClientesException(CodigoError.COMANDO_CAMBIO));
+        if (json == null || manejador == null || !hashDelComando(json).equals(fila.comandoHash())) {
+            throw vaciandoAntesDeFallar(contexto, tokenHash, new ClientesException(CodigoError.COMANDO_CAMBIO));
         }
-        if (!repositorio.marcarUsada(tokenHash, ahora)) {
+        if (!repositorio.marcarUsada(contexto.negocioId(), tokenHash, ahora)) {
             throw new ClientesException(CodigoError.TOKEN_USADO);
         }
         ResultadoComando resultado;
         try {
             resultado = ejecutar(manejador, contexto, json);
         } catch (RuntimeException error) {
-            throw vaciandoAntesDeFallar(tokenHash, error);
+            throw vaciandoAntesDeFallar(contexto, tokenHash, error);
         }
-        vaciarTrasExito(tokenHash);
+        vaciarTrasExito(contexto, tokenHash);
         return resultado;
     }
 
@@ -120,9 +126,9 @@ public final class ServicioPreparacion {
      * Vacia el comando guardado (lleva datos personales, SC-10) y devuelve el error original. Si vaciar tambien falla,
      * ese fallo queda como suprimido y no tapa el error que la persona debe ver.
      */
-    private <E extends RuntimeException> E vaciandoAntesDeFallar(String tokenHash, E error) {
+    private <E extends RuntimeException> E vaciandoAntesDeFallar(ContextoNegocio contexto, String tokenHash, E error) {
         try {
-            repositorio.vaciar(tokenHash);
+            repositorio.vaciar(contexto.negocioId(), tokenHash);
         } catch (RuntimeException fallo) {
             error.addSuppressed(fallo);
         }
@@ -130,9 +136,9 @@ public final class ServicioPreparacion {
     }
 
     /** Tras un exito, un fallo al vaciar no debe convertir un alta que si ocurrio en un error. */
-    private void vaciarTrasExito(String tokenHash) {
+    private void vaciarTrasExito(ContextoNegocio contexto, String tokenHash) {
         try {
-            repositorio.vaciar(tokenHash);
+            repositorio.vaciar(contexto.negocioId(), tokenHash);
         } catch (RuntimeException fallo) {
             // Solo la clase: el mensaje de la base podria citar el contenido de la fila.
             LOG.error("No se pudo vaciar una preparacion ya confirmada ({}); la purga de 24 horas la limpiara",
@@ -155,6 +161,19 @@ public final class ServicioPreparacion {
             throw new ClientesException(CodigoError.COMANDO_CAMBIO);
         }
         return manejador.confirmar(contexto, comando);
+    }
+
+    /**
+     * Hash del comando que no depende de como se escribio el JSON: ordena las claves y ignora los espacios, de modo
+     * que el mismo comando guardado como {@code jsonb} (que reordena claves y agrega espacios) conserva su hash. Cambiar
+     * un valor, agregar o quitar un campo si lo cambia. Un JSON ilegible se hashea tal cual y no coincide con nada.
+     */
+    public static String hashDelComando(String json) {
+        try {
+            return hash(CANONICO.writeValueAsString(CANONICO.readValue(json, Object.class)));
+        } catch (JsonProcessingException e) {
+            return hash(json);
+        }
     }
 
     private String serializar(Comando comando) {

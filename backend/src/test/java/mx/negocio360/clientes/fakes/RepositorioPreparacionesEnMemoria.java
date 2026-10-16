@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import mx.negocio360.clientes.aplicacion.Preparacion;
 import mx.negocio360.clientes.aplicacion.puertos.RepositorioPreparaciones;
 
@@ -22,14 +23,14 @@ public final class RepositorioPreparacionesEnMemoria implements RepositorioPrepa
     }
 
     @Override
-    public Optional<Preparacion> porHash(String tokenHash) {
-        return Optional.ofNullable(filas.get(tokenHash));
+    public Optional<Preparacion> porHash(UUID negocioId, String tokenHash) {
+        return Optional.ofNullable(filas.get(tokenHash)).filter(f -> f.negocioId().equals(negocioId));
     }
 
     @Override
-    public boolean marcarUsada(String tokenHash, Instant ahora) {
+    public boolean marcarUsada(UUID negocioId, String tokenHash, Instant ahora) {
         var fila = filas.get(tokenHash);
-        if (simularCarreraDeUso || fila == null || fila.usadoEn() != null) {
+        if (simularCarreraDeUso || fila == null || !fila.negocioId().equals(negocioId) || fila.usadoEn() != null) {
             return false;
         }
         filas.put(tokenHash, fila.usada(ahora));
@@ -40,12 +41,12 @@ public final class RepositorioPreparacionesEnMemoria implements RepositorioPrepa
     public boolean fallarAlVaciar;
 
     @Override
-    public void vaciar(String tokenHash) {
+    public void vaciar(UUID negocioId, String tokenHash) {
         if (fallarAlVaciar) {
             throw new IllegalStateException("fallo simulado al vaciar");
         }
         var fila = filas.get(tokenHash);
-        if (fila != null) {
+        if (fila != null && fila.negocioId().equals(negocioId)) {
             filas.put(tokenHash, fila.vaciada());
         }
     }

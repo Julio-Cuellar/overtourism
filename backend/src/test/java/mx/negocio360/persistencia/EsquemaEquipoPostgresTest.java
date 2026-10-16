@@ -49,10 +49,11 @@ class EsquemaEquipoPostgresTest {
     // ---- los catalogos son datos y coinciden con el codigo ----
 
     @Test
-    @DisplayName("AZ-02: los permisos sembrados en la base son exactamente los que declaran Identidad y Clientes")
+    @DisplayName("AZ-02: los permisos sembrados en la base son exactamente los que declaran Identidad, Clientes y Negocios")
     void permisos_coincidenConLosCatalogosDeLosModulos() throws Exception {
         var declarados = new java.util.ArrayList<PermisoDeclarado>(new PermisosDeIdentidad().permisos());
         declarados.addAll(new PermisosDeClientes().permisos());
+        declarados.addAll(new mx.negocio360.negocios.aplicacion.PermisosDeNegocios().permisos());
 
         try (var sesion = SesionSql.comoAplicacion()) {
             var codigos = sesion.columna("select codigo from identidad.permiso order by codigo", String.class);

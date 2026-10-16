@@ -1,0 +1,1170 @@
+openapi: 3.1.0
+info:
+  title: Negocio 360 · API de Identidad
+  version: 0.3.0
+  summary: Registro, acceso por código al correo, sesión, negocio activo, roles y permisos.
+  description: |
+    Contrato REST del módulo **Identidad** (D-72). Describe lo que está construido a 2026-10-15; si algo de aquí contradice
+    a `docs/BITACORA.md`, manda la Bitácora. Los repositorios de cuentas, códigos y sesiones siguen en memoria (IDN-1.1
+    pendiente); el pre-registro vive en Postgres (D-86).
+
+    ## Registro en dos pasos (D-84)
+    1. `POST /registro` guarda el formulario como **pre-registro** (sin cuenta) y manda un código de 6 dígitos al **correo**.
+       Hoy el canal es la consola del backend (D-77) y, solo en desarrollo, `GET /dev/canal/codigo`.
+    2. `POST /registro/verificacion` crea la cuenta con el correo ya verificado, borra el pre-registro y abre la sesión.
+       `POST /registro/reenvio` pide otro código.
+
+    El pre-registro y su código valen **15 minutos**; se borran al verificar, al pedir otro código y al vencer (limpieza cada
+    minuto). El celular no se verifica: es un dato y un identificador (P-20).
+
+    ## Acceso (D-76, D-85)
+    El **celular**, el **correo** y el **id** de la cuenta identifican a la persona. Con cualquiera se pide el código
+    (`POST /auth/codigo`) y **siempre llega al correo de la cuenta**. Pedirlo nunca revela si la cuenta existe (SI-02), y un
+    código usado, vencido, agotado o incorrecto responde siempre `401 CODIGO_INVALIDO`.
+
+    ## Sesión
+    El token es opaco (256 bits en base64url, 43 caracteres) y solo viaja en `Authorization: Bearer` (SI-05): no hay
+    cookies. Solo se guarda su hash. Caduca a las 8 horas sin uso y a los 30 días como tope; cada cuenta puede tener 5
+    sesiones. El negocio activo y el rol salen **del servidor**, nunca del cuerpo de la petición (AZ-05): un `negocioId`
+    en el cuerpo se ignora salvo en `PUT /auth/negocio-activo`.
+
+    ## Negocios (D-78, D-79, D-80)
+    Identidad **no registra negocios**: publica el evento `negocio.registro_solicitado` y el módulo de negocios (que aún no
+    existe; en desarrollo lo simula `POST /dev/negocios/{negocioId}/registrado`) responde con `negocio.registrado`. Mientras
+    tanto el negocio aparece en `negociosPendientes`. Con **un solo negocio** ese es el activo sin elegir nada; con dos o más
+    se elige con `PUT /auth/negocio-activo`, que emite otro token.
+
+    ## Convenciones
+    - Todas las respuestas llevan `Cache-Control: no-store` y `X-Content-Type-Options: nosniff` (SI-17), también las de error.
+    - Los errores tienen siempre la forma `{codigo, mensaje}`: el texto es fijo, en español de México, y nunca lleva datos
+      de la persona ni trazas (SI-14).
+    - El cuerpo debe ser `application/json`; otro tipo responde `415 SOLICITUD_INVALIDA`.
+    - La IP que cuenta para los topes es la de la conexión; no se confía en encabezados reenviados.
+    - Los campos que no se conocen se omiten o van en `null`; las fechas son ISO 8601 en UTC.
+
+    ## Topes (por defecto, configurables con `identidad.politica.*`)
+    | Tope | Valor |
+    |---|---|
+    | Pedidos de código por IP | 20 cada 15 minutos |
+    | Pedidos de código por lo que se escribe (celular, correo o id) | 3 cada 15 minutos |
+    | Códigos que llegan a un mismo correo | 3 cada 15 minutos (al agotarse no se manda y la respuesta no cambia) |
+    | Formularios y reenvíos por correo | 3 cada 15 minutos |
+    | Verificaciones por IP | 20 cada 15 minutos |
+    | Negocios pedidos por cuenta (`POST /registro/negocio`) | 3 cada 15 minutos |
+    | Intentos por código | 5, luego se agota |
+    | Vigencia del código de acceso | 5 minutos |
+    | Vigencia del pre-registro y su código | 15 minutos |
+
+    ## Eventos (contrato asíncrono, R3 y R5)
+    No son HTTP; se describen en `x-eventos` y en `components.schemas`. Todos usan el sobre común `SobreEvento` (UUIDv7,
+    `negocio_id`, `version`) y no llevan datos personales.
+  contact:
+    name: Equipo Negocio 360
+  license:
+    name: Propiedad de los autores (hackathon Puebla Turística 360°)
+    identifier: LicenseRef-Autores
+servers:
+  - url: http://localhost:8080
+    description: Desarrollo (perfil `desarrollo`)
+tags:
+  - name: Registro
+    description: Formulario, verificación del correo y reenvío del código (D-84).
+  - name: Acceso
+    description: Código al correo e inicio de sesión (D-85).
+  - name: Sesión
+    description: Perfil, cierre de sesión y nombre.
+  - name: Negocios
+    description: Pedir un negocio, elegir el activo, roles y permisos (D-78 a D-80).
+  - name: Solo desarrollo
+    description: |
+      Existen únicamente con `identidad.canal-simulado.habilitado=true` y nunca con el perfil `produccion` (AS-10, SI-13).
+      Sin eso no hay ruta y responden 404.
+
+security: []
+
+paths:
+  /registro:
+    post:
+      tags: [Registro]
+      operationId: llenarFormulario
+      summary: Llenar el formulario de registro (paso 1)
+      description: |
+        Valida los campos, guarda un **pre-registro** (uno por correo: otro formulario con el mismo correo lo reemplaza) y
+        manda un código de 6 dígitos al correo. **No crea la cuenta ni abre sesión.** El bloque `negocio` es opcional: si
+        viene, al verificar el correo se publica `negocio.registro_solicitado`.
+
+        Primero se valida la forma de los campos y el negocio, sin tocar nada ni gastar topes. Después se dice si el correo o
+        el celular ya tienen cuenta (`409`), sin haber probado nada antes; los topes acotan cuánto se puede sondear (P-21).
+        Si el canal falla (`503`) no se guarda nada y el pre-registro anterior, si lo había, sigue sirviendo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudRegistro'
+            examples:
+              conNegocio:
+                summary: Dueño con su negocio
+                value:
+                  nombre: Ana María
+                  apellidos: López Pérez
+                  correo: ana.lopez@example.com
+                  telefono: '2229100001'
+                  aceptaAviso: true
+                  negocio:
+                    nombre: Fonda Doña Chela
+                    giro: RESTAURANTE
+              soloPersona:
+                summary: Solo la persona
+                value:
+                  nombre: Beto
+                  apellidos: Ruiz Soto
+                  correo: beto.ruiz@example.com
+                  telefono: +52 223 555 0102
+                  aceptaAviso: true
+      responses:
+        '202':
+          description: Pre-registro guardado y código mandado al correo.
+          headers: &cabeceras
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Content-Type-Options:
+              $ref: '#/components/headers/NoSniff'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaPreregistro'
+              example:
+                correo: ana.lopez@example.com
+                venceEn: '2026-10-15T16:15:00Z'
+        '400':
+          description: |
+            Un campo no tiene forma válida. Códigos: `NOMBRE_INVALIDO`, `APELLIDOS_INVALIDOS`, `CORREO_INVALIDO`,
+            `TELEFONO_INVALIDO`, `GIRO_INVALIDO` (o `NOMBRE_INVALIDO` si el del negocio no sirve) y `SOLICITUD_INVALIDA`
+            (JSON ilegible o cadena enorme).
+          $ref: '#/components/responses/ErrorDeSolicitud'
+        '409':
+          description: |
+            `CORREO_NO_DISPONIBLE` si el correo ya tiene cuenta (sin importar mayúsculas) o `CUENTA_YA_EXISTE` si la tiene el
+            celular.
+          $ref: '#/components/responses/Error'
+        '415':
+          $ref: '#/components/responses/TipoNoSoportado'
+        '422':
+          description: Falta el nombre (`NOMBRE_REQUERIDO`) o no se aceptó el aviso de privacidad (`AVISO_REQUERIDO`).
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/TasaExcedida'
+        '503':
+          $ref: '#/components/responses/CanalNoDisponible'
+
+  /registro/verificacion:
+    post:
+      tags: [Registro]
+      operationId: verificarRegistro
+      summary: Verificar el correo y crear la cuenta (paso 2)
+      description: |
+        Con el código que llegó al correo se crea la cuenta (con `correoVerificadoEn` ya puesto y el aviso de privacidad
+        desde que se llenó el formulario), se borra el pre-registro y se abre la sesión. Si venía negocio, se anota como
+        pendiente y se publica `negocio.registro_solicitado`.
+
+        Un correo sin pre-registro, un código incorrecto, vencido, agotado o ya usado responden lo mismo:
+        `401 CODIGO_INVALIDO`. Cada intento fallido cuenta; a los 5 el código se agota. Si mientras tanto el correo o el
+        celular se usaron en otra cuenta, el pre-registro se borra y responde `409`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudVerificacion'
+            example:
+              correo: ana.lopez@example.com
+              codigo: '196483'
+      responses:
+        '201':
+          description: Cuenta creada y sesión abierta. Es la única vez que el token viaja en claro junto con el inicio de sesión.
+          headers: *cabeceras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaSesion'
+              example:
+                token: 7Qe3uF0Zx9mY2kVbN1sHcA8LrTjWdP4oGiXyEaMq5Uw
+                expiraEn: '2026-10-16T00:03:36Z'
+                cuenta:
+                  id: 0192f39f-3333-7000-8000-00000000f001
+                  nombre: Ana María
+                  apellidos: López Pérez
+                  telefono: '+522229100001'
+                  correo: ana.lopez@example.com
+                negocioActivo: null
+                negocios: []
+                negociosPendientes:
+                  - id: 0192f39f-3333-7000-8000-00000000f002
+                    nombre: Fonda Doña Chela
+                    giro: RESTAURANTE
+                    estado: PENDIENTE
+        '400':
+          description: '`CORREO_INVALIDO` o `SOLICITUD_INVALIDA`.'
+          $ref: '#/components/responses/ErrorDeSolicitud'
+        '401':
+          description: '`CODIGO_INVALIDO`, sin distinguir la causa.'
+          $ref: '#/components/responses/CodigoInvalido'
+        '409':
+          description: '`CORREO_NO_DISPONIBLE` o `CUENTA_YA_EXISTE`: otra cuenta se quedó con ese correo o celular.'
+          $ref: '#/components/responses/Error'
+        '415':
+          $ref: '#/components/responses/TipoNoSoportado'
+        '429':
+          $ref: '#/components/responses/TasaExcedida'
+
+  /registro/reenvio:
+    post:
+      tags: [Registro]
+      operationId: reenviarCodigoDeRegistro
+      summary: Pedir otro código para el pre-registro
+      description: |
+        Manda un código nuevo al correo del pre-registro: el anterior deja de servir, los intentos vuelven a cero y el
+        pre-registro vale otros 15 minutos. **Responde igual haya o no pre-registro** (y aunque el correo ya tenga cuenta),
+        para no delatar nada. Comparte con el formulario el tope de 3 por correo cada 15 minutos, que cuenta aunque no haya
+        pre-registro.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudReenvio'
+            example:
+              correo: ana.lopez@example.com
+      responses:
+        '202':
+          description: Aceptado, sin cuerpo.
+          headers: *cabeceras
+        '400':
+          description: '`CORREO_INVALIDO` o `SOLICITUD_INVALIDA`.'
+          $ref: '#/components/responses/ErrorDeSolicitud'
+        '415':
+          $ref: '#/components/responses/TipoNoSoportado'
+        '429':
+          $ref: '#/components/responses/TasaExcedida'
+        '503':
+          $ref: '#/components/responses/CanalNoDisponible'
+
+  /auth/codigo:
+    post:
+      tags: [Acceso]
+      operationId: pedirCodigo
+      summary: Pedir un código de acceso
+      description: |
+        `identificador` puede ser el **celular**, el **correo** o el **id** de la cuenta. El código llega siempre al correo
+        de la cuenta y vale 5 minutos; uno nuevo reemplaza al anterior. **Responde 202 sin cuerpo exista o no la cuenta**
+        (SI-02): a un identificador sin cuenta no se le manda nada.
+
+        Hay dos topes que sí se responden con error: 20 por IP y 3 por lo que se escribió, ambos cada 15 minutos. El tope de
+        códigos que llegan a un mismo correo no se responde con error: al agotarse simplemente no se manda otro.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudCodigo'
+            examples:
+              correo:
+                value: {identificador: ana.lopez@example.com}
+              celular:
+                value: {identificador: '222 910 0001'}
+              id:
+                value: {identificador: 0192f39f-3333-7000-8000-00000000f001}
+      responses:
+        '202':
+          description: Aceptado, sin cuerpo.
+          headers: *cabeceras
+        '400':
+          description: '`TELEFONO_INVALIDO` (si no es correo ni id) o `CORREO_INVALIDO` (si trae arroba) o `SOLICITUD_INVALIDA`.'
+          $ref: '#/components/responses/ErrorDeSolicitud'
+        '415':
+          $ref: '#/components/responses/TipoNoSoportado'
+        '429':
+          $ref: '#/components/responses/TasaExcedida'
+        '503':
+          $ref: '#/components/responses/CanalNoDisponible'
+
+  /auth/sesion:
+    post:
+      tags: [Acceso]
+      operationId: iniciarSesion
+      summary: Iniciar sesión con el código
+      description: |
+        Verifica el código que llegó al correo de la cuenta y abre una sesión. El `identificador` es el mismo que se usó en
+        `POST /auth/codigo` (o cualquiera de los otros dos de la misma cuenta). Si la persona tiene un solo negocio, viene
+        como `negocioActivo`. Una sexta sesión revoca la más antigua.
+
+        Cualquier fallo del código (incorrecto, vencido, agotado, ya usado, cuenta suspendida o inexistente) responde
+        `401 CODIGO_INVALIDO` con el mismo texto. Un celular sin cuenta **no** puede registrarse por aquí: usa `POST /registro`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudSesion'
+            example:
+              identificador: ana.lopez@example.com
+              codigo: '410632'
+      responses:
+        '200':
+          description: Sesión abierta.
+          headers: *cabeceras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaSesion'
+        '400':
+          description: '`TELEFONO_INVALIDO`, `CORREO_INVALIDO` o `SOLICITUD_INVALIDA`.'
+          $ref: '#/components/responses/ErrorDeSolicitud'
+        '401':
+          $ref: '#/components/responses/CodigoInvalido'
+        '415':
+          $ref: '#/components/responses/TipoNoSoportado'
+
+    delete:
+      tags: [Sesión]
+      operationId: cerrarSesion
+      summary: Cerrar esta sesión
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Sesión revocada.
+          headers: *cabeceras
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+
+  /auth/yo:
+    get:
+      tags: [Sesión]
+      operationId: perfil
+      summary: Perfil de la sesión
+      description: |
+        Una sola llamada dice quién soy, mi negocio activo y mi rol y permisos en él, los negocios donde soy miembro y los
+        que pedí y siguen pendientes. Renueva la inactividad de la sesión, pero no el tope de 30 días.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil.
+          headers: *cabeceras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaPerfil'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+
+  /auth/sesiones:
+    delete:
+      tags: [Sesión]
+      operationId: cerrarTodasLasSesiones
+      summary: Cerrar todas las sesiones de la cuenta
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Todas las sesiones de la cuenta revocadas, incluida esta.
+          headers: *cabeceras
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+
+  /cuenta:
+    patch:
+      tags: [Sesión]
+      operationId: cambiarNombre
+      summary: Cambiar el nombre de la cuenta
+      description: El nombre se normaliza (espacios colapsados, de 2 a 80 caracteres, sin caracteres de control).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudNombre'
+            example:
+              nombre: Ana María López
+      responses:
+        '200':
+          description: Cuenta con el nombre nuevo.
+          headers: *cabeceras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaCuenta'
+        '400':
+          description: '`NOMBRE_INVALIDO` o `SOLICITUD_INVALIDA`.'
+          $ref: '#/components/responses/ErrorDeSolicitud'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '415':
+          $ref: '#/components/responses/TipoNoSoportado'
+
+  /registro/negocio:
+    post:
+      tags: [Negocios]
+      operationId: pedirNegocio
+      summary: Pedir otro negocio
+      description: |
+        Para quien ya tiene cuenta. Publica el evento `negocio.registro_solicitado` y devuelve el **id que Identidad le
+        asignó** al negocio; el negocio **todavía no existe**: aparece en `negociosPendientes` hasta que el módulo de
+        negocios responda con `negocio.registrado`, y entonces la persona queda como `DUENO`. Tope de 3 pedidos cada 15
+        minutos por cuenta. Un `negocioId` en el cuerpo se ignora.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudNegocio'
+            example:
+              nombre: Museo de la Talavera
+              giro: MUSEO
+      responses:
+        '202':
+          description: Pedido anotado y evento publicado.
+          headers: *cabeceras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaNegocioSolicitado'
+        '400':
+          description: '`GIRO_INVALIDO`, `NOMBRE_INVALIDO` o `SOLICITUD_INVALIDA`.'
+          $ref: '#/components/responses/ErrorDeSolicitud'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '415':
+          $ref: '#/components/responses/TipoNoSoportado'
+        '429':
+          $ref: '#/components/responses/TasaExcedida'
+
+  /auth/negocio-activo:
+    put:
+      tags: [Negocios]
+      operationId: elegirNegocioActivo
+      summary: Elegir el negocio activo
+      description: |
+        Emite **otro token** y revoca el actual (SI-07). No alarga la sesión: el tope de 30 días se conserva. Un negocio donde
+        la persona no es miembro activo responde lo mismo que uno que no existe (`404 NEGOCIO_NO_DISPONIBLE`). Con dos o más
+        negocios no hay uno activo por omisión y todo lo que exige negocio queda negado hasta elegir; si una membresía deja
+        de estar activa, la sesión que la usaba deja de servir en ese instante (AM-06).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudNegocioActivo'
+            example:
+              negocioId: 0192f39f-3333-7000-8000-00000000f002
+      responses:
+        '200':
+          description: Sesión nueva con el negocio activo.
+          headers: *cabeceras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaSesion'
+        '400':
+          description: '`SOLICITUD_INVALIDA`, por ejemplo un `negocioId` que no es un UUID.'
+          $ref: '#/components/responses/ErrorDeSolicitud'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '404':
+          description: '`NEGOCIO_NO_DISPONIBLE`.'
+          $ref: '#/components/responses/Error'
+        '415':
+          $ref: '#/components/responses/TipoNoSoportado'
+
+  /roles:
+    get:
+      tags: [Negocios]
+      operationId: roles
+      summary: Roles que ofrece el giro del negocio activo
+      description: |
+        Los roles de la plantilla del giro, en orden, cada uno con sus permisos en orden alfabético. Un restaurante ofrece 6
+        (`DUENO`, `ADMINISTRADOR`, `GERENTE`, `CAJERO`, `MESERO`, `COCINERO`), una miscelánea 4 y un museo 5
+        (`DUENO`, `ADMINISTRADOR`, `GERENTE`, `TAQUILLERO`, `GUIA`). Exige el permiso `identidad.equipo.ver`.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Roles del giro.
+          headers: *cabeceras
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RespuestaRol'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          description: '`PERMISO_DENEGADO`: el rol de la persona no incluye `identidad.equipo.ver`.'
+          $ref: '#/components/responses/Error'
+        '404':
+          description: '`NEGOCIO_NO_DISPONIBLE`: la sesión no tiene negocio activo (sin negocios, o con varios y sin elegir).'
+          $ref: '#/components/responses/Error'
+
+  /permisos:
+    get:
+      tags: [Negocios]
+      operationId: permisos
+      summary: Catálogo de permisos de los módulos
+      description: |
+        Los permisos que declaran los módulos (hoy 16: 5 de Identidad y 11 de Clientes), ordenados por código. `sensible`
+        marca los que además piden confirmación reforzada (D-73). Exige `identidad.equipo.ver` y un negocio activo.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Catálogo.
+          headers: *cabeceras
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RespuestaPermiso'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          description: '`PERMISO_DENEGADO`.'
+          $ref: '#/components/responses/Error'
+        '404':
+          description: '`NEGOCIO_NO_DISPONIBLE`.'
+          $ref: '#/components/responses/Error'
+
+  /dev/canal/codigo:
+    get:
+      tags: [Solo desarrollo]
+      operationId: ultimoCodigoDelCanalSimulado
+      summary: Último código que "mandó" el canal simulado a un correo
+      description: |
+        El canal simulado no manda correos: escribe el código en la consola del backend (logger `identidad.canal.simulado`,
+        con el correo enmascarado, p. ej. `a***@example.com`) y este endpoint lo entrega. **No existe con el perfil
+        `produccion`** y sin `identidad.canal-simulado.habilitado=true` (D-77).
+      parameters:
+        - name: correo
+          in: query
+          required: true
+          description: Correo al que se mandó el código; se normaliza a minúsculas.
+          schema:
+            type: string
+            format: email
+            maxLength: 120
+          example: ana.lopez@example.com
+      responses:
+        '200':
+          description: Último código mandado a ese correo.
+          headers: *cabeceras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaCodigoDesarrollo'
+              example:
+                codigo: '196483'
+        '400':
+          description: '`CORREO_INVALIDO` o `SOLICITUD_INVALIDA` (falta el parámetro).'
+          $ref: '#/components/responses/ErrorDeSolicitud'
+        '404':
+          description: Nunca se mandó un código a ese correo. Sin cuerpo.
+          headers: *cabeceras
+
+  /dev/negocios/{negocioId}/registrado:
+    post:
+      tags: [Solo desarrollo]
+      operationId: simularNegocioRegistrado
+      summary: Simula la respuesta del módulo de negocios
+      description: |
+        Hace las veces del módulo de negocios, que todavía no existe (D-78): toma el pedido `negocio.registro_solicitado` de
+        ese negocio y responde como lo haría el real, con `negocio.registrado`. Aplica el aviso **en el mismo hilo**, así
+        que al responder `204` el negocio ya está aplicado: la persona queda como `DUENO`. **No existe con el perfil
+        `produccion`.**
+      parameters:
+        - name: negocioId
+          in: path
+          required: true
+          description: El id que Identidad asignó al pedir el negocio.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Negocio registrado y aplicado.
+          headers: *cabeceras
+        '404':
+          description: Nadie pidió ese negocio. Sin cuerpo.
+          headers: *cabeceras
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Token opaco de la sesión (43 caracteres base64url). El esquema `Bearer` no distingue mayúsculas. Sin token, con otro
+        esquema, inventado, vencido o revocado la respuesta es idéntica: `401 NO_AUTENTICADO` (AS-08).
+
+  headers:
+    CacheControl:
+      description: Siempre `no-store`.
+      schema:
+        type: string
+        const: no-store
+    NoSniff:
+      description: Siempre `nosniff`.
+      schema:
+        type: string
+        const: nosniff
+    WwwAuthenticate:
+      description: Siempre `Bearer`.
+      schema:
+        type: string
+        const: Bearer
+
+  responses:
+    Error:
+      description: Error de negocio con texto fijo.
+      headers: &cabecerasDeError
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+        X-Content-Type-Options:
+          $ref: '#/components/headers/NoSniff'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ErrorDeSolicitud:
+      description: La solicitud no es válida.
+      headers: *cabecerasDeError
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: CORREO_INVALIDO
+            mensaje: El correo no es válido. Revisa que tenga la forma nombre@dominio.com.
+    NoAutenticado:
+      description: |
+        `NO_AUTENTICADO`. Igual para token ausente, de otro esquema, inventado, vencido, revocado o de una cuenta que ya no
+        está activa.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+        X-Content-Type-Options:
+          $ref: '#/components/headers/NoSniff'
+        WWW-Authenticate:
+          $ref: '#/components/headers/WwwAuthenticate'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: NO_AUTENTICADO
+            mensaje: Tu sesión no es válida. Inicia sesión de nuevo.
+    CodigoInvalido:
+      description: |
+        `CODIGO_INVALIDO`. El mismo texto para código incorrecto, vencido, agotado, ya usado, cuenta suspendida y cuenta o
+        pre-registro inexistentes.
+      headers: *cabecerasDeError
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: CODIGO_INVALIDO
+            mensaje: El código no es correcto o ya venció. Revisa el que recibiste en tu correo o pide uno nuevo.
+    TasaExcedida:
+      description: '`TASA_EXCEDIDA`: se pasó de algún tope (ver «Topes» arriba).'
+      headers: *cabecerasDeError
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: TASA_EXCEDIDA
+            mensaje: Hiciste demasiadas solicitudes. Espera unos minutos e inténtalo de nuevo.
+    TipoNoSoportado:
+      description: El cuerpo no es `application/json` (`SOLICITUD_INVALIDA`).
+      headers: *cabecerasDeError
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    CanalNoDisponible:
+      description: |
+        `ERROR_TEMPORAL`: el canal no pudo mandar el código. No se guardó nada nuevo; lo que la persona ya tenía sigue
+        sirviendo.
+      headers: *cabecerasDeError
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    CodigoError:
+      type: string
+      description: |
+        Código de error y su estado HTTP. Cada uno tiene un texto fijo en español de México.
+
+        | Código | HTTP |
+        |---|---|
+        | `TELEFONO_INVALIDO`, `NOMBRE_INVALIDO`, `APELLIDOS_INVALIDOS`, `CORREO_INVALIDO`, `GIRO_INVALIDO`, `SOLICITUD_INVALIDA` | 400 |
+        | `CODIGO_INVALIDO`, `NO_AUTENTICADO` | 401 |
+        | `PERMISO_DENEGADO`, `ROL_NO_PERMITIDO` | 403 |
+        | `NEGOCIO_NO_DISPONIBLE`, `NO_ES_MIEMBRO` | 404 |
+        | `CORREO_NO_DISPONIBLE`, `CUENTA_YA_EXISTE`, `ULTIMO_DUENO`, `OPERACION_SOBRE_SI_MISMO` | 409 |
+        | `NOMBRE_REQUERIDO`, `AVISO_REQUERIDO` | 422 |
+        | `TASA_EXCEDIDA` | 429 |
+        | `ERROR_INTERNO` | 500 |
+        | `ERROR_TEMPORAL` | 503 |
+
+        `ROL_NO_PERMITIDO`, `NO_ES_MIEMBRO`, `ULTIMO_DUENO` y `OPERACION_SOBRE_SI_MISMO` son de la gestión de equipo, que
+        existe en la API de Java pero **aún no tiene endpoints REST** (IDN-3): están reservados. `CODIGO_EXPIRADO`,
+        `CODIGO_AGOTADO` y `REGISTRO_REQUERIDO` dejaron de existir con D-84 y D-85.
+      enum:
+        - TELEFONO_INVALIDO
+        - NOMBRE_INVALIDO
+        - APELLIDOS_INVALIDOS
+        - CORREO_INVALIDO
+        - GIRO_INVALIDO
+        - SOLICITUD_INVALIDA
+        - CODIGO_INVALIDO
+        - NO_AUTENTICADO
+        - PERMISO_DENEGADO
+        - ROL_NO_PERMITIDO
+        - NEGOCIO_NO_DISPONIBLE
+        - NO_ES_MIEMBRO
+        - CORREO_NO_DISPONIBLE
+        - CUENTA_YA_EXISTE
+        - ULTIMO_DUENO
+        - OPERACION_SOBRE_SI_MISMO
+        - NOMBRE_REQUERIDO
+        - AVISO_REQUERIDO
+        - TASA_EXCEDIDA
+        - ERROR_INTERNO
+        - ERROR_TEMPORAL
+
+    Error:
+      type: object
+      description: Forma fija de todo error (SI-14). El texto nunca lleva datos de la persona ni trazas.
+      required: [codigo, mensaje]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoError'
+        mensaje:
+          type: string
+          description: Texto fijo en español de México asociado al código.
+
+    Giro:
+      type: string
+      enum: [RESTAURANTE, MISCELANEA, MUSEO]
+      description: |
+        Giro del negocio; cada uno ofrece sus propios roles (D-69). Al **enviarlo** no distingue mayúsculas, espacios ni
+        acentos (`restaurante`, ` Miscelánea `); al **recibirlo** siempre viene normalizado.
+
+    Telefono:
+      type: string
+      description: |
+        Celular mexicano. Al **enviarlo** acepta 10 dígitos (el primero entre 2 y 9) con o sin `+52`/`52`, con espacios,
+        paréntesis, puntos o guiones; hasta 40 caracteres. Al **recibirlo** siempre va en E.164: `+52` y 10 dígitos.
+      examples: ['2229100001', '+52 (222) 910-0001']
+
+    SolicitudRegistro:
+      type: object
+      description: |
+        El formulario de registro. Los campos obligatorios, si faltan o no sirven, se responden con su error de negocio
+        (no con un 400 genérico): sin nombre `422 NOMBRE_REQUERIDO`, sin aviso `422 AVISO_REQUERIDO`. Un campo `codigo` o
+        `negocioId` en el cuerpo se ignora.
+      required: [nombre, apellidos, correo, telefono, aceptaAviso]
+      properties:
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 80
+          description: Sin caracteres de control ni de formato; los espacios sobrantes se colapsan.
+        apellidos:
+          type: string
+          minLength: 2
+          maxLength: 80
+        correo:
+          type: string
+          format: email
+          maxLength: 120
+          description: |
+            Solo ASCII: la parte local admite letras, dígitos y `. _ % + -`; el dominio, etiquetas con al menos un punto. Se
+            guarda en minúsculas. A él llega el código.
+        telefono:
+          $ref: '#/components/schemas/Telefono'
+        aceptaAviso:
+          type: boolean
+          description: Debe ser `true`. Es la versión 1 del aviso de privacidad del personal; se registra con la fecha del formulario.
+        negocio:
+          $ref: '#/components/schemas/SolicitudNegocio'
+
+    SolicitudNegocio:
+      type: object
+      description: El negocio que se pide (D-78). Opcional dentro del formulario.
+      required: [nombre, giro]
+      properties:
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 80
+        giro:
+          $ref: '#/components/schemas/Giro'
+
+    RespuestaPreregistro:
+      type: object
+      required: [correo, venceEn]
+      properties:
+        correo:
+          type: string
+          format: email
+          description: El correo normalizado al que se mandó el código.
+        venceEn:
+          type: string
+          format: date-time
+          description: Hasta cuándo valen el pre-registro y su código (15 minutos).
+
+    SolicitudVerificacion:
+      type: object
+      required: [correo, codigo]
+      properties:
+        correo:
+          type: string
+          format: email
+          maxLength: 120
+        codigo:
+          $ref: '#/components/schemas/Codigo'
+
+    SolicitudReenvio:
+      type: object
+      required: [correo]
+      properties:
+        correo:
+          type: string
+          format: email
+          maxLength: 120
+
+    Codigo:
+      type: string
+      pattern: '^\d{6}$'
+      description: |
+        Seis dígitos. Un código con otra forma (letras, otra longitud, nulo) **no** responde 400: es `CODIGO_INVALIDO` y
+        cuenta como intento fallido.
+
+    SolicitudCodigo:
+      type: object
+      required: [identificador]
+      properties:
+        identificador:
+          type: string
+          maxLength: 200
+          description: |
+            El celular, el correo o el id (UUID) de la cuenta. Con arroba se trata como correo; con forma de UUID, como id; el
+            resto, como celular.
+
+    SolicitudSesion:
+      type: object
+      required: [identificador, codigo]
+      properties:
+        identificador:
+          type: string
+          maxLength: 200
+          description: Celular, correo o id de la cuenta.
+        codigo:
+          $ref: '#/components/schemas/Codigo'
+
+    SolicitudNegocioActivo:
+      type: object
+      required: [negocioId]
+      properties:
+        negocioId:
+          type: string
+          format: uuid
+
+    SolicitudNombre:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 80
+
+    RespuestaCuenta:
+      type: object
+      description: Lo que la propia persona ve de su cuenta.
+      required: [id, nombre, apellidos, telefono, correo]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUIDv7.
+        nombre:
+          type: string
+        apellidos:
+          type: string
+        telefono:
+          type: string
+          pattern: '^\+52[2-9]\d{9}$'
+        correo:
+          type: string
+          format: email
+
+    RespuestaNegocio:
+      type: object
+      description: Un negocio donde la persona tiene membresía activa.
+      required: [id, nombre, rol]
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        rol:
+          type: string
+          description: Código del rol de la persona en ese negocio, por ejemplo `DUENO`.
+
+    RespuestaNegocioPendiente:
+      type: object
+      description: Un negocio que la persona pidió y el módulo de negocios todavía no registra.
+      required: [id, nombre, giro, estado]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: El que Identidad asignó (UUIDv7); es el mismo con que después aparece en `negocios`.
+        nombre:
+          type: string
+        giro:
+          $ref: '#/components/schemas/Giro'
+        estado:
+          type: string
+          enum: [PENDIENTE]
+          description: Por ahora el único estado. Un rechazo del módulo de negocios agregaría otro (P-17).
+
+    RespuestaSesion:
+      type: object
+      description: Sesión abierta. Es el único momento en que el token viaja en claro.
+      required: [token, expiraEn, cuenta, negocioActivo, negocios, negociosPendientes]
+      properties:
+        token:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{43}$'
+          description: Token opaco. Guárdalo; no se puede volver a consultar.
+        expiraEn:
+          type: string
+          format: date-time
+          description: Vencimiento por inactividad (8 horas desde el último uso).
+        cuenta:
+          $ref: '#/components/schemas/RespuestaCuenta'
+        negocioActivo:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            El negocio con que se actúa: el único que tiene la persona o el que eligió. `null` si no tiene ninguno o si tiene
+            varios y no eligió.
+        negocios:
+          type: array
+          items:
+            $ref: '#/components/schemas/RespuestaNegocio'
+        negociosPendientes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RespuestaNegocioPendiente'
+
+    RespuestaPerfil:
+      type: object
+      required: [cuenta, negocioActivo, rol, permisos, negocios, negociosPendientes]
+      properties:
+        cuenta:
+          $ref: '#/components/schemas/RespuestaCuenta'
+        negocioActivo:
+          type: [string, 'null']
+          format: uuid
+        rol:
+          type: [string, 'null']
+          description: Rol de la persona en el negocio activo; `null` sin negocio activo.
+        permisos:
+          type: array
+          items:
+            type: string
+            examples: ['clientes.ficha.ver']
+          description: Permisos del rol en el negocio activo, en orden alfabético; vacío sin negocio activo.
+        negocios:
+          type: array
+          items:
+            $ref: '#/components/schemas/RespuestaNegocio'
+        negociosPendientes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RespuestaNegocioPendiente'
+
+    RespuestaNegocioSolicitado:
+      type: object
+      required: [negocioId]
+      properties:
+        negocioId:
+          type: string
+          format: uuid
+          description: El id que Identidad asignó. El negocio aún no existe.
+
+    RespuestaRol:
+      type: object
+      required: [codigo, nombre, permisos]
+      properties:
+        codigo:
+          type: string
+          enum: [DUENO, ADMINISTRADOR, GERENTE, CAJERO, MESERO, COCINERO, TAQUILLERO, GUIA]
+        nombre:
+          type: string
+          examples: ['Dueño']
+        permisos:
+          type: array
+          items:
+            type: string
+          description: En orden alfabético. Cocinero, taquillero y guía no tienen permisos hasta que Inventario esté autorizado (IDN-4.4).
+
+    RespuestaPermiso:
+      type: object
+      required: [codigo, modulo, descripcion, sensible]
+      properties:
+        codigo:
+          type: string
+          description: Con la forma `modulo.recurso.accion`.
+          examples: ['identidad.miembro.invitar']
+        modulo:
+          type: string
+          examples: ['identidad']
+        descripcion:
+          type: string
+        sensible:
+          type: boolean
+          description: Si además del permiso exige confirmación reforzada (D-73).
+
+    RespuestaCodigoDesarrollo:
+      type: object
+      required: [codigo]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/Codigo'
+
+    # ---- Eventos (asíncronos; no son HTTP) ----
+    SobreEvento:
+      type: object
+      description: |
+        Sobre común de todos los eventos (R3, R5). En JSON los nombres van en snake_case. Los `datos` llevan hechos con ids y
+        valores, nunca datos personales; solo cadenas, enteros, booleanos, listas y mapas.
+      required: [id, tipo, version, negocio_id, origen, ocurrido_en, correlacion_id, datos]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUIDv7, único por evento. Los consumidores deduplican por él (R3).
+        tipo:
+          type: string
+          pattern: '^[a-z]+\.[a-z_]+$'
+        version:
+          type: integer
+          minimum: 1
+        negocio_id:
+          type: string
+          format: uuid
+        origen:
+          type: string
+          description: Módulo que publica.
+        ocurrido_en:
+          type: string
+          format: date-time
+        correlacion_id:
+          type: string
+          format: uuid
+        causa_id:
+          type: [string, 'null']
+          format: uuid
+          description: Evento que lo provocó, o ausente.
+        datos:
+          type: object
+
+    NegocioRegistroSolicitadoV1:
+      description: |
+        **Lo publica Identidad** (`origen: identidad`) al verificar el correo de un registro con negocio, o al pedir un
+        negocio con `POST /registro/negocio`. Lo consume el módulo de negocios. `negocio_id` del sobre es el id que Identidad
+        asignó. Contrato versionado: solo se agregan campos opcionales (R5).
+      allOf:
+        - $ref: '#/components/schemas/SobreEvento'
+        - type: object
+          properties:
+            tipo:
+              const: negocio.registro_solicitado
+            version:
+              const: 1
+            origen:
+              const: identidad
+            datos:
+              type: object
+              required: [cuenta_id, nombre, giro]
+              properties:
+                cuenta_id:
+                  type: string
+                  format: uuid
+                  description: La cuenta que pide el negocio.
+                nombre:
+                  type: string
+                giro:
+                  $ref: '#/components/schemas/Giro'
+
+    NegocioRegistradoV1:
+      description: |
+        **Lo publica el módulo de negocios** (`origen: negocios`) cuando registra el negocio pedido; **lo consume Identidad**,
+        que crea la referencia del negocio y la membresía `DUENO` de quien lo pidió. Identidad es un lector tolerante: ignora
+        campos que no usa y descarta, sin reintentar, lo que no entiende (otro tipo, versión u origen, o datos mal formados).
+        Solo actúa si hay un pedido pendiente de esa cuenta para ese negocio. `negocio_id` del sobre es el que asignó Identidad.
+      allOf:
+        - $ref: '#/components/schemas/SobreEvento'
+        - type: object
+          properties:
+            tipo:
+              const: negocio.registrado
+            version:
+              const: 1
+            origen:
+              const: negocios
+            datos:
+              type: object
+              required: [solicitado_por, nombre, giro]
+              properties:
+                solicitado_por:
+                  type: string
+                  format: uuid
+                  description: La cuenta que lo pidió.
+                nombre:
+                  type: string
+                giro:
+                  type: string
+
+x-eventos:
+  publica:
+    - tipo: negocio.registro_solicitado
+      version: 1
+      esquema: '#/components/schemas/NegocioRegistroSolicitadoV1'
+      consume: módulo de negocios (no construido)
+  consume:
+    - tipo: negocio.registrado
+      version: 1
+      esquema: '#/components/schemas/NegocioRegistradoV1'
+      publica: módulo de negocios (no construido; en desarrollo lo simula POST /dev/negocios/{negocioId}/registrado)
+  entrega: |
+    Al menos una vez y sin orden global. Con el bus real la entrega es asíncrona (Spring Modulith): la app debe tratar el
+    negocio como pendiente hasta que aparezca en `negocios`.

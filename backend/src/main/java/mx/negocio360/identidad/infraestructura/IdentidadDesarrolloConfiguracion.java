@@ -3,9 +3,11 @@ package mx.negocio360.identidad.infraestructura;
 import mx.negocio360.identidad.web.DevCanalController;
 import mx.negocio360.identidad.web.DevNegociosController;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 /**
@@ -58,9 +60,14 @@ public class IdentidadDesarrolloConfiguracion {
         return new RepositorioNegociosEnMemoria();
     }
 
+    /**
+     * Reenvia cada evento al bus de Spring (y al outbox) y ademas lo guarda para el simulador del modulo de negocios.
+     * Es el preferido sobre el publicador de produccion, que tambien existe.
+     */
     @Bean
-    public PublicadorEventosEnMemoria publicadorDeEventos() {
-        return new PublicadorEventosEnMemoria();
+    @Primary
+    public PublicadorEventosEnMemoria publicadorDeEventos(ApplicationEventPublisher bus) {
+        return new PublicadorEventosEnMemoria(new PublicadorEventosEnBus(bus));
     }
 
     @Bean

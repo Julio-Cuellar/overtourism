@@ -13,6 +13,7 @@ import mx.negocio360.identidad.infraestructura.PublicadorEventosEnMemoria;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,11 +39,14 @@ public class DevNegociosController {
     private final PublicadorEventosEnMemoria publicados;
     private final EquipoServicio equipo;
     private final Clock reloj;
+    private final TransactionOperations transacciones;
 
-    public DevNegociosController(PublicadorEventosEnMemoria publicados, EquipoServicio equipo, Clock reloj) {
+    public DevNegociosController(PublicadorEventosEnMemoria publicados, EquipoServicio equipo, Clock reloj,
+                                 TransactionOperations transacciones) {
         this.publicados = publicados;
         this.equipo = equipo;
         this.reloj = reloj;
+        this.transacciones = transacciones;
     }
 
     @PostMapping("/{negocioId}/registrado")
@@ -58,7 +62,9 @@ public class DevNegociosController {
                 negocioId, "negocios", ahora, solicitud.correlacionId(), solicitud.id(),
                 Map.of("solicitado_por", solicitud.datos().get("cuenta_id"), "nombre", solicitud.datos().get("nombre"),
                         "giro", solicitud.datos().get("giro")));
-        NegocioRegistradoV1.de(respuesta).ifPresent(equipo::alNegocioRegistrado);
+        // El servicio publica membresia.agregada: tiene que correr en una transaccion para que llegue al outbox.
+        NegocioRegistradoV1.de(respuesta).ifPresent(aviso ->
+                transacciones.executeWithoutResult(estado -> equipo.alNegocioRegistrado(aviso)));
         return ResponseEntity.noContent().build();
     }
 }

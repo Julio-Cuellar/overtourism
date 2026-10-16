@@ -57,7 +57,7 @@ public final class Escenario {
             Stream.of("clientes.sugerir", "clientes.lista.ver", "clientes.panorama.ver", "clientes.ficha.ver",
                     "clientes.cliente.registrar", "clientes.cliente.editar", "clientes.consentimiento.registrar",
                     "clientes.aviso.publicar", "clientes.cliente.anonimizar", "clientes.arco.gestionar",
-                    "clientes.datos.exportar")
+                    "clientes.datos.exportar", "negocios.perfil.ver", "negocios.perfil.editar", "negocios.sucursal.gestionar", "negocios.horario.editar", "negocios.negocio.publicar", "negocios.disponibilidad.editar", "negocios.negocio.pausar", "negocios.negocio.cerrar", "negocios.empleado.ver", "negocios.empleado.registrar", "negocios.empleado.editar", "negocios.empleado.baja", "negocios.resena.ver", "negocios.resena.responder")
                     .map(codigo -> new PermisoDeclarado(codigo, "Permiso de prueba", false))).toList();
 
     public final RelojMutable reloj = new RelojMutable(AHORA);

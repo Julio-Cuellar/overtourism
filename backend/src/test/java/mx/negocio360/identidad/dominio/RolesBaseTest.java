@@ -42,13 +42,14 @@ class RolesBaseTest {
     void dueno_tieneTodos() {
         var todos = RolesBase.todos().stream().flatMap(r -> r.permisos().stream()).collect(Collectors.toSet());
 
-        assertThat(permisosDe("DUENO")).containsAll(todos).hasSize(16);
+        assertThat(permisosDe("DUENO")).containsAll(todos).hasSize(30);
     }
 
     @Test
-    @DisplayName("el administrador tiene todo menos los derechos del responsable")
+    @DisplayName("el administrador tiene todo menos los derechos del responsable y pausar o cerrar el negocio")
     void administrador_todoMenosLosDelResponsable() {
         var esperado = permisosDe("DUENO").stream().filter(p -> !RESERVADOS_DEL_RESPONSABLE.contains(p))
+                .filter(p -> !p.equals("negocios.negocio.pausar") && !p.equals("negocios.negocio.cerrar"))
                 .collect(Collectors.toSet());
 
         assertThat(permisosDe("ADMINISTRADOR")).containsExactlyInAnyOrderElementsOf(esperado);
@@ -66,21 +67,64 @@ class RolesBaseTest {
     @DisplayName("el cajero solo busca y registra clientes y sus consentimientos")
     void cajero_soloBuscaYRegistra() {
         assertThat(permisosDe("CAJERO")).containsExactlyInAnyOrder("clientes.sugerir", "clientes.cliente.registrar",
-                "clientes.consentimiento.registrar");
+                "clientes.consentimiento.registrar", "negocios.perfil.ver");
     }
 
     @Test
     @DisplayName("el mesero solo busca clientes para ligarlos a una cuenta")
     void mesero_soloBusca() {
-        assertThat(permisosDe("MESERO")).containsExactly("clientes.sugerir");
+        assertThat(permisosDe("MESERO")).containsExactlyInAnyOrder("clientes.sugerir", "negocios.perfil.ver");
     }
 
     @Test
-    @DisplayName("cocinero, taquillero y guia no tienen permisos hasta que existan Inventario y Museos")
-    void cocineroTaquilleroYGuia_sinPermisosPorAhora() {
-        assertThat(permisosDe("COCINERO")).isEmpty();
-        assertThat(permisosDe("TAQUILLERO")).isEmpty();
-        assertThat(permisosDe("GUIA")).isEmpty();
+    @DisplayName("cocinero, taquillero y guia solo ven el perfil del negocio hasta que existan Inventario y Museos")
+    void cocineroTaquilleroYGuia_soloVenElPerfil() {
+        assertThat(permisosDe("COCINERO")).containsExactly("negocios.perfil.ver");
+        assertThat(permisosDe("TAQUILLERO")).containsExactly("negocios.perfil.ver");
+        assertThat(permisosDe("GUIA")).containsExactly("negocios.perfil.ver");
+    }
+
+    /** La matriz de la seccion 7.7 de docs/diseno/negocios.md: quien tiene cada permiso de Negocios. */
+    private static final java.util.Map<String, Set<String>> MATRIZ_DE_NEGOCIOS = java.util.Map.ofEntries(
+            java.util.Map.entry("negocios.perfil.ver", Set.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO", "MESERO",
+                    "COCINERO", "TAQUILLERO", "GUIA")),
+            java.util.Map.entry("negocios.perfil.editar", Set.of("DUENO", "ADMINISTRADOR")),
+            java.util.Map.entry("negocios.sucursal.gestionar", Set.of("DUENO", "ADMINISTRADOR")),
+            java.util.Map.entry("negocios.horario.editar", Set.of("DUENO", "ADMINISTRADOR", "GERENTE")),
+            java.util.Map.entry("negocios.negocio.publicar", Set.of("DUENO", "ADMINISTRADOR")),
+            java.util.Map.entry("negocios.disponibilidad.editar", Set.of("DUENO", "ADMINISTRADOR", "GERENTE")),
+            java.util.Map.entry("negocios.negocio.pausar", Set.of("DUENO")),
+            java.util.Map.entry("negocios.negocio.cerrar", Set.of("DUENO")),
+            java.util.Map.entry("negocios.empleado.ver", Set.of("DUENO", "ADMINISTRADOR", "GERENTE")),
+            java.util.Map.entry("negocios.empleado.registrar", Set.of("DUENO", "ADMINISTRADOR")),
+            java.util.Map.entry("negocios.empleado.editar", Set.of("DUENO", "ADMINISTRADOR")),
+            java.util.Map.entry("negocios.empleado.baja", Set.of("DUENO", "ADMINISTRADOR")),
+            java.util.Map.entry("negocios.resena.ver", Set.of("DUENO", "ADMINISTRADOR", "GERENTE")),
+            java.util.Map.entry("negocios.resena.responder", Set.of("DUENO", "ADMINISTRADOR", "GERENTE")));
+
+    @Test
+    @DisplayName("D-96: los permisos de Negocios de cada rol son exactamente los de la matriz de negocios.md 7.7")
+    void negocios_matrizDeLaSeccion77() {
+        assertThat(MATRIZ_DE_NEGOCIOS).hasSize(14);
+        for (var rol : RolesBase.todos()) {
+            var esperados = MATRIZ_DE_NEGOCIOS.entrySet().stream().filter(e -> e.getValue().contains(rol.codigo()))
+                    .map(java.util.Map.Entry::getKey).collect(Collectors.toSet());
+            var reales = rol.permisos().stream().filter(p -> p.startsWith("negocios.")).collect(Collectors.toSet());
+
+            assertThat(reales).as(rol.codigo()).isEqualTo(esperados);
+        }
+    }
+
+    @Test
+    @DisplayName("los dos permisos sensibles de Negocios (cerrar y dar de baja) solo los tiene el dueno o el administrador")
+    void negocios_sensibles_soloDuenoYAdministrador() {
+        for (var rol : RolesBase.todos()) {
+            if (!Set.of("DUENO", "ADMINISTRADOR").contains(rol.codigo())) {
+                assertThat(rol.permisos()).as(rol.codigo()).doesNotContain("negocios.negocio.cerrar",
+                        "negocios.empleado.baja");
+            }
+        }
+        assertThat(permisosDe("ADMINISTRADOR")).doesNotContain("negocios.negocio.cerrar").contains("negocios.empleado.baja");
     }
 
     @Test

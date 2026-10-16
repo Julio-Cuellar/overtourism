@@ -9,6 +9,11 @@ import mx.negocio360.compartido.identidad.UuidV7;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import java.util.ArrayList;
+import java.util.List;
+import mx.negocio360.identidad.aplicacion.puertos.PublicadorEventos;
+
 /** El publicador de desarrollo guarda en memoria y no crece sin limite (revision de seguridad, 2026-10-15). */
 class PublicadorEventosEnMemoriaTest {
 
@@ -50,6 +55,33 @@ class PublicadorEventosEnMemoriaTest {
         publicador.publicar(evento(1));
 
         publicador.limpiar();
+
+        assertThat(publicador.eventos()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("con destino, reenvia cada evento al bus y ademas lo guarda para el simulador")
+    void publicar_conDestino_reenviaYGuarda() {
+        var reenviados = new ArrayList<SobreEvento>();
+        PublicadorEventos destino = reenviados::add;
+        var publicador = new PublicadorEventosEnMemoria(destino);
+        var evento = evento(1);
+
+        publicador.publicar(evento);
+
+        assertThat(reenviados).containsExactly(evento);
+        assertThat(publicador.eventos()).containsExactly(evento);
+    }
+
+    @Test
+    @DisplayName("si el destino rechaza el evento, no se guarda: el simulador solo ve lo que de verdad se publico")
+    void publicar_siElDestinoFalla_noGuarda() {
+        PublicadorEventos destino = evento -> {
+            throw new IllegalStateException("sin transaccion");
+        };
+        var publicador = new PublicadorEventosEnMemoria(destino);
+
+        assertThatThrownBy(() -> publicador.publicar(evento(1))).isInstanceOf(IllegalStateException.class);
 
         assertThat(publicador.eventos()).isEmpty();
     }

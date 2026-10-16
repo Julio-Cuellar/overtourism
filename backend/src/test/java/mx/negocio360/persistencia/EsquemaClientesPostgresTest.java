@@ -86,6 +86,11 @@ class EsquemaClientesPostgresTest {
                             + "where n.nspname not in ('pg_catalog', 'information_schema', 'public') "
                             + "and n.nspname not like 'pg\\_%' and c.relkind = 'r' "
                             + "and not (n.nspname = 'identidad' and c.relname in ('sesion', 'negocio_ref')) "
+                            // Negocios: preparacion_resena se busca por el hash de su token (aun no se sabe el negocio) y
+                            // demostracion_negocio es la lista global de negocios simulados de la demo; ninguna es dato de
+                            // un negocio. Se limitan por permisos: rol_negocios_publico no las lee.
+                            + "and not (n.nspname = 'negocios' and c.relname in ('preparacion_resena', "
+                            + "'demostracion_negocio')) "
                             + "and exists (select 1 from information_schema.columns k where k.table_schema = n.nspname "
                             + "and k.table_name = c.relname and k.column_name = 'negocio_id') "
                             + "and not (c.relrowsecurity and c.relforcerowsecurity) order by 1", String.class);

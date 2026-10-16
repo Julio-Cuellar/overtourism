@@ -48,9 +48,11 @@ class EsquemaGraphqlClientesTest {
     static void construirEsquema() throws IOException {
         var parser = new SchemaParser();
         var registro = new TypeDefinitionRegistry();
-        // Mismo patron que usa Spring: cualquier .graphqls bajo graphql/, tambien en subcarpetas.
+        // Solo la parte comun y la de Clientes: cada modulo prueba su propio esquema (Negocios tiene el suyo).
         var recursos = new PathMatchingResourcePatternResolver().getResources("classpath*:graphql/**/*.graphqls");
-        assertThat(recursos).as("archivos .graphqls del classpath").isNotEmpty();
+        recursos = Arrays.stream(recursos).filter(r -> "compartido.graphqls".equals(r.getFilename())
+                || "clientes.graphqls".equals(r.getFilename())).toArray(org.springframework.core.io.Resource[]::new);
+        assertThat(recursos).as("archivos .graphqls de compartido y clientes").hasSize(2);
         for (var recurso : recursos) {
             try (var lector = new InputStreamReader(recurso.getInputStream(), StandardCharsets.UTF_8)) {
                 registro.merge(parser.parse(lector));

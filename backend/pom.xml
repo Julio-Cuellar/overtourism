@@ -21,6 +21,7 @@
     <java.version>21</java.version>
     <spring-modulith.version>1.4.0</spring-modulith.version>
     <jacoco.version>0.8.12</jacoco.version>
+    <springdoc.version>2.8.9</springdoc.version>
     <!-- Spring Boot 3.5.0 trae 1.21.0, que no habla con Docker 29 (su API minima es 1.40). -->
     <testcontainers.version>1.21.4</testcontainers.version>
   </properties>
@@ -73,6 +74,13 @@
     <dependency>
       <groupId>org.springframework.modulith</groupId>
       <artifactId>spring-modulith-starter-jdbc</artifactId>
+    </dependency>
+
+    <!-- Swagger UI y /v3/api-docs. Apagados por omision (SG-12); solo el perfil "desarrollo" los enciende. -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>${springdoc.version}</version>
     </dependency>
 
     <dependency>

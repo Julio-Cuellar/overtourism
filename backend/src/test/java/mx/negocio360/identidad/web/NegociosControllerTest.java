@@ -178,9 +178,9 @@ class NegociosControllerTest {
         mvc.perform(conToken(get("/roles"), activo)).andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].codigo").value(org.hamcrest.Matchers.contains("DUENO", "ADMINISTRADOR",
                         "GERENTE", "TAQUILLERO", "GUIA")))
-                .andExpect(jsonPath("$[0].permisos", hasSize(16)));
+                .andExpect(jsonPath("$[0].permisos", hasSize(30)));
         mvc.perform(conToken(get("/permisos"), activo)).andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(16)))
+                .andExpect(jsonPath("$", hasSize(30)))
                 .andExpect(jsonPath("$[?(@.codigo=='clientes.cliente.anonimizar')].sensible").value(hasItem(true)))
                 .andExpect(jsonPath("$[?(@.codigo=='clientes.sugerir')].modulo").value(hasItem("clientes")));
     }

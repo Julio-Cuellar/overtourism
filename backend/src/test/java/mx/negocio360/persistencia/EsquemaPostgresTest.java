@@ -154,7 +154,7 @@ class EsquemaPostgresTest {
                     "select schema_name from information_schema.schemata where schema_name not like 'pg\\_%' "
                             + "and schema_name not in ('information_schema', 'public')", String.class);
 
-            assertThat(propios).containsExactlyInAnyOrder("plataforma", "identidad", "clientes");
+            assertThat(propios).containsExactlyInAnyOrder("plataforma", "identidad", "clientes", "negocios");
         }
     }
 }

@@ -24,6 +24,8 @@ spring:
       app_user: ${NEGOCIO360_APP_USER:negocio360_app}
   modulith:
     events:
+      # Entrega al menos una vez (R3): al arrancar se reenvian los eventos del outbox que ningun listener termino.
+      republish-outstanding-events-on-restart: true
       jdbc:
         # El outbox (event_publication) lo crea Flyway en V002, no Spring Modulith.
         schema-initialization:
@@ -37,3 +39,9 @@ spring:
         enabled: false
       printer:
         enabled: false
+# SG-12: sin Swagger UI ni /v3/api-docs fuera del perfil "desarrollo" (ahí se encienden en application-desarrollo.yml).
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

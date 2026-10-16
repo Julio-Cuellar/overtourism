@@ -3,6 +3,8 @@ package mx.negocio360.identidad.infraestructura;
 import java.time.Clock;
 import java.util.List;
 import mx.negocio360.compartido.seguridad.CatalogoDePermisos;
+import mx.negocio360.compartido.transaccion.FronteraTransaccional;
+import mx.negocio360.identidad.dominio.IdentidadException;
 import mx.negocio360.identidad.aplicacion.EquipoServicio;
 import mx.negocio360.identidad.aplicacion.PermisosDeIdentidad;
 import mx.negocio360.identidad.aplicacion.puertos.PublicadorEventos;
@@ -23,10 +25,12 @@ import mx.negocio360.identidad.web.CabecerasDeSeguridad;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.transaction.support.TransactionOperations;
 
 /**
  * Cableado de Identidad que existe en todos los perfiles. Necesita un canal, repositorios y un limite de tasa: en
@@ -81,8 +85,8 @@ public class IdentidadConfiguracion {
     /**
      * Escucha el aviso del modulo de negocios (D-78). Es logica de produccion, no de desarrollo, y por eso vive aqui.
      * Con {@code @ApplicationModuleListener} solo recibe lo que se publica dentro de una transaccion, y corre en otro
-     * hilo y en su propia transaccion: Spring Modulith activa {@code @Async} por si solo. Falta una prueba con el bus
-     * real.
+     * hilo y en su propia transaccion: Spring Modulith activa {@code @Async} por si solo. La prueba con el bus real
+     * es {@code EventosPorOutboxPostgresTest}.
      */
     @Bean
     public EscuchaDeNegocios escuchaDeNegocios(EquipoServicio equipo) {
@@ -101,12 +105,29 @@ public class IdentidadConfiguracion {
         return new LimpiezaDePreregistros(preregistros, reloj);
     }
 
-    /** Un solo objeto es la API de acceso y la de equipo; los controladores piden la interfaz que usan. */
+    /**
+     * Los eventos de Identidad van al bus de Spring y, con Spring Modulith, al outbox en la transaccion de la
+     * operacion. En desarrollo y demo lo reemplaza el publicador que ademas los guarda para el simulador.
+     */
     @Bean
-    public IdentidadServicio identidadApi(RepositorioCuentas cuentas, RepositorioCodigos codigos,
+    public PublicadorEventos publicadorDeEventosEnBus(ApplicationEventPublisher bus) {
+        return new PublicadorEventosEnBus(bus);
+    }
+
+    /**
+     * Un solo objeto es la API de acceso y la de equipo; los controladores piden la interfaz que usan. Cada llamada es
+     * una sola transaccion, que incluye los eventos que publica (outbox). Un error de negocio confirma en lugar de
+     * deshacer: un intento fallido de codigo que se cuenta tiene que sobrevivir al error que provoca.
+     */
+    @Bean
+    public IdentidadFachada identidadApi(RepositorioCuentas cuentas, RepositorioCodigos codigos,
                                           RepositorioPreregistros preregistros, RepositorioSesiones sesiones,
                                           CanalDeCodigos canal, LimiteDeTasa limite, Clock reloj,
-                                          PoliticaDeAcceso politica, EquipoServicio equipo) {
-        return new IdentidadServicio(cuentas, codigos, preregistros, sesiones, canal, limite, reloj, politica, equipo);
+                                          PoliticaDeAcceso politica, EquipoServicio equipo,
+                                          TransactionOperations transacciones) {
+        var servicio = new IdentidadServicio(cuentas, codigos, preregistros, sesiones, canal, limite, reloj, politica,
+                equipo);
+        return FronteraTransaccional.envolver(IdentidadFachada.class, servicio, transacciones,
+                IdentidadException.class);
     }
 }

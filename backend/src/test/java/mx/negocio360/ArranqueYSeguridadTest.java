@@ -70,4 +70,12 @@ class ArranqueYSeguridadTest {
         mockMvc.perform(get("/graphiql")).andExpect(status().isNotFound());
         mockMvc.perform(get("/graphql/schema")).andExpect(status().isNotFound());
     }
+
+    @Test
+    @DisplayName("SG-12: Swagger UI y /v3/api-docs no estan publicados fuera del perfil desarrollo")
+    void rutas_swaggerYApiDocs_noExistenSinPerfilDesarrollo() throws Exception {
+        mockMvc.perform(get("/swagger-ui.html")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/swagger-ui/index.html")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/v3/api-docs")).andExpect(status().isNotFound());
+    }
 }

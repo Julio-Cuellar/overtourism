@@ -1,0 +1,245 @@
+# Esquema del modulo de Negocios (docs/diseno/negocios.md, v0.3), etapas N0 a N3 y N6 (resenas en modo demostracion).
+# Sus resolvedores estan en negocios.web y entran por el filtro de /graphql (IDN-4).
+# Lo de equipo, imagenes, pausa y cierre llega con sus etapas. El PANEL no lleva negocioId en ningun tipo ni argumento: el negocio sale del
+# contexto (SG-02). La superficie PUBLICA (NegocioPublico y companeros) usa tipos propios que no comparten campos con
+# el panel (PU-03); su id es el objeto consultado, no el contexto. Ningun resolvedor sale antes del filtro de entrada
+# (IDN-4) y de cerrar SG-01 a SG-10.
+
+extend type Query {
+  # ---------- Panel del locatario ----------
+  miNegocio: Negocio!
+  sucursales: [Sucursal!]!
+  horarioDeSucursal(sucursalId: ID!): Horario!
+  # Permitida sin negocio activo: filtra por la cuenta del token (excepcion acotada a SG-02).
+  misAltasDeNegocio: [AltaDeNegocio!]!
+  # Requiere negocios.resena.ver. De la mas nueva a la mas antigua, con el resumen. Sin autor (RS-08).
+  resenas(filtro: FiltroResenas = TODAS, primeros: Int! = 20, despues: String): ResenaConexion!
+
+  # ---------- Superficie publica (la app del turista): sin sesion ----------
+  # Topes (PU-05): primeros se recorta a 20, el texto a 80 caracteres y la cercania a 25 km. Ver LimitesPublicos.
+  negociosPublicos(filtro: FiltroPublico, primeros: Int! = 20, despues: String): NegocioPublicoConexion!
+  negocioPublico(id: ID!): NegocioPublico
+  # Sin sesion. Sin autor (RS-08). El negocio es el objeto consultado, no el contexto (excepcion acotada a SG-02).
+  resenasDeNegocio(negocioId: ID!, primeros: Int! = 10, despues: String): ResenaPublicaConexion!
+}
+
+extend type Mutation {
+  actualizarNegocio(input: ActualizarNegocioInput!): Negocio!
+  definirSubcategorias(version: Int!, subcategorias: [String!]!): Negocio!
+  definirAtributos(input: DefinirAtributosInput!): Negocio!
+  definirDisponibilidad(nivel: NivelDisponibilidad!, nota: String): Disponibilidad!
+  publicarNegocio(publicar: Boolean!): Negocio!
+  actualizarSucursal(id: ID!, input: ActualizarSucursalInput!): Sucursal!
+  definirHorario(sucursalId: ID!, version: Int!, semana: [DiaDeHorarioInput!]!): Horario!
+  agregarExcepcionHorario(sucursalId: ID!, input: ExcepcionInput!): Horario!
+  quitarExcepcionHorario(id: ID!): Horario!
+  # Una respuesta por resena, sin editarla (RS-04). Requiere negocios.resena.responder.
+  responderResena(id: ID!, texto: String!): Resena!
+  # Publicar una resena es preparar y confirmar con el par de la plataforma: prepararComando(publicarResena) y
+  # confirmarComando. La manda el turista con la cabecera X-Dispositivo-Id, sin cuenta, y solo con el modo demostracion
+  # encendido (RS-09, RS-11, DM-03).
+}
+
+extend input ComandoInput {
+  publicarResena: PublicarResenaInput
+}
+
+input PublicarResenaInput {
+  negocioId: ID!
+  calificacion: Int!
+  comentario: String
+}
+
+type Subscription {
+  # Permitida sin negocio activo. Va con consulta de respaldo (misAltasDeNegocio): el socket es un atajo.
+  altaDeNegocio: AvisoDeAlta!
+}
+
+# ---------- Panel ----------
+type Negocio {
+  id: ID!
+  nombre: String!
+  giro: Giro!
+  subcategorias: [SubcategoriaDelNegocio!]!
+  estado: EstadoNegocio!
+  suspendidoPor: Origen
+  publicado: Boolean!
+  contactoPublico: Boolean!
+  descripcion: String
+  telefonoContacto: String
+  correoContacto: String
+  zonaHoraria: String!
+  completitud: Completitud!
+  principal: Sucursal!
+  atributos: AtributosDeclarados!
+  disponibilidad: Disponibilidad
+  esSimulado: Boolean!
+  version: Int!
+  actualizadoEn: DateTime!
+}
+
+type Giro { codigo: String! nombre: String! }
+type SubcategoriaDelNegocio { codigo: String! nombre: String! giro: String! capacidad: Boolean! }
+enum Origen { DUENO PLATAFORMA }
+enum EstadoNegocio { ACTIVO SUSPENDIDO CERRADO }
+type Completitud { porcentaje: Int! faltantes: [Faltante!]! }
+enum Faltante { UBICACION HORARIO CONTACTO LOGO }
+
+type AtributosDeclarados {
+  dieta: [Etiqueta!]!
+  accesibilidad: [Etiqueta!]!
+  duracionVisitaMin: Int
+  costoMedioMxn: Int
+}
+type Etiqueta { codigo: String! nombre: String! }
+enum NivelDisponibilidad { LIBRE MODERADA LLENA }
+type Disponibilidad { nivel: NivelDisponibilidad! nota: String declaradaEn: DateTime! venceEn: DateTime! }
+
+type Sucursal {
+  id: ID!
+  nombre: String!
+  esPrincipal: Boolean!
+  activa: Boolean!
+  calle: String
+  numero: String
+  colonia: String
+  municipio: String
+  entidadFederativa: String
+  codigoPostal: String
+  referencias: String
+  latitud: Float
+  longitud: Float
+  telefono: String
+  version: Int!
+}
+
+type Horario { sucursalId: ID! semana: [DiaDeHorario!]! excepciones: [Excepcion!]! abiertoAhora: Boolean! version: Int! }
+type DiaDeHorario { dia: Int! tramos: [Tramo!]! }
+type Tramo { abre: String! cierra: String! }
+type Excepcion { id: ID! fecha: Date! cerrado: Boolean! abre: String cierra: String motivo: String }
+
+type AltaDeNegocio { negocioId: ID! estado: EstadoAlta! motivo: String }
+type AvisoDeAlta { negocioId: ID! estado: EstadoAlta! motivo: String }
+enum EstadoAlta { REGISTRADO RECHAZADO }
+
+input ActualizarNegocioInput {
+  version: Int!
+  nombre: String
+  descripcion: String
+  telefonoContacto: String
+  correoContacto: String
+  contactoPublico: Boolean
+}
+input ActualizarSucursalInput {
+  version: Int!
+  nombre: String
+  calle: String
+  numero: String
+  colonia: String
+  municipio: String
+  entidadFederativa: String
+  codigoPostal: String
+  referencias: String
+  latitud: Float
+  longitud: Float
+  telefono: String
+}
+input DefinirAtributosInput {
+  version: Int!
+  dieta: [String!]!
+  accesibilidad: [String!]!
+  duracionVisitaMin: Int
+  costoMedioMxn: Int
+}
+input DiaDeHorarioInput { dia: Int! tramos: [TramoInput!]! }
+input TramoInput { abre: String! cierra: String! }
+input ExcepcionInput { fecha: Date! cerrado: Boolean! abre: String cierra: String motivo: String }
+
+# ---------- Superficie publica: lista permitida de campos (PU-03) ----------
+input FiltroPublico {
+  texto: String
+  giro: String
+  subcategorias: [String!]
+  dieta: [String!]
+  accesibilidad: [String!]
+  abiertoAhora: Boolean
+  cerca: CercaDe
+  orden: OrdenPublico = RELEVANCIA
+}
+input CercaDe { latitud: Float! longitud: Float! radioKm: Float! = 5 }
+enum OrdenPublico { RELEVANCIA DISTANCIA }
+
+type NegocioPublicoConexion { negocios: [NegocioPublico!]! pageInfo: PageInfo! }
+
+type NegocioPublico {
+  id: ID!
+  nombre: String!
+  giro: GiroPublico!
+  subcategorias: [SubcategoriaPublica!]!
+  descripcion: String
+  ubicacion: UbicacionPublica!
+  horario: HorarioPublico!
+  telefono: String
+  correo: String
+  atributos: AtributosPublicos!
+  disponibilidad: DisponibilidadPublica
+  calificacion: CalificacionPublica!
+  distanciaKm: Float
+  simulado: Boolean!
+}
+type GiroPublico { codigo: String! nombre: String! }
+type SubcategoriaPublica { codigo: String! nombre: String! giro: String! capacidad: Boolean! }
+type UbicacionPublica {
+  calle: String
+  numero: String
+  colonia: String
+  municipio: String
+  entidadFederativa: String
+  codigoPostal: String
+  referencias: String
+  latitud: Float
+  longitud: Float
+}
+type HorarioPublico { semana: [DiaPublico!]! excepciones: [ExcepcionPublica!]! abiertoAhora: Boolean! zonaHoraria: String! }
+type DiaPublico { dia: Int! tramos: [TramoPublico!]! }
+type TramoPublico { abre: String! cierra: String! }
+type ExcepcionPublica { fecha: Date! cerrado: Boolean! abre: String cierra: String motivo: String }
+type AtributosPublicos {
+  dieta: [EtiquetaPublica!]!
+  accesibilidad: [EtiquetaPublica!]!
+  duracionVisitaMin: Int
+  costoMedioMxn: Int
+}
+type EtiquetaPublica { codigo: String! nombre: String! }
+type DisponibilidadPublica { nivel: NivelDisponibilidad! nota: String declaradaEn: DateTime! }
+type CalificacionPublica { promedio: Float total: Int! distribucion: [Int!]! }
+
+# ---------- Resenas ----------
+enum FiltroResenas { TODAS SIN_RESPUESTA }
+enum EstadoResena { PUBLICADA OCULTA }
+
+type Resena {
+  id: ID!
+  calificacion: Int!
+  comentario: String
+  creadaEn: DateTime!
+  estado: EstadoResena!
+  respuesta: RespuestaDelNegocio
+  demostracion: Boolean!
+  version: Int!
+}
+type RespuestaDelNegocio { texto: String! respondidaEn: DateTime! }
+type ResumenDeResenas { promedio: Float total: Int! distribucion: [Int!]! }
+type ResenaConexion { resenas: [Resena!]! hayMas: Boolean! cursorFinal: String resumen: ResumenDeResenas! }
+
+# Publico: sin autor, ni nombre ni id de dispositivo (RS-08, PU-03).
+type ResenaPublica {
+  id: ID!
+  calificacion: Int!
+  comentario: String
+  creadaEn: DateTime!
+  respuesta: RespuestaPublica
+  demostracion: Boolean!
+}
+type RespuestaPublica { texto: String! respondidaEn: DateTime! }
+type ResenaPublicaConexion { resenas: [ResenaPublica!]! pageInfo: PageInfo! }

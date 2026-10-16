@@ -257,7 +257,7 @@ class PreparacionTest {
         var preparacion = e.api.preparar(e.ctxA, Fixtures.registrar("Ana", "Perez", "222 123 4567"));
         var fila = filaDeRegistro();
         var forjado = fila.comando().replace("\"nombre\"", "\"campoAjeno\":\"Ana\",\"nombre\"");
-        e.preparaciones.reemplazarComandoYHash(fila.tokenHash(), forjado, sha256(forjado));
+        e.preparaciones.reemplazarComandoYHash(fila.tokenHash(), forjado, ServicioPreparacion.hashDelComando(forjado));
 
         var error = fallaCon(() -> e.api.confirmar(e.ctxA, preparacion.token()), CodigoError.COMANDO_CAMBIO);
 
@@ -315,5 +315,39 @@ class PreparacionTest {
     @DisplayName("el comando es obligatorio")
     void preparar_comandoNulo_lanzaNullPointer() {
         assertThatThrownBy(() -> e.api.preparar(e.ctxA, null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("el comando guardado como jsonb (otro orden de claves y espacios) sigue siendo el mismo comando")
+    void confirmar_comandoReformateadoSinCambiarDeSentido_confirma() throws Exception {
+        e.conAviso(e.ctxA);
+        var preparacion = e.api.preparar(e.ctxA, Fixtures.registrar("Ana", "Perez", "222 123 4567"));
+        var fila = filaDeRegistro();
+        // jsonb reordena las claves y escribe ": " y ", ": el texto cambia, el comando no.
+        var mapeador = new com.fasterxml.jackson.databind.ObjectMapper();
+        var original = mapeador.readTree(fila.comando());
+        var alReves = new java.util.ArrayList<String>();
+        original.fieldNames().forEachRemaining(alReves::add);
+        java.util.Collections.reverse(alReves);
+        var reformateado = new com.fasterxml.jackson.databind.node.ObjectNode(mapeador.getNodeFactory());
+        alReves.forEach(campo -> reformateado.set(campo, original.get(campo)));
+        var texto = mapeador.writerWithDefaultPrettyPrinter().writeValueAsString(reformateado);
+        assertThat(texto).isNotEqualTo(fila.comando());
+        e.preparaciones.alterarComando(fila.tokenHash(), texto);
+
+        var resultado = e.api.confirmar(e.ctxA, preparacion.token());
+
+        assertThat(resultado.recursoId()).isNotNull();
+        assertThat(e.clientes.total()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("el hash del comando no depende del orden de las claves ni de los espacios, pero si del contenido")
+    void hashDelComando_esCanonico() {
+        var a = ServicioPreparacion.hashDelComando("{\"b\":1,\"a\":\"x\"}");
+        var b = ServicioPreparacion.hashDelComando("{ \"a\": \"x\",\n \"b\": 1 }");
+        var otro = ServicioPreparacion.hashDelComando("{\"a\":\"y\",\"b\":1}");
+
+        assertThat(a).isEqualTo(b).isNotEqualTo(otro);
     }
 }

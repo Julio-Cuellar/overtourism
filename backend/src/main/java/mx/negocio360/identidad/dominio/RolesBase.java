@@ -12,7 +12,8 @@ import mx.negocio360.compartido.seguridad.PermisoDeclarado;
 /**
  * Los ocho roles base y la plantilla de cada giro (D-69, AM-09). Es la fuente de estos datos para la aplicacion; la
  * migracion V022 los siembra en la base y una prueba comprueba que los dos coinciden. Los permisos de Inventario se
- * agregan cuando ese modulo este autorizado (IDN-4.4); por eso cocinero, taquillero y guia no tienen permisos todavia.
+ * agregan cuando ese modulo este autorizado (IDN-4.4). Los de Negocios siguen la matriz de la seccion 7.7 de
+ * {@code docs/diseno/negocios.md} (D-96, cambio 5): todos ven el perfil del negocio y cada rol suma lo suyo.
  * Un permiso que ningun modulo declara impide el arranque (AZ-03, {@link #verificar}).
  */
 public final class RolesBase {
@@ -25,18 +26,30 @@ public final class RolesBase {
             "clientes.panorama.ver", "clientes.ficha.ver", "clientes.cliente.registrar", "clientes.cliente.editar",
             "clientes.consentimiento.registrar");
 
+    /** Permisos de Negocios: todos ven el perfil; el administrador opera el negocio y su personal; el dueno ademas lo pausa y lo cierra. */
+    private static final List<String> NEGOCIOS_VER = List.of("negocios.perfil.ver");
+    private static final List<String> NEGOCIOS_ADMINISTRADOR = List.of("negocios.perfil.ver", "negocios.perfil.editar",
+            "negocios.sucursal.gestionar", "negocios.horario.editar", "negocios.negocio.publicar",
+            "negocios.disponibilidad.editar", "negocios.empleado.ver", "negocios.empleado.registrar",
+            "negocios.empleado.editar", "negocios.empleado.baja", "negocios.resena.ver", "negocios.resena.responder");
+    private static final List<String> NEGOCIOS_SOLO_DUENO = List.of("negocios.negocio.pausar", "negocios.negocio.cerrar");
+    private static final List<String> NEGOCIOS_GERENTE = List.of("negocios.perfil.ver", "negocios.horario.editar",
+            "negocios.disponibilidad.editar", "negocios.empleado.ver", "negocios.resena.ver", "negocios.resena.responder");
+
     private static final List<Rol> TODOS = List.of(
-            rol("DUENO", "Dueño", concatenar(EQUIPO_Y_AUDITORIA, OPERACION_DE_CLIENTES, SOLO_RESPONSABLE)),
-            rol("ADMINISTRADOR", "Administrador", concatenar(EQUIPO_Y_AUDITORIA, OPERACION_DE_CLIENTES)),
-            rol("GERENTE", "Gerente", List.of("identidad.equipo.ver", "clientes.sugerir", "clientes.lista.ver",
+            rol("DUENO", "Dueño", concatenar(EQUIPO_Y_AUDITORIA, OPERACION_DE_CLIENTES, SOLO_RESPONSABLE,
+                    NEGOCIOS_ADMINISTRADOR, NEGOCIOS_SOLO_DUENO)),
+            rol("ADMINISTRADOR", "Administrador", concatenar(EQUIPO_Y_AUDITORIA, OPERACION_DE_CLIENTES,
+                    NEGOCIOS_ADMINISTRADOR)),
+            rol("GERENTE", "Gerente", concatenar(List.of("identidad.equipo.ver", "clientes.sugerir", "clientes.lista.ver",
                     "clientes.panorama.ver", "clientes.ficha.ver", "clientes.cliente.registrar", "clientes.cliente.editar",
-                    "clientes.consentimiento.registrar")),
-            rol("CAJERO", "Cajero", List.of("clientes.sugerir", "clientes.cliente.registrar",
-                    "clientes.consentimiento.registrar")),
-            rol("MESERO", "Mesero", List.of("clientes.sugerir")),
-            rol("COCINERO", "Cocinero", List.of()),
-            rol("TAQUILLERO", "Taquillero", List.of()),
-            rol("GUIA", "Guía", List.of()));
+                    "clientes.consentimiento.registrar"), NEGOCIOS_GERENTE)),
+            rol("CAJERO", "Cajero", concatenar(List.of("clientes.sugerir", "clientes.cliente.registrar",
+                    "clientes.consentimiento.registrar"), NEGOCIOS_VER)),
+            rol("MESERO", "Mesero", concatenar(List.of("clientes.sugerir"), NEGOCIOS_VER)),
+            rol("COCINERO", "Cocinero", NEGOCIOS_VER),
+            rol("TAQUILLERO", "Taquillero", NEGOCIOS_VER),
+            rol("GUIA", "Guía", NEGOCIOS_VER));
 
     private static final Map<Giro, List<String>> PLANTILLAS = Map.of(
             Giro.RESTAURANTE, List.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO", "MESERO", "COCINERO"),
