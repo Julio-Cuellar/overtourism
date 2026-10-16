@@ -186,6 +186,7 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 | D-87 | `canjearCupon` recibe el descuento que vio el cajero; si Pasaporte calcula otro, rechaza con `COMANDO_CAMBIO` sin canjear | PROPUESTA | 2026-10-15 | Revisión de calidad (medio 2): evita que un cupón quede gastado en una venta que no se registra. Cambia el contrato J3 que hay que acordar con el dueño de Pasaporte |
 | D-88 | El consumidor de Caja marca un evento como procesado solo si lo aplicó. Si el turno no existe o cerró responde `SIN_TURNO_ABIERTO`, y si el evento no cumple el contrato o no viene de Ventas responde `DATOS_INVALIDOS`; en los dos casos el evento no se pierde. La anulación revierte lo que Caja registró, no los montos del evento | PROPUESTA | 2026-10-15 | Revisión de seguridad y calidad (A1, M3, M4): antes la venta se descartaba y quedaba marcada, y un método desconocido lanzaba excepción en cada reintento |
 | D-89 | El frontend se hace en **Dart y Flutter**, pensado sobre todo como app móvil, en la carpeta `frontend/` junto a `backend/`. Habla con el servidor por GraphQL (y REST para el inicio de sesión) | ACEPTADA | 2026-10-15 | Lo pidió el usuario: «comienza a maquetar el front con dart y flutter ya que mayormente sera app movil». Reemplaza la opción Next.js de `CLAUDE.md` |
+| D-90 | Mientras no exista el módulo de negocios, en la demo las sesiones sin negocio usan un **negocio de demostración** fijado en la configuración del servidor (`negocio360.demo.negocio-id`). El cliente nunca elige el negocio. Solo con `negocio360.demo.habilitada=true` y nunca con el perfil `produccion` | PROPUESTA | 2026-10-15 | F4: Identidad todavía no asigna negocio a la sesión, y sin negocio no hay contexto para Ventas ni Caja |
 
 ### Decisiones de producto abiertas (vienen de la sesión de mockups)
 | Tema | Opciones | Estado |
@@ -1024,3 +1025,32 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 - **F4 de Ventas y Caja:** exponer sus comandos y consultas por GraphQL (D-55: `prepararComando` y `confirmarComando`, más consultas propias), encender los módulos al arrancar con Spring y permitir CORS para el frontend. Catálogo y Pasaporte siguen sin existir: se cargan productos y cupones de demostración **rotulados como simulados**. Los repositorios siguen en memoria (F5, JDBC, **no** está autorizada).
 - **Carpeta `frontend/`** en la raíz, junto a `backend/`.
 - **Frontend en Dart y Flutter**, pensado sobre todo para móvil. Esto cierra la decisión abierta «Frontend» de la sección 4 (antes Next.js sin confirmar): **D-89 ACEPTADA**.
+
+### 2026-10-15 — F4 de Ventas y Caja por GraphQL y maqueta de la app en Flutter
+**Pedido del usuario:** la entrada anterior (autorización de F4, carpeta `frontend/` y Flutter).
+
+**Qué se hizo:**
+1. **F4 (commit `3c9419f`, sin push):** módulo nuevo `canal` con `prepararComando` y `confirmarComando` (D-55) para Ventas y Caja; el token lleva al frente su módulo (`ventas.` o `caja.`). Consultas `venta`, `ventasDelTurno`, `cajas`, `turnoActivo`, `saldoTurno` y `cortes`. Los errores de dominio salen con `codigo`, `regla` y el texto fijo. El negocio sale de la sesión de Identidad (D-90 para la demo).
+2. Ventas y Caja se encienden al arrancar con repositorios **en memoria** y el bus de Spring (sin outbox: F5). `canal.demo` simula Catálogo (6 productos), Pasaporte (cupones `PASAPORTE-20` y `PASAPORTE-50`, reutilizables en la demo) y permisos (toda cuenta puede anular y autorizar); todo va rotulado como simulado.
+3. Todo detrás de `negocio360.demo.habilitada=true`, encendido en `application-desarrollo.yml` con CORS para `localhost`. Nunca con el perfil `produccion`.
+4. Spring Modulith: interfaces con nombre `puertos`, `dominio`, `comandos` y `textos` en Ventas y Caja para que `canal` use solo lo expuesto.
+5. **Frontend:** proyecto Flutter en `frontend/` (Flutter 3.44.6, Dart 3.12.2; Android, iOS y web), sin dependencias extra. Una app con dos modos: turista (explorar por intereses, ficha, Pasaporte y ruta del día) y negocio (abrir turno, cobrar con cupón y forma de pago, ventas y corte). Funciona con datos de ejemplo rotulados; aún no llama al servidor. Instrucciones en `frontend/README.md`.
+
+**Verificación hecha:**
+- Backend: RED en compilación (faltaban las clases de `canal`). GREEN: `CanalGraphQlTest` 7/7 (camino dorado por GraphQL sin base de datos) y `ContextoDeSesionTest` 3/3. `mvn -B verify` sin las 10 clases de Docker: **858/858, BUILD SUCCESS, cobertura cumplida**. `EstructuraModulosTest` acepta el módulo `canal`.
+- Se ajustaron tres pruebas de `EsquemaGraphqlClientesTest` que suponían que todo el esquema era de Clientes. Siguen siendo listas exactas, así que una consulta o lista plana nueva sin anotar sigue haciéndolas fallar.
+- `PostgresDePruebasInicializador` ahora se puede apagar con `negocio360.pruebas.sin-base=true`; las demás pruebas no cambian.
+- Frontend: RED (no existían los archivos) y GREEN: `flutter analyze` sin avisos y `flutter test` **14/14** (carrito en centavos, caja simulada y cuatro recorridos de pantalla).
+
+**No verificado:** el arranque real con `mvn spring-boot:run -Dspring-boot.run.profiles=desarrollo` y una llamada HTTP a `/graphql` (Docker apagado: la aplicación no arranca sin PostgreSQL). La app no se abrió en un emulador ni en el navegador; solo pruebas de widgets.
+
+**Pendiente:** conectar la app al servidor (sesión REST + cliente GraphQL); paginar `cortes` antes de producción; outbox, JDBC y bloqueos (F5); reemplazar los negocios ficticios por datos reales.
+
+**Fuentes de datos públicas de Puebla investigadas (para elegir hoy):**
+- Gobierno del Estado: boletines trimestrales de turismo del CEIGEP/SEI (`sei.puebla.gob.mx/docs/boletines/turismo-*.pdf`; ocupación hotelera, llegada de turistas, derrama), indicadores del Observatorio Turístico de la Secretaría de Turismo (`sectur.puebla.gob.mx/observatorioturistico`), «Información estadística general» por municipio del SEI (CSV, replicada en datamx.io; última actualización 2019) y la Estrategia Estatal de Pueblos Mágicos (12 Pueblos Mágicos). El portal `datos.puebla.gob.mx` no respondió (DNS) el 2026-10-15.
+- Federales con detalle de Puebla: DENUE de INEGI (negocios con ubicación y giro) y DataTur (monitoreo hotelero por destino).
+
+**Decisiones:** D-89 (ACEPTADA), D-90 (PROPUESTA).
+
+**Archivos creados:** `backend/src/main/java/mx/negocio360/canal/**`, `ventas/infraestructura/*`, `caja/infraestructura/*`, `compartido/comandos/PreparacionesEnMemoria.java`, `package-info` de puertos y dominio, `graphql/{ventas,caja,canal}.graphqls`, pruebas de `canal`; `frontend/**`.
+**Archivos modificados:** comandos y plantillas de Ventas y Caja (anotaciones), `compartido.graphqls` (`Resultado.datos`), `application-desarrollo.yml`, `EstructuraModulosTest`, `EsquemaGraphqlClientesTest`, `PostgresDePruebasInicializador` y esta Bitácora.
