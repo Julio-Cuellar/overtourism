@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: plataforma
+  config:
+    # Lee backend/.env si existe (contraseñas locales, fuera de git), arranque la aplicación desde backend/ o desde la
+    # raíz del repositorio (IntelliJ usa la raíz por omisión). En un servidor se usan variables de entorno.
+    import: optional:file:.env[.properties],optional:file:backend/.env[.properties]
+  # PostgreSQL. Las contraseñas no tienen valor por omisión: si faltan, la aplicación no arranca (falla cerrado).
+  datasource:
+    url: ${NEGOCIO360_DB_URL:jdbc:postgresql://localhost:5433/negocio360}
+    # Rol de la aplicación: sin superusuario y sujeto a la seguridad por fila.
+    username: ${NEGOCIO360_APP_USER:negocio360_app}
+    password: ${NEGOCIO360_APP_PASSWORD}
+  flyway:
+    # Las migraciones corren con el dueño de la base, que es quien puede crear esquemas y tablas.
+    url: ${NEGOCIO360_DB_URL:jdbc:postgresql://localhost:5433/negocio360}
+    user: ${NEGOCIO360_DB_USER:negocio360}
+    password: ${NEGOCIO360_DB_PASSWORD}
+    schemas: plataforma
+    default-schema: plataforma
+    create-schemas: true
+    placeholders:
+      # Nombre del rol de la aplicación, al que V001 le da sus permisos. Debe existir antes de migrar.
+      app_user: ${NEGOCIO360_APP_USER:negocio360_app}
+  modulith:
+    events:
+      # Entrega al menos una vez (R3): al arrancar se reenvian los eventos del outbox que ningun listener termino.
+      republish-outstanding-events-on-restart: true
+      jdbc:
+        # El outbox (event_publication) lo crea Flyway en V002, no Spring Modulith.
+        schema-initialization:
+          enabled: false
+  graphql:
+    # SG-12: superficie cerrada. Sin introspeccion, sin GraphiQL y sin imprimir el esquema.
+    graphiql:
+      enabled: false
+    schema:
+      introspection:
+        enabled: false
+      printer:
+        enabled: false
+# SG-12: sin Swagger UI ni /v3/api-docs fuera del perfil "desarrollo" (ahí se encienden en application-desarrollo.yml).
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

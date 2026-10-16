@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rutas del turista — mockup detallado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6FA; --surface:#FFFFFF; --surface-2:#EBEFF6; --fg:#15202E; --muted:#566277; --line:#D6DCE8;
+  --accent:#1F4E9C; --accent-soft:#E1EAF8; --gold:#A8680A; --gold-soft:#FAEDD0;
+  --ok:#1B7648; --ok-soft:#DDF1E6; --warn:#A94E14; --err:#B3261E; --err-soft:#FBE3E1; --bezel:#1B2433;
+  --font-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --font-body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D1320; --surface:#151D2D; --surface-2:#1C2639; --fg:#E6EBF4; --muted:#97A3B9; --line:#29344D;
+  --accent:#84AAF0; --accent-soft:#1A2946; --gold:#EDB24B; --gold-soft:#35290F;
+  --ok:#5CCB93; --ok-soft:#12301F; --warn:#F09A62; --err:#F2928B; --err-soft:#3A1B19; --bezel:#3A475F; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0D1320; --surface:#151D2D; --surface-2:#1C2639; --fg:#E6EBF4; --muted:#97A3B9; --line:#29344D;
+  --accent:#84AAF0; --accent-soft:#1A2946; --gold:#EDB24B; --gold-soft:#35290F;
+  --ok:#5CCB93; --ok-soft:#12301F; --warn:#F09A62; --err:#F2928B; --err-soft:#3A1B19; --bezel:#3A475F; color-scheme:dark;}
+*{box-sizing:border-box}
+html{scroll-padding-top:64px}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--font-body)}
+h1,h2,h3,h4{font-family:var(--font-display);line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:clamp(1.7rem,4vw,2.5rem)} h2{font-size:1.5rem} h3{font-size:1.1rem} h4{font-size:.95rem}
+p{margin:0}
+code,pre,.mono{font-family:var(--font-mono);font-size:12.5px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:1280px;margin-inline:auto;padding-inline:16px}
+header.top{padding-block:24px 14px;display:grid;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:12.5px;font-weight:500}
+.chip.gold{background:var(--gold-soft);color:var(--gold);border-color:transparent}
+.chip.blue{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.lead{color:var(--muted);max-width:75ch}
+nav.menu{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line)}
+nav.menu .in{display:flex;gap:4px;overflow-x:auto;padding-block:8px;align-items:center}
+nav.menu button.tab{border:0;background:transparent;padding:8px 14px;border-radius:99px;font-weight:600;color:var(--muted);white-space:nowrap}
+nav.menu button.tab[aria-selected="true"]{background:var(--accent);color:var(--bg)}
+nav.menu .sp{flex:1}
+.themebtn{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13px;white-space:nowrap}
+main{padding-block:22px 56px}
+section.pane{display:grid;gap:18px}
+section.pane[hidden]{display:none}
+section.pane>*{min-width:0}
+.intro{color:var(--muted);max-width:80ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+.cap{font-size:13px;color:var(--muted);border-left:3px solid var(--gold);padding-left:10px;max-width:85ch}
+.cap b{color:var(--fg)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:7px 9px;border-bottom:1px solid var(--line)}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--surface-2)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.tw table{min-width:820px}
+tr.clk{cursor:pointer} tr.clk:hover td{background:var(--accent-soft)}
+.k{display:inline-block;border-radius:6px;padding:0 6px;font-family:var(--font-mono);font-size:12px;background:var(--surface-2);border:1px solid var(--line);color:var(--fg)}
+.k.q{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.k.m{background:var(--gold-soft);color:var(--gold);border-color:transparent}
+.k.w{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.k.e{background:var(--err-soft);color:var(--err);border-color:transparent}
+button.k{cursor:pointer}
+pre.js{margin:0;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;max-height:340px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
+.js .jk{color:var(--accent)} .js .js_{color:var(--ok)} .js .jn{color:var(--gold)}
+details{border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+details>summary{cursor:pointer;padding:7px 11px;font-weight:600;font-size:13.5px}
+details>.bd{padding:0 11px 11px;display:grid;gap:8px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filters select,.filters input{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px;min-width:0}
+.proto{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:22px;align-items:start}
+.leftcol{display:grid;gap:12px;min-width:0}
+.picker{display:flex;flex-wrap:wrap;gap:5px}
+.picker button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:3px 8px;font-size:12.5px}
+.picker button[aria-current="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.statebar{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.statebar button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:2px 10px;font-size:12.5px}
+.statebar button[aria-pressed="true"]{background:var(--gold-soft);color:var(--gold);border-color:var(--gold)}
+.phone{width:100%;max-width:372px;margin-inline:auto;height:740px;border:9px solid var(--bezel);border-radius:40px;background:var(--surface);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sb{display:flex;justify-content:space-between;padding:7px 18px 3px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.scr{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 14px 16px;display:flex;flex-direction:column;gap:11px;position:relative}
+.scr>*{flex-shrink:0}
+.tabbar{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface)}
+.tabbar button{border:0;background:transparent;padding:7px 0 8px;font-size:10.5px;display:grid;justify-items:center;gap:1px;color:var(--muted)}
+.tabbar button[aria-current="true"]{color:var(--accent);font-weight:600}
+.ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic.s{width:15px;height:15px}
+.phone.hot [data-act]{outline:2px dashed var(--gold);outline-offset:2px}
+.topbar{display:flex;align-items:center;gap:8px;min-height:30px}
+.topbar h3{flex:1;font-size:1.05rem}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:32px;height:32px;display:grid;place-items:center;padding:0}
+.pbtn{border:0;background:var(--accent);color:var(--bg);font-weight:600;border-radius:12px;padding:10px 14px;text-align:center;width:100%}
+.pbtn.alt{background:var(--surface-2);color:var(--fg);border:1px solid var(--line)}
+.pbtn.gold{background:var(--gold);color:var(--bg)}
+.pbtn.dng{background:var(--err-soft);color:var(--err);border:1px solid var(--err)}
+.pbtn.sm{padding:6px 10px;font-size:13px;width:auto;border-radius:9px}
+.pbtn[disabled]{opacity:.45;cursor:not-allowed}
+.pchip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 11px;font-size:13px;white-space:nowrap}
+.pchip[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.hscroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:3px}
+.chips2{display:flex;flex-wrap:wrap;gap:6px}
+.pcard{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);text-align:left;padding:0;display:block;width:100%}
+.pcard .im{height:70px;background:linear-gradient(135deg,var(--accent-soft),var(--gold-soft));display:grid;place-items:center;color:var(--accent)}
+.pcard .im .ic{width:30px;height:30px}
+.pcard .tx{padding:8px 11px 10px;display:grid;gap:4px}
+.pcard b{font-family:var(--font-display);font-size:1rem}
+.meta{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12px;color:var(--muted);align-items:center}
+.tag{border-radius:6px;padding:0 6px;font-size:11.5px;background:var(--surface-2);color:var(--muted)}
+.tag.ok{background:var(--ok-soft);color:var(--ok)} .tag.gold{background:var(--gold-soft);color:var(--gold)} .tag.blue{background:var(--accent-soft);color:var(--accent)} .tag.err{background:var(--err-soft);color:var(--err)}
+.live{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ok);font-weight:600}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;animation:pl 1.6s infinite}
+@keyframes pl{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.live i,.skel{animation:none}}
+.box{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2);display:grid;gap:5px;font-size:13px}
+.box.gold{background:var(--gold-soft);border-color:transparent}
+.box.ok{background:var(--ok-soft);border-color:transparent}
+.box.err{background:var(--err-soft);border-color:transparent;color:var(--err)}
+.hero{height:108px;border-radius:14px;background:linear-gradient(140deg,var(--accent),var(--gold));display:flex;align-items:flex-end;padding:10px 12px;color:#fff;font-family:var(--font-display);font-size:1.25rem}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:7px 4px;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.mrow{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.mrow b{font-variant-numeric:tabular-nums}
+.stamps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stamp{aspect-ratio:1;border-radius:50%;border:2px dashed var(--line);display:grid;place-items:center;color:var(--muted);font-size:11px}
+.stamp.on{border:2px solid var(--gold);background:var(--gold-soft);color:var(--gold)}
+.viewf{aspect-ratio:1;max-height:230px;border-radius:16px;background:var(--surface-2);position:relative;display:grid;place-items:center;border:3px solid var(--gold);text-align:center;padding:14px;color:var(--muted);font-size:13px}
+.qr{width:170px;height:170px;margin-inline:auto;background:#fff;padding:8px;border-radius:12px;border:1px solid var(--line);display:block}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:2px solid var(--line);border-radius:18px 18px 0 0;padding:14px;display:grid;gap:9px;box-shadow:0 -8px 24px rgba(0,0,0,.18);z-index:5}
+.toast{position:absolute;left:14px;right:14px;top:8px;background:var(--fg);color:var(--bg);border-radius:12px;padding:9px 12px;font-size:13px;z-index:8}
+.banner{border-radius:10px;padding:7px 10px;font-size:12.5px;background:var(--gold-soft);color:var(--gold)}
+.banner.off{background:var(--err-soft);color:var(--err)}
+.skel{height:64px;border-radius:12px;background:linear-gradient(90deg,var(--surface-2),var(--line),var(--surface-2));background-size:200% 100%;animation:sk 1.4s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.map{border-radius:14px;border:1px solid var(--line);background:var(--surface-2);width:100%;display:block}
+.sim{border:2px dashed var(--gold);border-radius:12px;padding:10px;display:grid;gap:7px;background:var(--gold-soft)}
+.sim h4{color:var(--gold)}
+.sim button{border:1px solid var(--gold);background:var(--surface);border-radius:9px;padding:6px 9px;text-align:left;font-size:13px}
+.insp{position:sticky;top:64px;display:grid;gap:12px;max-height:calc(100vh - 80px);overflow:auto;padding-right:2px;min-width:0}
+.insp .hd{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.steps{margin:0;padding-left:20px;display:grid;gap:5px;font-size:13.5px}
+.steps li::marker{color:var(--gold);font-weight:700}
+.log{display:grid;gap:3px;font-size:12.5px;max-height:220px;overflow:auto;font-family:var(--font-mono)}
+.log div{padding:3px 6px;border-radius:6px;background:var(--surface-2);overflow-wrap:anywhere}
+.log .ev{background:var(--gold-soft);color:var(--gold)} .log .au{opacity:.7} .log .bl{background:var(--err-soft);color:var(--err)}
+.scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:12px}
+.scard{display:grid;gap:7px;align-content:start}
+.scard .t{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.btnrow{display:grid;gap:4px;font-size:13px}
+.btnrow .r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;border-top:1px dashed var(--line);padding-top:4px}
+.btnrow .r span.l{min-width:0;overflow-wrap:anywhere}
+.path{display:flex;flex-wrap:wrap;gap:12px;counter-reset:p;padding-top:8px}
+.path .st{flex:1 1 170px;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 10px 10px;display:grid;gap:4px;font-size:13px;position:relative;align-content:start}
+.path .st::before{counter-increment:p;content:counter(p);position:absolute;top:-10px;left:10px;background:var(--gold);color:var(--bg);border-radius:99px;font-size:12px;font-weight:700;width:20px;height:20px;display:grid;place-items:center}
+.svgwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.svgwrap svg{display:block;min-width:900px;width:100%;height:auto}
+svg text{font-family:var(--font-body);fill:var(--fg)}
+svg text.mono{font-family:var(--font-mono)}
+footer{border-top:1px solid var(--line);padding-block:20px;color:var(--muted);font-size:13px;display:grid;gap:5px}
+@media (max-width:900px){.proto{grid-template-columns:minmax(0,1fr)}.insp{position:static;max-height:none}}
+</style>
+</head>
+<body>
+<style>
+.pipe{display:flex;flex-wrap:wrap;gap:12px;counter-reset:s;padding-top:8px}
+.pst{flex:1 1 210px;min-width:0;border:1px solid var(--line);border-radius:12px;padding:14px 12px 11px;background:var(--surface);display:grid;gap:5px;align-content:start;position:relative;font-size:13.5px}
+.pst.code{border-left:4px solid var(--accent)}
+.pst.ia{border-left:4px solid var(--gold);background:var(--gold-soft)}
+.pst::before{counter-increment:s;content:counter(s);position:absolute;top:-10px;left:10px;background:var(--fg);color:var(--bg);border-radius:99px;font-size:12px;font-weight:700;width:20px;height:20px;display:grid;place-items:center}
+.bar{height:9px;border-radius:99px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:var(--accent)}
+.bar.warn i{background:var(--gold)} .bar.err i{background:var(--err)}
+.life{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.life .arrow{color:var(--muted)}
+.vcard{display:grid;gap:5px;text-align:left}
+.stopn{font-family:var(--font-display);font-size:1.15rem}
+.lock{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:2px 8px;font-size:12.5px}
+.lock[aria-pressed="true"]{background:var(--gold-soft);color:var(--gold);border-color:var(--gold)}
+.dots{display:flex;gap:6px;align-items:center}
+.dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--line)}
+.dot.on{background:var(--ok);border-color:var(--ok)} .dot.cur{border-color:var(--accent);background:var(--accent-soft)} .dot.sk{border-color:var(--muted);background:var(--surface-2)}
+</style>
+<header class="wrap top">
+  <div class="chips">
+    <span class="chip gold">Borrador · solo diseño</span>
+    <span class="chip blue">Datos de ejemplo inventados</span>
+    <span class="chip">Operaciones y eventos: PROPUESTA</span>
+    <span class="chip">2026-10-08</span>
+  </div>
+  <h1>Rutas del turista: una ruta que te acompaña</h1>
+  <p class="lead">De «genera una ruta y guárdala» a un recorrido que se plantea en pocos toques, se compara, se edita, se sigue en la calle y se corrige cuando algo falla. Toca el teléfono: cada botón muestra qué operación lanza, qué datos viajan y qué eventos nacen.</p>
+</header>
+<nav class="menu" aria-label="Secciones">
+  <div class="wrap in" role="tablist" id="tabs"></div>
+</nav>
+<main class="wrap">
+  <section class="pane" id="p-proto" role="tabpanel"></section>
+  <section class="pane" id="p-mapa" role="tabpanel" hidden></section>
+  <section class="pane" id="p-decide" role="tabpanel" hidden></section>
+  <section class="pane" id="p-acc" role="tabpanel" hidden></section>
+  <section class="pane" id="p-prob" role="tabpanel" hidden></section>
+  <section class="pane" id="p-alc" role="tabpanel" hidden></section>
+</main>
+<footer class="wrap">
+  <div><b>Fuentes:</b> <code>docs/BITACORA.md</code> (D-01 a D-44), <code>docs/mockups/app-turista.html</code> (S-09 y acciones A-39 a A-41, que este mockup reemplaza), <code>docs/diseno/inventario.md</code> §7.1 (sobre de eventos) y <code>CLAUDE.md</code> (rutas con IA, recomendador con equidad, garantías de veracidad).</div>
+  <div><b>Rotulado:</b> negocios, personas, horarios, precios y tiempos de traslado son inventados o estimados. Los datos de transporte son ilustrativos (no existe GTFS público). Es un diseño en revisión, no un producto.</div>
+</footer>
+<script>
+"use strict";
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function jh(o){
+  return esc(JSON.stringify(o,null,2)).replace(/(&quot;[^&]*?&quot;)(:)?|(-?\b\d+(?:\.\d+)?\b)|\b(true|false|null)\b/g,function(m,str,col){
+    if(str) return col?'<span class="jk">'+str+'</span>:':'<span class="js_">'+str+'</span>';
+    return '<span class="jn">'+m+'</span>';
+  });
+}
+const IC={
+ back:'<path d="m15 18-6-6 6-6"/>', check:'<path d="m5 12 5 5 9-10"/>', clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ compass:'<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>', map:'<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
+ route:'<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/>', ticket:'<path d="M3 9V6h18v3a3 3 0 0 0 0 6v3H3v-3a3 3 0 0 0 0-6z"/><path d="M13 6v12"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', pin:'<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>', lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
+};
+const ic=(n,c)=>'<svg class="ic'+(c?' '+c:'')+'" viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>';
+const B=(act,inner,cls,arg,extra)=>'<button type="button" class="'+(cls||'')+'" data-act="'+act+'"'+(arg!==undefined&&arg!==''?' data-arg="'+esc(arg)+'"':'')+(extra||'')+'>'+inner+'</button>';
+/* ===== Lugares de ejemplo (todo inventado) y reglas que aplica el servidor ===== */
+const NEG='0192f3a0-7c10-7000-8000-00000000f001', VIS='0192f3a0-7c10-7000-8000-00000000a001', RUTA='0192f3a0-7c10-7000-8000-00000000b001';
+const PL={
+ museo:{n:'Museo Talavera Viva',cat:'Museo',min:90,cost:60,afl:'MEDIO',open:540,close:1080,uuid:'0192f3a0-7c10-7000-8000-00000000f002',why:'Coincide con tu interés en arte y abre hasta las 18:00. A esa hora hay afluencia media.',tags:['Sello','Abierto hasta 18:00']},
+ chela:{n:'Fonda Doña Chela',cat:'Restaurante',min:75,cost:180,afl:'BAJO',open:540,close:1080,peak:[840,960],uuid:NEG,why:'Comida típica con menú publicado hoy. Llegas antes de la hora pico (14:00 a 16:00), cuando hay más espera.',tags:['Sello','Cupón 10%','Abierto hasta 18:00']},
+ lupe:{n:'Dulces Doña Lupe',cat:'Miscelánea',min:30,cost:40,afl:'BAJO',open:600,close:1140,uuid:'0192f3a0-7c10-7000-8000-00000000f003',why:'Cierra la ruta con dulces típicos para llevar. Abre a las 10:00 y hoy no hay fila.',tags:['Sello','Abierto hasta 19:00']},
+ santa:{n:'Cocina Santa Clara',cat:'Restaurante',min:60,cost:90,afl:'ALTO',open:600,close:1020,peak:[780,900],uuid:'0192f3a0-7c10-7000-8000-00000000f004',why:'Comida corrida más económica. A esa hora suele haber espera.',tags:['Sello','Abierto hasta 17:00']},
+ esquina:{n:'Fonda La Esquina (ejemplo)',cat:'Restaurante',min:60,cost:120,afl:'BAJO',open:600,close:1080,uuid:'0192f3a0-7c10-7000-8000-00000000f005',why:'Gastronomía típica con poca gente: reparte las visitas fuera de los lugares más llenos.',tags:['Poco visitado','Abierto hasta 18:00']},
+ taller:{n:'Taller del Barrio del Artista (ejemplo)',cat:'Taller',min:60,cost:50,afl:'BAJO',open:600,close:1020,uuid:'0192f3a0-7c10-7000-8000-00000000f006',why:'Taller de arte abierto al público, fuera del centro y poco visitado.',tags:['Poco visitado','Abierto hasta 17:00']},
+ cafe:{n:'Café Analco (ejemplo)',cat:'Café',min:30,cost:45,afl:'BAJO',open:480,close:1200,uuid:'0192f3a0-7c10-7000-8000-00000000f007',why:'Pausa corta con café local en Analco, poco visitado.',tags:['Poco visitado','Abierto hasta 20:00']}
+};
+const WALK={'museo-chela':15,'chela-lupe':9,'museo-lupe':20,'museo-santa':10,'santa-lupe':12,'museo-esquina':11,'esquina-lupe':7,'chela-santa':8,'chela-esquina':6,'museo-taller':18,'taller-chela':14,'taller-lupe':16,'chela-cafe':10,'lupe-cafe':8,'santa-cafe':9,'esquina-cafe':7,'museo-cafe':12,'taller-santa':13,'taller-esquina':12,'taller-cafe':15,'santa-esquina':9};
+const walk=(a,b)=>WALK[a+'-'+b]||WALK[b+'-'+a]||14;
+const POOL={museo:['taller'],taller:['museo'],chela:['esquina','santa'],santa:['chela','esquina'],esquina:['chela','santa'],lupe:['cafe'],cafe:['lupe']};
+const AFL={BAJO:'Poca gente',MEDIO:'Afluencia media',ALTO:'Muy concurrido'};
+const START=660;
+const hm=m=>Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' min';
+const clock=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const money=n=>'$'+n.toFixed(2);
+/* El servidor calcula: horarios, duración, costo, caminata y avisos. Nada de esto lo decide el modelo. */
+function calc(stops,delay,limit,budget){
+  let t=START+(delay||0),rows=[],wk=0,cost=0,issues=[];
+  stops.forEach((s,i)=>{
+    if(i>0){const w=walk(stops[i-1].id,s.id);wk+=w;t+=w;}
+    const p=PL[s.id],a=t,l=t+s.min;rows.push({i,id:s.id,arr:a,lea:l,p,w:i>0?walk(stops[i-1].id,s.id):0});t=l;cost+=p.cost;
+    if(a<p.open)issues.push({k:'err',t:p.n+': abre a las '+clock(p.open)+' y llegarías a las '+clock(a)});
+    if(l>p.close)issues.push({k:'err',t:p.n+': cierra a las '+clock(p.close)+' y saldrías a las '+clock(l)});
+    if(p.peak&&a<p.peak[1]&&l>p.peak[0])issues.push({k:'warn',t:p.n+': coincide con la hora pico ('+clock(p.peak[0])+' a '+clock(p.peak[1])+'), puede haber espera'});
+  });
+  const total=t-START;
+  if(total>limit)issues.push({k:'err',t:'Ya no cabe: pasa '+(total-limit)+' min de tu tiempo'});
+  if(cost>budget)issues.push({k:'err',t:'Ya no cabe: pasa '+money(cost-budget)+' de tu presupuesto por persona'});
+  return {rows,total,cost,wk,issues,cabe:!issues.some(x=>x.k==='err')};
+}
+const VAR={
+ A:{n:'Cultural y tranquila',d:'Arte y comida típica, con poca gente y sin prisas.',ids:[['museo',90],['chela',75],['lupe',30]]},
+ B:{n:'Más económica',d:'Mismo centro, con comida corrida para gastar menos.',ids:[['museo',90],['santa',60],['lupe',30]]},
+ C:{n:'Lugares poco visitados',d:'Reparte las visitas fuera de los lugares más llenos.',ids:[['taller',60],['esquina',60],['cafe',30]]}
+};
+
+/* ===== Estado ===== */
+function fresh(){return {scr:'R-01',hist:[],ui:'normal',bf:{cuando:'hoy11',tiempo:240,personas:2,con:'Pareja',presu:300,ritmo:'Tranquilo',nec:new Set(),salida:'Mi ubicación'},vk:null,stops:[],drop:[],alt:{mode:'rep',idx:0},saved:false,shared:false,down:false,planB:false,started:false,delay:0,alertFor:null,sellos:0,rating:0,fav:false,toast:'',sel:null,mesas:4,state:'borrador',pub11:false};}
+let S=fresh(); let LOG=[]; let HOT=false;
+const lim=()=>S.bf.tiempo, bud=()=>S.bf.presu;
+const cur=()=>calc(S.stops,S.delay,lim(),bud());
+function mk(k){
+  const stops=VAR[k].ids.map(x=>({id:x[0],min:x[1],lock:false,st:'pend',sello:false}));const drop=[];
+  while(stops.length>1&&!calc(stops,0,lim(),bud()).cabe){drop.push(PL[stops.pop().id].n);}
+  return {stops,drop};
+}
+const curIdx=()=>S.stops.findIndex(s=>s.st==='pend');
+const tog=(set,k)=>{if(set.has(k))set.delete(k);else set.add(k);};
+const briefJson=()=>({cuando:S.bf.cuando==='ahora'?'AHORA':S.bf.cuando==='hoy11'?'HOY_11:00':'OTRO_DIA',duracion_min:S.bf.tiempo,personas:S.bf.personas,con:S.bf.con.toUpperCase(),presupuesto_por_persona:S.bf.presu.toFixed(2),ritmo:S.bf.ritmo.toUpperCase(),necesidades:Array.from(S.bf.nec),salida:S.bf.salida==='Mi ubicación'?'UBICACION_ACTUAL':'PUNTO_ELEGIDO'});
+const liveRes=()=>{const c=cur();return {cabe:c.cabe,total_min:c.total,costo_por_persona:c.cost.toFixed(2),moneda:'MXN',caminata_min:c.wk,estimada:true,avisos:c.issues.map(x=>x.t)};};
+
+/* ===== Pantallas ===== */
+const SCR={
+ 'R-01':{n:'Plantear',lane:'Antes',p:'El brief en pocos toques, precargado del perfil. También «Sorpréndeme».',api:'proponerRutas(brief)'},
+ 'R-02':{n:'Elegir estilo',lane:'Antes',p:'Hasta tres rutas comparables en tiempo, costo, caminata y afluencia.',api:'proponerRutas · ruta(id)'},
+ 'R-03':{n:'Editar',lane:'Armar',p:'Línea de tiempo con «por qué», barras de tiempo y dinero, y edición con aviso de si todavía cabe.',api:'editarRuta · alternativasParada'},
+ 'R-04':{n:'Alternativas y paradas nuevas',lane:'Armar',p:'Qué cambia con cada opción antes de aceptarla.',api:'alternativasParada · candidatosParaAgregar'},
+ 'R-05':{n:'Revisar y guardar',lane:'Armar',p:'Avisos del servidor, plan B de lluvia, guardar, compartir y descargar.',api:'guardarRuta · compartirRuta · paqueteRuta · planB'},
+ 'R-06':{n:'En ruta',lane:'Durante',p:'Siguiente parada, cómo llegar, «ya llegué», «voy tarde» y «saltar».',api:'iniciarRuta · reajustarRuta · WS rutaActiva'},
+ 'R-07':{n:'Aviso: algo cambió',lane:'Durante',p:'Un lugar se llenó: opciones que caben, sin perder el ritmo.',api:'reajustarRuta'},
+ 'R-08':{n:'Cierre',lane:'Después',p:'Qué hiciste, sellos y cupones, calificar la ruta y reseñar.',api:'finalizarRuta · calificarRuta'},
+ 'R-09':{n:'Mis rutas',lane:'Después',p:'Borradores, guardadas, en curso y terminadas.',api:'misRutas · ruta(id)'}
+};
+/* ===== Acciones ===== */
+const VIA={local:'Solo en el dispositivo',consulta:'GraphQL · consulta',mutacion:'GraphQL · mutación',ws:'WebSocket · suscripción',evento:'Evento simulado'};
+const A={};
+function act(id,scr,label,o){A[id]=Object.assign({id,scr,label,kind:'local',mod:'—',op:'',sync:[],pub:[],cons:[],inEv:[],err:[],go:null,ui:'',req:null,res:null,pat:'',also:[],auto:false,dyn:null},o||{});}
+const SYNC_PROPONER=['visitantes.perfilDe(visitanteId)','directorio.buscar(restricciones duras)','directorio.disponibilidad(ids) y afluencia(ids, franja)','transporte.estimarTraslado(origen, destino, modo)','rutas: puntaje y solver (código)','modelo de IA: explicar con hechos del solver; el verificador de cifras revisa el texto'];
+act('RA-01','R-01','Elegir cuándo',{req:{cuando:'HOY_11:00'},ui:'Ahora, hoy a una hora o en otro día. Con «Ahora» el solver parte de la hora real.'});
+act('RA-02','R-01','Elegir cuánto tiempo',{req:{duracion_min:240},ui:'2 h, 4 h o un día. Varios días es fase P2 y hoy solo avisa.'});
+act('RA-03','R-01','Cambiar el número de personas',{req:{personas:2},ui:'Cambia el costo del grupo y el cupo de mesas que se buscan.'});
+act('RA-04','R-01','Elegir con quién viajas',{req:{con:'PAREJA'},ui:'Solo, pareja, familia o grupo. Ajusta ritmo y tipos de lugar por defecto.'});
+act('RA-05','R-01','Elegir presupuesto por persona',{req:{presupuesto_por_persona:'300.00'},ui:'Es un tope por persona, no del grupo. El servidor lo respeta; no lo decide el modelo.'});
+act('RA-06','R-01','Elegir ritmo',{req:{ritmo:'TRANQUILO'},ui:'Tranquilo deja más margen entre paradas y menos paradas por hora.'});
+act('RA-07','R-01','Marcar una necesidad',{req:{necesidades:['SIN_GLUTEN']},ui:'Sin gluten, caminar poco o con niños. Son restricciones duras: lo que no las cumple no entra. En el mockup solo cambian el brief; falta definir las etiquetas en Directorio.'});
+act('RA-08','R-01','Elegir punto de salida',{req:{salida:'UBICACION_ACTUAL'},ui:'Mi ubicación o un punto elegido. La ubicación viaja en la consulta y no se guarda.'});
+act('RA-09','R-01','Ver rutas',{kind:'mutacion',mod:'rutas',op:'proponerRutas(brief)',sync:SYNC_PROPONER,err:['RUTA_SIN_RESULTADOS','BRIEF_INVALIDO','IA_NO_DISPONIBLE (se usan textos estándar)'],go:'R-02',ui:'Devuelve hasta 3 variantes. Las variantes son borradores: todavía no publican eventos.',dyn:()=>({req:{brief:briefJson()},res:{variantes:Object.keys(VAR).map(k=>{const r=mk(k),c=calc(r.stops,0,lim(),bud());return {id:k,nombre:VAR[k].n,paradas:r.stops.length,total_min:c.total,costo_por_persona:c.cost.toFixed(2),caminata_min:c.wk,quitadas_para_que_quepa:r.drop};})}})});
+act('RA-10','R-01','Sorpréndeme',{kind:'mutacion',mod:'rutas',op:'proponerRutas(brief con valores del perfil)',sync:SYNC_PROPONER,go:'R-02',ui:'Usa el perfil y valores por defecto: sin preguntar nada. Es la entrada más rápida para quien tiene prisa.',dyn:()=>({req:{brief:briefJson(),origen_brief:'PERFIL_Y_DEFECTOS'},res:{variantes:Object.keys(VAR).length}})});
+act('RA-11','R-02','Elegir una variante',{kind:'consulta',mod:'rutas',op:'ruta(varianteId)',go:'R-03',err:['VARIANTE_NO_ENCONTRADA'],ui:'Abre el editor con esa variante. Todavía es borrador.',dyn:()=>({req:{variante_id:S.vk||'A'},res:Object.assign({ruta_id:RUTA,variante:S.vk||'A',paradas:S.stops.map((s,i)=>({orden:i+1,negocio_id:PL[s.id].uuid,duracion_min:s.min,fija:s.lock}))},liveRes())})});
+act('RA-12','R-02','Cambiar mi brief',{go:'R-01',ui:'Vuelve al brief con tus respuestas.'});
+act('RA-13','R-03','Ajustar el tiempo de una visita',{kind:'mutacion',mod:'rutas',op:'editarRuta(rutaId, cambio: AJUSTAR_DURACION)',err:['NO_CABE (se avisa; no se bloquea)','PARADA_NO_ENCONTRADA'],ui:'El servidor recalcula horas, caminata, costo y avisos al instante. Si ya no cabe, lo dice y deja decidir.',dyn:()=>({req:{ruta_id:RUTA,cambio:{tipo:'AJUSTAR_DURACION',parada:1,delta_min:15}},res:liveRes()})});
+act('RA-14','R-03','Cambiar esta parada',{kind:'consulta',mod:'rutas',op:'alternativasParada(rutaId, orden)',sync:['directorio.buscar(misma categoría, restricciones duras)','directorio.disponibilidad(ids)','transporte.estimarTraslado(...)'],go:'R-04',err:['SIN_ALTERNATIVAS'],ui:'Muestra qué cambia con cada opción (minutos, dinero, afluencia) antes de aceptar.',dyn:()=>({req:{ruta_id:RUTA,orden:S.alt.idx+1},res:{alternativas:altList().map(a=>({negocio_id:PL[a.id].uuid,cabe:a.c.cabe,delta_min:a.dm,delta_costo:a.dc.toFixed(2)}))}})});
+act('RA-15','R-03','Quitar esta parada',{kind:'mutacion',mod:'rutas',op:'editarRuta(rutaId, cambio: QUITAR)',err:['MINIMO_UNA_PARADA'],ui:'Quita la parada y recalcula los traslados entre las vecinas.',dyn:()=>({req:{ruta_id:RUTA,cambio:{tipo:'QUITAR',parada:2}},res:liveRes()})});
+act('RA-16','R-03','Fijar o soltar una parada',{kind:'mutacion',mod:'rutas',op:'editarRuta(rutaId, cambio: FIJAR)',ui:'Una parada fija no se cambia cuando el servidor reordena o reemplaza. Te permite proteger lo que ya te gustó.',dyn:()=>({req:{ruta_id:RUTA,cambio:{tipo:'FIJAR',parada:1,fija:true}},res:liveRes()})});
+act('RA-17','R-03','Agregar una parada',{kind:'consulta',mod:'rutas',op:'candidatosParaAgregar(rutaId)',sync:['directorio.buscar(cerca de la ruta)','transporte.estimarTraslado(...)'],go:'R-04',ui:'Cada candidato dice si encaja y qué cuesta en tiempo y dinero.',dyn:()=>({req:{ruta_id:RUTA},res:{candidatos:addList().map(a=>({negocio_id:PL[a.id].uuid,encaja:a.c.cabe,delta_min:a.dm,delta_costo:a.dc.toFixed(2)}))}})});
+act('RA-18','R-04','Elegir una opción',{also:['R-03'],kind:'mutacion',mod:'rutas',op:'editarRuta(rutaId, cambio: REEMPLAZAR | AGREGAR)',go:'R-03',err:['NO_CABE (se avisa)','NEGOCIO_NO_DISPONIBLE'],ui:'Aplica el cambio y vuelve al editor con todo recalculado.',dyn:()=>({req:{ruta_id:RUTA,cambio:{tipo:S.alt.mode==='rep'?'REEMPLAZAR':'AGREGAR',parada:S.alt.idx+1}},res:liveRes()})});
+act('RA-19','R-05','Ver plan B (lluvia)',{kind:'consulta',mod:'rutas',op:'planB(rutaId)',sync:['transporte.estimarTraslado(modo: AUTOBUS)'],ui:'Si hay lluvia: las paradas son techadas y los traslados pasan a autobús. Costo y horarios del autobús: por confirmar.',req:{ruta_id:RUTA,motivo:'LLUVIA'},res:{paradas_techadas:3,traslado:'AUTOBUS',estimado:true,costo_traslado:'POR_CONFIRMAR'}});
+act('RA-20','R-03','Revisar y guardar',{kind:'consulta',mod:'rutas',op:'ruta(rutaId)',go:'R-05',ui:'Revisa horarios y avisos antes de guardar.',dyn:()=>({req:{ruta_id:RUTA},res:liveRes()})});
+act('RA-21','R-05','Guardar ruta',{kind:'mutacion',mod:'rutas',op:'guardarRuta(rutaId)',pub:['E-11'],err:['RUTA_NO_CABE'],ui:'La primera vez que guardas o empiezas se publica ruta.generada (E-11): hasta ahora eran borradores. Así la demanda planeada cuenta rutas en las que la persona sí se comprometió.',dyn:()=>({req:{ruta_id:RUTA},res:{guardada:true,estado:'GUARDADA'}})});
+act('RA-22','R-05','Compartir enlace',{kind:'mutacion',mod:'rutas',op:'compartirRuta(rutaId)',ui:'Crea un enlace de solo lectura que caduca a los 7 días. Quien lo abre ve la ruta, no tu perfil ni tu ubicación.',req:{ruta_id:RUTA,caduca_dias:7},res:{url:'https://puebla360.example/r/ab12cd',expira_en:'2026-10-22T18:00:00Z',solo_lectura:true},err:['RUTA_NO_GUARDADA']});
+act('RA-23','R-05','Descargar para usar sin conexión',{kind:'consulta',mod:'rutas',op:'paqueteRuta(rutaId)',ui:'Guarda en el teléfono la ruta, los horarios y el mapa de las paradas, para cuando no haya señal. Sin datos personales.',req:{ruta_id:RUTA},res:{version:1,paradas:3,tamano_aprox:'1.1 MB (ejemplo)'}});
+act('RA-24','R-05','Empezar ruta',{kind:'mutacion',mod:'rutas',op:'iniciarRuta(rutaId)',pub:['E-11','E-15'],go:'R-06',err:['RUTA_NO_CABE','YA_HAY_UNA_RUTA_EN_CURSO'],ui:'Pasa a modo viaje. Rutas empieza a vigilar mesas, afluencia y sellos de tus paradas. Si no se había guardado, publica también E-11.',dyn:()=>({req:{ruta_id:RUTA},res:{estado:'EN_CURSO',siguiente:{orden:1,negocio_id:PL[S.stops[0]?S.stops[0].id:'museo'].uuid}}})});
+act('RA-25','R-06','Al abrir: suscribirse a la ruta en curso',{auto:true,kind:'ws',mod:'rutas',op:'rutaActiva(rutaId)',inEv:['E-12','E-13','E-05'],req:{rutaId:RUTA},res:{tipo:'LUGAR_LLENO',parada:2,opciones:['…']},ui:'Rutas consume E-12 (mesas) y E-13 (afluencia) de Directorio y Afluencia, y E-05 (sello) de Pasaporte. Cuando algo afecta una parada pendiente, empuja un aviso a la app. No hay notificaciones fuera de la app en el MVP.'});
+act('RA-26','R-06','Cómo llegar',{ui:'Abre Transporte (pantalla S-10 de la app) con la parada como destino.'});
+act('RA-27','R-06','Ya llegué: sellar',{kind:'mutacion',mod:'pasaporte',op:'prepararSello → confirmarSello',sync:['directorio.validarQrNegocio(qrToken)'],pub:['E-05'],inEv:[],err:['QR_INVALIDO','QR_EXPIRADO','SELLO_REPETIDO'],ui:'Es el flujo de sello de la app (A-48 y A-49). Rutas consume E-05 y marca la parada como hecha. Para un lugar sin sello se marcaría a mano (por definir).',req:{qr_token:'qr1.negocio.…'},res:{sello_id:'0192f3a0-7c10-7000-8000-0000000000b5'},pat:'preparar → confirmar'});
+act('RA-28','R-06','Voy tarde (+15 min)',{kind:'mutacion',mod:'rutas',op:'reajustarRuta(rutaId, motivo: RETRASO)',pub:['E-16'],err:['NO_CABE (se avisa)'],ui:'Corre las horas siguientes 15 minutos y avisa si algo deja de caber o de estar abierto.',dyn:()=>({req:{ruta_id:RUTA,motivo:'RETRASO',minutos:15},res:liveRes()})});
+act('RA-29','R-06','Saltar esta parada',{kind:'mutacion',mod:'rutas',op:'reajustarRuta(rutaId, motivo: OMITIDA)',pub:['E-16'],ui:'La parada pasa a «omitida» y se recalculan los traslados.',dyn:()=>({req:{ruta_id:RUTA,motivo:'OMITIDA',parada:S.stops[curIdx()>=0?curIdx():0]?curIdx()+1:1},res:liveRes()})});
+act('RA-30','R-06','Terminar ruta',{kind:'mutacion',mod:'rutas',op:'finalizarRuta(rutaId)',pub:['E-17'],go:'R-08',ui:'Cierra la ruta y publica ruta.finalizada con paradas hechas y omitidas.',req:{ruta_id:RUTA},res:{estado:'TERMINADA'}});
+act('RA-31','R-07','Cambiar por otra opción',{kind:'mutacion',mod:'rutas',op:'reajustarRuta(rutaId, motivo: LUGAR_LLENO, reemplazo)',pub:['E-16'],go:'R-06',err:['NO_CABE (se avisa)','NEGOCIO_NO_DISPONIBLE'],ui:'Solo se ofrecen opciones que caben en tu tiempo y presupuesto. Publica ruta.reajustada con causa_id = el evento E-12 que la provocó.',dyn:()=>({req:{ruta_id:RUTA,motivo:'LUGAR_LLENO',parada:2,reemplazo_negocio_id:PL.esquina.uuid},res:liveRes()})});
+act('RA-32','R-07','Esperar unos 20 min',{kind:'mutacion',mod:'rutas',op:'reajustarRuta(rutaId, motivo: ESPERA, minutos)',pub:['E-16'],go:'R-06',ui:'Mantiene la parada y corre lo demás 20 minutos (estimado). Avisa si ya no cabe.',dyn:()=>({req:{ruta_id:RUTA,motivo:'ESPERA',minutos:20},res:liveRes()})});
+act('RA-33','R-07','Mantener y seguir vigilando',{go:'R-06',ui:'No cambia nada. Rutas sigue vigilando el lugar y avisa si se libera.'});
+act('RA-34','R-06','SIMULACIÓN: Fonda Doña Chela se llena',{kind:'evento',mod:'restaurantes → directorio → rutas',op:'(evento) negocio.disponibilidad_cambiada',inEv:['C-01'],pub:['E-12'],req:{tipo:'MESAS',libres:0,total:12,abierto:true},res:{},ui:'No es un botón: Restaurantes publica C-01, Directorio publica E-12 con 0 mesas libres y Rutas lo consume. Como esa parada está pendiente, empuja un aviso a la app.'});
+act('RA-36','R-08','Calificar mi ruta',{kind:'mutacion',mod:'rutas',op:'calificarRuta(rutaId, calificacion)',req:{ruta_id:RUTA,calificacion:5},res:{ok:true},ui:'Sirve a Rutas para afinar los pesos del puntaje (fase P3). No publica evento.'});
+act('RA-37','R-08','Reseñar lugares visitados',{ui:'Abre Reseñas (pantalla S-08 de la app). Está habilitado por los sellos que ganaste en la ruta.'});
+act('RA-38','R-08','Guardar como favorita',{kind:'mutacion',mod:'rutas',op:'guardarRuta(rutaId, favorita)',req:{ruta_id:RUTA,favorita:true},res:{ok:true}});
+act('RA-39','R-08','Ver mis rutas',{kind:'consulta',mod:'rutas',op:'misRutas(estado?)',go:'R-09',req:{},res:{rutas:['…']}});
+act('RA-40','R-09','Al abrir: cargar mis rutas',{auto:true,kind:'consulta',mod:'rutas',op:'misRutas(estado?)',req:{estado:null,pagina:{tam:10}},res:{rutas:[{id:RUTA,nombre:'Cultural y tranquila',estado:'EN_CURSO'}]},ui:'Lista tus rutas por estado.'});
+act('RA-41','R-09','Abrir una ruta',{kind:'consulta',mod:'rutas',op:'ruta(rutaId)',go:'R-03',req:{ruta_id:RUTA},res:{estado:'GUARDADA'},ui:'Una ruta en curso abre el modo viaje; las demás, el editor.'});
+act('RA-42','R-09','Nueva ruta',{go:'R-01',ui:'Abre el brief vacío.'});
+act('RA-43','*','← Atrás',{ui:'Vuelve a la pantalla anterior.'});
+act('RA-44','R-01','Barra inferior (otras pestañas)',{also:['R-09'],ui:'Las otras pestañas son pantallas de la app del turista, no de este mockup.'});
+act('RA-45','R-04','Mantener la parada actual',{go:'R-03',ui:'Cierra la lista sin cambiar nada.'});
+act('RA-35','R-06','Marcar como hecha (lugar sin sello)',{kind:'mutacion',mod:'rutas',op:'marcarLlegada(rutaId, orden)',req:{ruta_id:RUTA,orden:2},res:{estado_parada:'HECHA'},ui:'Para lugares que no están en el pasaporte: la persona marca que llegó. No hay sello ni evento de Pasaporte.'});
+/* ===== Eventos ===== */
+const EV={};
+function ev(id,tipo,origen,o){EV[id]=Object.assign({id,tipo,version:1,origen,neg:true,datos:{},cons:[],nota:'',kind:'pub'},o);}
+const APP='App del turista (WebSocket)';
+ev('E-11','ruta.generada','rutas',{neg:false,datos:{ruta_id:RUTA,visitante_id:VIS,variante:'CULTURAL',personas:2,ritmo:'TRANQUILO',paradas:[{orden:1,negocio_id:PL.museo.uuid,llegada_estimada:'11:00',duracion_min:90},{orden:2,negocio_id:PL.chela.uuid,llegada_estimada:'12:45',duracion_min:75},{orden:3,negocio_id:PL.lupe.uuid,llegada_estimada:'14:09',duracion_min:30}],estimada:true},cons:[{m:'gobierno',t:'Flujo planeado por zona y franja. Nunca por negocio individual.'}],nota:'Cambia el disparo respecto a la app (A-39): se publica al guardar o empezar, no al proponer. Los campos personas y ritmo son aditivos (R5). Rutas calcula su demanda planeada con sus propias tablas; Afluencia no consume este evento, para no crear un ciclo con E-13.'});
+ev('E-15','ruta.iniciada','rutas',{neg:false,datos:{ruta_id:RUTA,visitante_id:VIS,iniciada_en:'2026-10-15T17:00:00Z'},cons:[{m:'gobierno',t:'Rutas en curso por zona, agregadas.'}]});
+ev('E-16','ruta.reajustada','rutas',{neg:false,datos:{ruta_id:RUTA,motivo:'LUGAR_LLENO',parada:2,reemplazo_negocio_id:PL.esquina.uuid,minutos_cambio:-5},cons:[{m:'gobierno',t:'Cuántas rutas se desvían de un lugar lleno y hacia dónde: datos agregados.'}],nota:'motivo: RETRASO, OMITIDA, LUGAR_LLENO o ESPERA. causa_id apunta al evento que la provocó, por ejemplo E-12.'});
+ev('E-17','ruta.finalizada','rutas',{neg:false,datos:{ruta_id:RUTA,completadas:3,omitidas:0,duracion_real_min:225},cons:[{m:'gobierno',t:'Flujo realizado frente a planeado.'},{m:'rutas',t:'Aprendizaje de duraciones reales (fase P3).'}]});
+ev('E-05','sello.otorgado','pasaporte',{datos:{sello_id:'0192f3a0-7c10-7000-8000-0000000000b5',pasaporte_id:'0192f3a0-7c10-7000-8000-000000009001',visitante_id:VIS,metodo:'QR'},cons:[{m:'rutas',t:'Marca como hecha la parada de ese negocio en la ruta en curso.'},{m:'reseñas',t:'Habilita reseñar ese negocio.'},{m:'gobierno',t:'Visita verificada por zona, agregada.'}],nota:'Ya existe (app del turista). Aquí se suma Rutas como consumidor.'});
+ev('E-12','directorio.disponibilidad_actualizada','directorio',{datos:{tipo:'MESAS',libres:4,total:12,abierto:true,actualizado_en:'2026-10-15T18:20:00Z'},cons:[{m:'rutas',t:'Si el negocio está en una ruta en curso y se llenó, empuja un aviso a la app.'},{m:APP,t:'Cambia el número de la ficha.'}],nota:'Ya existe (app del turista). Aquí se suma Rutas como consumidor.'});
+ev('E-13','afluencia.nivel_actualizado','afluencia',{datos:{franja_inicio:'14:00',franja_fin:'16:00',nivel:'BAJO'},cons:[{m:'rutas',t:'Si sube a ALTO en una parada pendiente, avisa y propone alternativas.'},{m:'directorio',t:'Guarda el nivel para filtros y tarjetas.'}],nota:'Ya existe. Aquí se suma Rutas como consumidor.'});
+ev('C-01','negocio.disponibilidad_cambiada','restaurantes (también museos y misceláneas)',{kind:'in',datos:{tipo:'MESAS',libres:0,total:12,abierto:true,actualizado_en:'2026-10-15T18:21:30Z'},cons:[{m:'directorio',t:'Actualiza su proyección y publica E-12.'}],nota:'Ya existe (app del turista).'});
+const SUBS=[['SUB-6','rutaActiva(rutaId)','E-12 · E-13 · E-05 (los consume Rutas)','Avisos de la ruta en curso: lugar lleno, afluencia alta, parada hecha','R-06 · R-07','RA-25']];
+function envelope(e,aid){
+  const n=e.id.slice(2),C=e.id[0]==='C';
+  const env={id:'0192f3a0-8a00-7000-8000-00000000'+(C?'c0':'e0')+n,tipo:e.tipo,version:e.version,negocio_id:e.neg?NEG:null,origen:e.origen.split(' ')[0],ocurrido_en:'2026-10-15T18:40:12Z',correlacion_id:'0192f3a0-7c10-7000-8000-00000000cc'+n,causa_id:null,datos:JSON.parse(JSON.stringify(e.datos))};
+  if(e.id==='E-12'||e.id==='C-01')env.datos.libres=S.mesas;
+  if(e.id==='E-16'){const M={'RA-28':'RETRASO','RA-29':'OMITIDA','RA-31':'LUGAR_LLENO','RA-32':'ESPERA'};if(M[aid]){env.datos.motivo=M[aid];}if(aid==='RA-31')env.causa_id='0192f3a0-8a00-7000-8000-00000000e012';if(aid!=='RA-31'){delete env.datos.reemplazo_negocio_id;delete env.datos.parada;env.datos.minutos_cambio=aid==='RA-28'?15:aid==='RA-32'?20:0;}}
+  if(aid==='RA-34'&&e.id==='E-12')env.causa_id='0192f3a0-8a00-7000-8000-00000000c001';
+  return env;
+}
+/* Llamadas síncronas de Rutas */
+const SYNC=[
+ ['L-R1','canal','rutas','proponerRutas · ruta · editarRuta · alternativasParada · candidatosParaAgregar · guardarRuta · compartirRuta · paqueteRuta · planB · iniciarRuta · reajustarRuta · marcarLlegada · finalizarRuta · calificarRuta · misRutas','RA-09 a RA-41','El canal compone; Rutas es dueño de las rutas'],
+ ['L-R2','rutas','visitantes','perfilDe(visitanteId)','RA-09 RA-10','Horizontal a horizontal (R6)'],
+ ['L-R3','rutas','directorio','buscar(restricciones duras) · disponibilidad(ids) · afluencia(ids, franja) · ficha (horarios)','RA-09 RA-14 RA-17','Lectura'],
+ ['L-R4','rutas','transporte','estimarTraslado(origen, destino, modo)','RA-09 RA-14 RA-19','Resultado siempre «estimado»'],
+ ['L-R5','rutas','modelo de IA','interpretarBrief(texto) · explicar(hechos del solver)','RA-09 RA-10','Salida con esquema fijo; el verificador de cifras revisa el texto'],
+ ['L-R6','canal','pasaporte','prepararSello / confirmarSello (flujo existente)','RA-27','Rutas se entera por E-05']
+];
+/* ===== Efectos, avisos y listas ===== */
+function altList(){const s=S.stops[S.alt.idx];if(!s)return [];const base=cur();return (POOL[s.id]||[]).filter(id=>!S.stops.some(x=>x.id===id)).map(id=>{const t=S.stops.map((x,i)=>i===S.alt.idx?{id,min:PL[id].min}:x);const c=calc(t,S.delay,lim(),bud());return {id,c,dm:c.total-base.total,dc:c.cost-base.cost};});}
+function addList(){const base=cur();return Object.keys(PL).filter(id=>!S.stops.some(x=>x.id===id)).slice(0,4).map(id=>{const c=calc(S.stops.concat([{id,min:PL[id].min}]),S.delay,lim(),bud());return {id,c,dm:c.total-base.total,dc:c.cost-base.cost};});}
+const FX={
+ 'RA-01':v=>{S.bf.cuando=v;},
+ 'RA-02':v=>{if(v==='multi'){S.toast='Rutas de varios días: fase P2, no entra en la demo';return;}S.bf.tiempo=+v;},
+ 'RA-03':v=>{S.bf.personas=Math.max(1,Math.min(10,S.bf.personas+(+v)));},
+ 'RA-04':v=>{S.bf.con=v;},
+ 'RA-05':v=>{S.bf.presu=+v;},
+ 'RA-06':v=>{S.bf.ritmo=v;},
+ 'RA-07':v=>{tog(S.bf.nec,v);},
+ 'RA-08':v=>{S.bf.salida=v;},
+ 'RA-10':()=>{S.bf.con='Pareja';S.bf.ritmo='Tranquilo';},
+ 'RA-11':k=>{S.vk=k;const r=mk(k);S.stops=r.stops;S.drop=r.drop;S.saved=false;S.shared=false;S.down=false;S.planB=false;S.state='borrador';S.started=false;S.delay=0;S.sellos=0;S.pub11=false;S.alertFor=null;S.mesas=4;},
+ 'RA-13':v=>{const p=v.split(':'),s=S.stops[+p[0]];s.min=Math.max(15,s.min+(+p[1]));},
+ 'RA-14':i=>{S.alt={mode:'rep',idx:+i};},
+ 'RA-15':i=>{if(S.stops.length>1)S.stops.splice(+i,1);else S.toast='Una ruta necesita al menos una parada';},
+ 'RA-16':i=>{S.stops[+i].lock=!S.stops[+i].lock;},
+ 'RA-17':()=>{S.alt={mode:'add',idx:-1};},
+ 'RA-18':v=>{const p=v.split(':'),id=p[1];if(p[0]==='rep'&&S.alt.idx>=0)S.stops[S.alt.idx]={id,min:PL[id].min,lock:false,st:'pend',sello:false};else S.stops.push({id,min:PL[id].min,lock:false,st:'pend',sello:false});},
+ 'RA-19':()=>{S.planB=!S.planB;},
+ 'RA-21':()=>{S.saved=true;if(S.state==='borrador')S.state='guardada';},
+ 'RA-22':()=>{S.shared=true;},
+ 'RA-23':()=>{S.down=true;S.toast='Ruta descargada (ejemplo)';},
+ 'RA-24':()=>{S.started=true;S.state='en curso';S.saved=true;S.delay=0;S.mesas=4;S.stops.forEach(s=>{s.st='pend';s.sello=false;});S.sellos=0;},
+ 'RA-27':()=>{const c=curIdx();if(c<0)return;const s=S.stops[c];s.st='hecha';if(PL[s.id].tags.indexOf('Sello')>=0){s.sello=true;S.sellos++;}S.toast='Llegaste a '+PL[s.id].n+(s.sello?' · sello obtenido':'');},
+ 'RA-35':()=>{const c=curIdx();if(c<0)return;S.stops[c].st='hecha';S.toast='Marcada como hecha: '+PL[S.stops[c].id].n;},
+ 'RA-28':()=>{S.delay+=15;S.toast='Horas corridas 15 min';},
+ 'RA-29':()=>{const c=curIdx();if(c>=0)S.stops[c].st='omit';},
+ 'RA-30':()=>{S.state='terminada';S.started=false;},
+ 'RA-31':v=>{const id=v.split(':')[1];S.stops[S.alertFor]={id,min:PL[id].min,lock:false,st:'pend',sello:false};S.alertFor=null;S.toast='Parada cambiada por '+PL[id].n;},
+ 'RA-32':()=>{S.delay+=20;S.alertFor=null;S.toast='Esperamos unos 20 min (estimado)';},
+ 'RA-33':()=>{S.alertFor=null;},
+ 'RA-34':()=>{S.mesas=0;S.alertFor=S.stops.findIndex(s=>s.id==='chela'&&s.st==='pend');},
+ 'RA-36':n=>{S.rating=+n;},
+ 'RA-38':()=>{S.fav=!S.fav;S.toast=S.fav?'Guardada como favorita':'Quitada de favoritas';},
+ 'RA-41':()=>{if(S.started)S.scr='R-06';},
+ 'RA-44':v=>{if(v==='Rutas'){S.scr='R-01';}else S.toast='Pestaña «'+v+'»: pantalla de la app del turista';}
+};
+const GUARD={
+ 'RA-34':()=>!S.started?'Primero inicia una ruta (Revisar y guardar → Empezar ruta).':S.stops.findIndex(s=>s.id==='chela'&&s.st==='pend')<0?'Fonda Doña Chela no está pendiente en tu ruta. Elige la variante A y no la hayas pasado.':'',
+ 'RA-24':()=>cur().cabe?'':'La ruta ya no cabe: ajústala antes de empezar.',
+ 'RA-21':()=>cur().cabe?'':'La ruta ya no cabe: ajústala antes de guardar.'
+};
+const AUTOS=id=>Object.values(A).filter(a=>a.auto&&a.scr===id);
+function addLog(c,t){LOG.unshift({c,t});if(LOG.length>40)LOG.pop();}
+function goto(s,back){if(!back&&S.scr!==s)S.hist.push(S.scr);S.scr=s;S.ui='normal';AUTOS(s).forEach(a=>addLog('au','↻ al abrir '+s+': '+a.id+' '+a.label));const sc=$('#screen');if(sc)sc.scrollTop=0;}
+function fire(id,arg){
+  const a=A[id];if(!a)return;S.toast='';
+  if(S.ui==='offline'&&a.kind!=='local'){addLog('bl','✕ '+id+' bloqueada: sin conexión (se reintenta al volver la red)');S.sel={id,arg,blocked:true};render();return;}
+  const g=GUARD[id]?GUARD[id]():'';
+  if(g){addLog('bl','✕ '+id+': '+g);S.toast=g;S.sel={id,arg};render();return;}
+  S.sel={id,arg};addLog('',id+' · '+a.label+(arg?' ('+arg+')':''));
+  if(id==='RA-43'){const p=S.hist.pop();if(p){S.scr=p;S.ui='normal';}render();return;}
+  const was=S.scr;
+  if(FX[id])FX[id](arg);
+  a.inEv.forEach(e=>addLog('ev','→ entra '+e+' '+EV[e].tipo));
+  a.pub.filter(e=>e!=='E-11'||!S.pub11).forEach(e=>addLog('ev','⚡ '+e+' '+EV[e].tipo+' → '+EV[e].cons.map(c=>c.m).join(', ')));
+  if(a.pub.indexOf('E-11')>=0)S.pub11=true;
+  if(id==='RA-34'){if(S.alertFor>=0){addLog('ev','→ Rutas consume E-12 y empuja el aviso LUGAR_LLENO');goto('R-07');}}
+  else if(S.scr!==was){/* efecto movió la pantalla */}
+  else if(a.go)goto(a.go,id==='RA-33'||id==='RA-45');
+  render();
+}
+/* ===== Teléfono ===== */
+const tbar=(t,back)=>'<div class="topbar">'+(back===false?'':B('RA-43',ic('back','s'),'iconbtn','',' aria-label="Atrás"'))+'<h3>'+esc(t)+'</h3></div>';
+const tagA=p=>'<span class="tag '+(p.afl==='ALTO'?'err':p.afl==='BAJO'?'ok':'gold')+'">'+AFL[p.afl]+'</span>';
+const chip=(act,label,arg,on)=>B(act,label,'pchip',arg,' aria-pressed="'+on+'"');
+function issuesBox(c){
+  if(!c.issues.length)return '<div class="box ok"><b>Todo cabe</b><small>Horarios, tiempo y presupuesto en regla.</small></div>';
+  return '<div class="box '+(c.cabe?'gold':'err')+'"><b>'+(c.cabe?'Avisos del servidor':'Esto ya no funciona')+'</b>'+c.issues.map(x=>'<small>'+(x.k==='err'?'✕ ':'• ')+esc(x.t)+'</small>').join('')+'</div>';
+}
+function meter(c){
+  const pt=Math.min(100,Math.round(c.total/lim()*100)),pc=Math.min(100,Math.round(c.cost/bud()*100));
+  return '<div class="box"><div class="meta"><span>Tiempo '+hm(c.total)+' de '+hm(lim())+'</span></div><div class="bar'+(c.total>lim()?' err':pt>=95?' warn':'')+'"><i style="width:'+pt+'%"></i></div><div class="meta"><span>Dinero '+money(c.cost)+' de '+money(bud())+' por persona</span></div><div class="bar'+(c.cost>bud()?' err':pc>=95?' warn':'')+'"><i style="width:'+pc+'%"></i></div></div>';
+}
+const WHY=(p,c,row)=>S.ui==='sinia'?'Abierto a esa hora, dentro de tu presupuesto y a '+(row.w||0)+' min a pie del punto anterior.':p.why;
+const RS={
+'R-01':()=>{const b=S.bf;return '<div class="topbar"><h3>Planea tu ruta</h3></div><div class="meta"><span class="tag blue">Precargado de tu perfil</span><span class="tag">Gastronomía local · Cultura y arte</span></div>'
+ +'<h4>¿Cuándo?</h4><div class="chips2">'+[['ahora','Ahora'],['hoy11','Hoy 11:00'],['otro','Otro día']].map(x=>chip('RA-01',x[1],x[0],b.cuando===x[0])).join('')+'</div>'
+ +'<h4>¿Cuánto tiempo?</h4><div class="chips2">'+[['120','2 h'],['240','4 h'],['480','Un día'],['multi','2–3 días']].map(x=>chip('RA-02',x[1],x[0],String(b.tiempo)===x[0])).join('')+'</div>'
+ +'<h4>¿Con quién?</h4><div class="chips2">'+['Solo','Pareja','Familia','Grupo'].map(x=>chip('RA-04',x,x,b.con===x)).join('')+'</div>'
+ +'<div class="mrow"><span>Personas</span><span class="meta">'+B('RA-03','−','iconbtn','-1',' aria-label="Menos personas"')+'<b>'+b.personas+'</b>'+B('RA-03','+','iconbtn','+1',' aria-label="Más personas"')+'</span></div>'
+ +'<h4>Presupuesto por persona</h4><div class="chips2">'+[150,300,500].map(x=>chip('RA-05',money(x),String(x),b.presu===x)).join('')+'</div>'
+ +'<h4>Ritmo</h4><div class="chips2">'+['Tranquilo','Normal','Intenso'].map(x=>chip('RA-06',x,x,b.ritmo===x)).join('')+'</div>'
+ +'<h4>Necesito</h4><div class="chips2">'+[['SIN_GLUTEN','Sin gluten'],['CAMINAR_POCO','Caminar poco'],['CON_NINOS','Con niños']].map(x=>chip('RA-07',x[1],x[0],b.nec.has(x[0]))).join('')+'</div>'
+ +'<h4>Salgo de</h4><div class="chips2">'+['Mi ubicación','Otro punto'].map(x=>chip('RA-08',x,x,b.salida===x)).join('')+'</div>'
+ +'<div style="display:grid;gap:6px;margin-top:auto">'+B('RA-09','Ver rutas','pbtn')+B('RA-10','Sorpréndeme','pbtn alt')+'</div>';},
+'R-02':()=>{let h=tbar('Elige tu estilo')+'<small style="color:var(--muted)">Tres rutas para '+S.bf.personas+' personas · '+hm(lim())+' · hasta '+money(bud())+' por persona</small>';
+ Object.keys(VAR).forEach(k=>{const r=mk(k),c=calc(r.stops,0,lim(),bud()),sell=r.stops.filter(s=>PL[s.id].tags.indexOf('Sello')>=0).length,cup=r.stops.some(s=>PL[s.id].tags.indexOf('Cupón 10%')>=0),pico=c.issues.filter(x=>x.k==='warn').length,low=r.stops.filter(s=>PL[s.id].tags.indexOf('Poco visitado')>=0).length;
+  h+=B('RA-11','<span class="tx vcard"><b>'+k+' · '+VAR[k].n+'</b><span style="font-size:12.5px;color:var(--muted)">'+VAR[k].d+'</span><span class="meta"><span>'+r.stops.length+' paradas</span><span>'+hm(c.total)+'</span><span><b>'+money(c.cost)+'</b> por persona</span></span><span class="meta"><span>'+c.wk+' min a pie (est.)</span><span class="tag ok">'+sell+' sellos</span>'+(cup?'<span class="tag gold">Cupón 10%</span>':'')+(low?'<span class="tag blue">'+low+' poco visitados</span>':'')+(pico?'<span class="tag err">'+pico+' aviso de espera</span>':'<span class="tag ok">Sin esperas previstas</span>')+'</span>'+(r.drop.length?'<span class="meta"><span class="tag err">Se quitó '+esc(r.drop.join(', '))+' para que quepa</span></span>':'')+'</span>','pcard',k);});
+ return h+B('RA-12','Cambiar mi brief','pbtn alt sm')+(S.ui==='sinia'?'<div class="banner">Textos estándar: la explicación automática no está disponible. Las rutas son las mismas.</div>':'')+'<small style="color:var(--muted)">Cifras de ejemplo. Los traslados son estimados.</small>';},
+'R-03':()=>{const c=cur();let h=tbar('Tu ruta · '+(S.vk?VAR[S.vk].n:''))+meter(c)+(S.drop.length?'<div class="banner">Para que cupiera, se quitó: '+esc(S.drop.join(', '))+'.</div>':'');
+ if(S.ui==='sinia')h+='<div class="banner">Textos estándar: la explicación automática no está disponible.</div>';
+ c.rows.forEach((r,i)=>{const s=S.stops[i],p=r.p,peak=p.peak&&r.arr<p.peak[1]&&r.lea>p.peak[0];
+  if(i>0)h+='<div class="meta" style="padding-left:6px">↓ '+r.w+' min a pie (estimado)</div>';
+  h+='<div class="box"><span class="meta"><b>'+clock(r.arr)+'</b><span>→ '+clock(r.lea)+'</span>'+tagA(p)+(peak?'<span class="tag err">Hora pico</span>':'')+'</span><span class="stopn">'+(i+1)+'. '+esc(p.n)+'</span><small>'+esc(WHY(p,c,r))+'</small><span class="meta">'+p.tags.map(t=>'<span class="tag blue">'+esc(t)+'</span>').join('')+'</span>'
+   +'<span class="meta">Visita '+B('RA-13','−','iconbtn',i+':-15',' aria-label="15 minutos menos"')+'<b>'+s.min+' min</b>'+B('RA-13','+','iconbtn',i+':+15',' aria-label="15 minutos más"')+'<span>≈ '+money(p.cost)+'</span></span>'
+   +'<span class="meta">'+B('RA-14','Cambiar','pbtn alt sm',String(i))+B('RA-15','Quitar','pbtn alt sm',String(i))+B('RA-16',ic('lock','s')+' '+(s.lock?'Fija':'Fijar'),'lock',String(i),' aria-pressed="'+s.lock+'"')+'</span></div>';});
+ h+=issuesBox(c);
+ return h+'<div style="display:flex;gap:6px;flex-wrap:wrap">'+B('RA-17','+ Agregar parada','pbtn alt sm')+B('RA-20','Revisar y guardar','pbtn sm')+'</div>';},
+'R-04':()=>{const rep=S.alt.mode==='rep';const L=rep?altList():addList();const cs=S.stops[S.alt.idx];
+ let h=tbar(rep?'Cambiar parada':'Agregar parada')+'<small style="color:var(--muted)">'+(rep&&cs?'Ahora: '+esc(PL[cs.id].n):'Lugares cerca de tu ruta')+'. Antes de aceptar ves qué cambia.</small>';
+ if(!L.length)h+='<div class="box">No hay alternativas que cumplan tus restricciones. (SIN_ALTERNATIVAS)</div>';
+ L.forEach(a=>{const p=PL[a.id];h+=B('RA-18','<span class="tx vcard"><b>'+esc(p.n)+'</b><span style="font-size:12.5px;color:var(--muted)">'+esc(p.why)+'</span><span class="meta"><span>'+(a.dm>=0?'+':'')+a.dm+' min</span><span>'+(a.dc>=0?'+':'−')+money(Math.abs(a.dc))+' por persona</span>'+tagA(p)+'</span><span class="meta">'+(a.c.cabe?'<span class="tag ok">Encaja</span>':'<span class="tag err">No encaja: '+esc(a.c.issues.filter(x=>x.k==='err')[0].t)+'</span>')+p.tags.map(t=>'<span class="tag blue">'+esc(t)+'</span>').join('')+'</span></span>','pcard',(rep?'rep:':'add:')+a.id);});
+ return h+(rep?B('RA-45','Mantener la parada actual','pbtn alt'):B('RA-45','Cancelar','pbtn alt'));},
+'R-05':()=>{const c=cur();const pp=S.bf.personas;let h=tbar('Revisar y guardar')+'<div class="box"><b>'+(S.vk?VAR[S.vk].n:'')+'</b><span class="meta"><span>'+S.stops.length+' paradas</span><span>'+hm(c.total)+'</span><span>'+c.wk+' min a pie (est.)</span></span><span><b>'+money(c.cost)+'</b> por persona · <b>'+money(c.cost*pp)+'</b> para '+pp+' personas</span></div>'+issuesBox(c);
+ h+=B('RA-19',S.planB?'Ocultar plan B':'Ver plan B si llueve','pbtn alt sm')+(S.planB?'<div class="box"><b>Plan B: lluvia</b><small>Las '+S.stops.length+' paradas son techadas. Los traslados pasan a autobús: tiempo y costo estimados y por confirmar.</small></div>':'');
+ if(S.shared)h+='<div class="box ok"><b>Enlace creado</b><small class="mono">https://puebla360.example/r/ab12cd</small><small>Solo lectura · caduca a los 7 días · sin tu perfil ni tu ubicación.</small></div>';
+ return h+'<div style="display:grid;gap:6px;margin-top:auto">'+B('RA-24','Empezar ruta','pbtn gold')+'<div style="display:flex;gap:6px;flex-wrap:wrap">'+B('RA-21',S.saved?'Guardada ✓':'Guardar','pbtn alt sm')+B('RA-22','Compartir enlace','pbtn alt sm')+B('RA-23',S.down?'Descargada ✓':'Descargar sin conexión','pbtn alt sm')+'</div></div>';},
+'R-06':()=>{const c=cur();const i=curIdx();let h='<div class="topbar"><h3>En ruta</h3><span class="live"><i></i>vigilando</span></div><div class="dots">'+S.stops.map((s,k)=>'<span class="dot '+(s.st==='hecha'?'on':s.st==='omit'?'sk':k===i?'cur':'')+'" title="'+esc(PL[s.id].n)+'"></span>').join('')+'<small style="color:var(--muted)">'+S.stops.filter(s=>s.st==='hecha').length+' de '+S.stops.length+' hechas</small></div>';
+ if(S.delay)h+='<div class="banner">Llevas '+S.delay+' min de retraso o espera sobre lo planeado.</div>';
+ if(i<0)return h+'<div class="box ok"><b>Terminaste tus paradas</b><small>Cierra la ruta para ver tu resumen.</small></div>'+B('RA-30','Terminar ruta','pbtn gold');
+ const r=c.rows[i],p=r.p,s=S.stops[i],sello=p.tags.indexOf('Sello')>=0;
+ h+='<div class="box gold"><small>Siguiente parada</small><span class="stopn">'+esc(p.n)+'</span><span class="meta"><b>'+clock(r.arr)+'</b><span>'+s.min+' min</span>'+(r.w?'<span>'+r.w+' min a pie (est.)</span>':'')+'</span>'
+  +(p.id==='chela'||s.id==='chela'?'':'')+(s.id==='chela'?'<span class="meta"><span class="live"><i></i>en vivo</span><span>Mesas libres: <b>'+S.mesas+' de 12</b></span></span>':'<span class="meta">'+tagA(p)+'</span>')+'<small>'+esc(WHY(p,c,r))+'</small></div>';
+ h+='<div style="display:flex;gap:6px;flex-wrap:wrap">'+B('RA-26','Cómo llegar','pbtn alt sm')+(sello?B('RA-27','Ya llegué: sellar','pbtn sm'):B('RA-35','Marcar como hecha','pbtn sm'))+B('RA-28','Voy tarde','pbtn alt sm')+B('RA-29','Saltar','pbtn alt sm')+'</div>';
+ const after=c.rows.slice(i+1);if(after.length)h+='<h4>Después</h4>'+after.map(x=>'<div class="mrow"><span>'+clock(x.arr)+' · '+esc(x.p.n)+'</span><b>'+x.p.min+' min</b></div>').join('');
+ return h+issuesBox(c)+B('RA-30','Terminar ruta ahora','pbtn alt sm');},
+'R-07':()=>{const idx=S.alertFor;const s=S.stops[idx];if(!s)return tbar('Aviso')+'<div class="box">No hay avisos pendientes.</div>'+B('RA-33','Volver a la ruta','pbtn');
+ const base=cur();const alts=['esquina','santa'].filter(id=>!S.stops.some(x=>x.id===id)).map(id=>{const t=S.stops.map((x,k)=>k===idx?{id,min:PL[id].min}:x);const c=calc(t,S.delay,lim(),bud());return {id,c,dm:c.total-base.total,dc:c.cost-base.cost};});
+ const wait=calc(S.stops,S.delay+20,lim(),bud());
+ let h=tbar('Aviso: algo cambió')+'<div class="box err"><b>'+esc(PL[s.id].n)+' está llena</b><small>Mesas libres: '+S.mesas+' de 12 · dato en vivo (E-12). Tu parada era a las '+clock(base.rows[idx].arr)+'.</small></div><h4>Opciones que caben</h4>';
+ alts.forEach(a=>{const p=PL[a.id];const mesas=a.id==='esquina'?5:2;h+=B('RA-31','<span class="tx vcard"><b>'+esc(p.n)+'</b><span class="meta"><span>'+walk(S.stops[idx-1]?S.stops[idx-1].id:'museo',a.id)+' min a pie (est.)</span><span>'+mesas+' mesas libres</span><span>'+(a.dc>=0?'+':'−')+money(Math.abs(a.dc))+'</span>'+tagA(p)+'</span><span class="meta">'+(a.c.cabe?'<span class="tag ok">Encaja en tu tiempo</span>':'<span class="tag err">No encaja</span>')+'</span></span>','pcard','rep:'+a.id);});
+ h+=B('RA-32','<span class="tx vcard"><b>Esperar unos 20 min</b><span class="meta"><span>Estimado</span>'+(wait.cabe?'<span class="tag ok">Encaja: '+hm(wait.total)+' de '+hm(lim())+'</span>':'<span class="tag err">Ya no cabe</span>')+'</span></span>','pcard');
+ return h+B('RA-33','Mantener y seguir vigilando','pbtn alt');},
+'R-08':()=>{const done=S.stops.filter(s=>s.st==='hecha').length,om=S.stops.filter(s=>s.st==='omit').length,chela=S.stops.some(s=>s.id==='chela'&&s.st==='hecha');
+ return tbar('¡Terminaste tu ruta!',false)+'<div class="box ok"><b>'+done+' de '+S.stops.length+' paradas hechas</b><small>'+om+' omitidas · '+S.sellos+' sellos nuevos en tu pasaporte</small></div>'+(chela?'<div class="box gold"><b>Cupón 10% en Fonda Doña Chela</b><small>Tope $50.00 · para usar en tu próxima visita</small></div>':'')
+ +'<h4>¿Cómo estuvo tu ruta?</h4><div class="chips2">'+[1,2,3,4,5].map(n=>chip('RA-36',n+' ★',String(n),S.rating===n)).join('')+'</div><div style="display:flex;gap:6px;flex-wrap:wrap">'+B('RA-37','Reseñar lugares','pbtn alt sm')+B('RA-38',S.fav?'Favorita ✓':'Guardar como favorita','pbtn alt sm')+B('RA-39','Ver mis rutas','pbtn sm')+'</div><small style="color:var(--muted)">Las reseñas se habilitan con los sellos que ganaste.</small>';},
+'R-09':()=>{const nm=S.vk?VAR[S.vk].n:null;const est=S.state;return '<div class="topbar"><h3>Mis rutas</h3></div>'+(nm?'<div class="box"><span class="meta"><b>'+esc(nm)+'</b><span class="tag '+(est==='terminada'?'ok':est==='en curso'?'gold':'blue')+'">'+({borrador:'Borrador',guardada:'Guardada','en curso':'En curso',terminada:'Terminada'}[est])+'</span></span><small>'+S.stops.length+' paradas · '+hm(cur().total)+'</small>'+B('RA-41','Abrir','pbtn sm')+'</div>':'')
+ +'<div class="box"><span class="meta"><b>Lugares poco visitados</b><span class="tag ok">Terminada</span></span><small>12 oct 2026 (ejemplo) · 3 de 3 paradas</small></div>'+B('RA-42','Nueva ruta','pbtn');}
+};
+const TABS=[['Explorar','compass'],['Mapa','map'],['Rutas','route'],['Pasaporte','ticket'],['Perfil','user']];
+const STX={
+ 'R-01':{vacio:['Sin perfil todavía','Puedes planear sin cuestionario: usaremos valores generales.'],error:['No pudimos preparar el formulario','Intenta de nuevo.'],exito:['Brief listo','Ya puedes ver rutas.']},
+ 'R-02':{vacio:['No encontramos una ruta que quepa','RUTA_SIN_RESULTADOS: prueba con más tiempo, más presupuesto o quitar una necesidad.'],error:['No pudimos armar las rutas','Fallo del servidor. Se conserva tu brief.'],exito:['Rutas listas','Elige la que más te guste.']},
+ 'R-03':{vacio:['Tu ruta se quedó sin paradas','Agrega una parada o vuelve a elegir un estilo.'],error:['No pudimos recalcular','Tu cambio no se aplicó. Vuelve a intentarlo.'],exito:['Cambio aplicado','Todo recalculado.']},
+ 'R-06':{vacio:['No hay una ruta en curso','Empieza una desde «Revisar y guardar».'],error:['Perdimos la conexión con tu ruta','Seguimos con lo último guardado en tu teléfono.'],exito:['Parada hecha','Sigue la siguiente.']}
+};
+const STD={vacio:['Nada por aquí todavía','No hay datos para mostrar.'],error:['No pudimos cargar','Hubo un problema con el servidor. Intenta de nuevo.'],exito:['Listo','La operación se completó.']};
+function stateView(scr,st){
+  if(st==='cargando')return '<div class="box"><b>Armando tus rutas…</b><small>✓ Entendiendo tu brief</small><small>✓ Buscando lugares abiertos a tu hora</small><small>✓ Revisando afluencia y mesas</small><small>… Ordenando para caminar menos</small><small style="color:var(--muted)">Redactando el «por qué» de cada parada</small></div><div class="skel"></div><div class="skel"></div>';
+  const t=(STX[scr]&&STX[scr][st])||STD[st];const err=st==='error';
+  return '<div style="flex:1;display:grid;align-content:center;justify-items:center;text-align:center;gap:10px"><div class="box '+(err?'err':st==='exito'?'ok':'')+'" style="width:100%"><b>'+esc(t[0])+'</b><small>'+esc(t[1])+'</small></div><button type="button" class="pbtn alt sm" data-ui="normal">'+(err?'Reintentar':'Volver a la pantalla')+'</button></div>';
+}
+/* ===== Inspector ===== */
+const nameOf=s=>SCR[s]?SCR[s].n:s;
+const kChip=a=>'<span class="k '+({consulta:'q',mutacion:'m',ws:'w',evento:'e',local:''}[a.kind]||'')+'">'+VIA[a.kind]+'</span>';
+function evBlock(id,aid){
+  const e=EV[id],env=envelope(e,aid);
+  return '<details><summary><span class="k m">'+id+'</span> '+esc(e.tipo)+' <span class="k">v'+e.version+'</span> · origen '+esc(e.origen)+'</summary><div class="bd"><pre class="js">'+jh(env)+'</pre>'+e.cons.map(c=>'<div style="font-size:13px"><b>'+esc(c.m)+'</b>: '+esc(c.t)+'</div>').join('')+(e.nota?'<div class="cap">'+esc(e.nota)+'</div>':'')+'</div></details>';
+}
+function steps(a){
+  const s=[];
+  if(a.kind==='local')s.push('En el teléfono: no sale ninguna llamada.');
+  else if(a.kind==='evento')s.push('Hecho externo a la app (no es un botón). Lo provoca otro módulo.');
+  else s.push('<b>App → canal</b> por '+VIA[a.kind]+': <span class="mono">'+esc(a.op)+'</span>'+(a.mod!=='—'?' · atiende <b>'+esc(a.mod)+'</b>':''));
+  a.inEv.forEach(e=>s.push('Entra por el bus <span class="k e">'+e+'</span> '+esc(EV[e].tipo)+' → '+EV[e].cons.map(c=>'<b>'+esc(c.m)+'</b>').join(', ')));
+  a.sync.forEach(x=>s.push('<span class="k q">sync</span> '+esc(x)));
+  a.pub.forEach(e=>s.push('Publica <span class="k m">'+e+'</span> '+esc(EV[e].tipo)+' (outbox, misma transacción). Reaccionan: '+EV[e].cons.map(c=>'<b>'+esc(c.m)+'</b>').join(', ')));
+  if(a.go)s.push('Navega a <b>'+a.go+' '+nameOf(a.go)+'</b>.');
+  return s;
+}
+function actDetail(a,arg,blocked){
+  const d=a.dyn?a.dyn():null,req=d?d.req:a.req,res=d?d.res:a.res;
+  let h='<div class="hd"><span class="k">'+a.id+'</span>'+kChip(a)+(a.scr!=='*'?'<span class="chip">'+a.scr+' '+nameOf(a.scr)+'</span>':'<span class="chip">toda la app</span>')+(arg?'<span class="k">arg: '+esc(arg)+'</span>':'')+'</div><h3>'+esc(a.label)+'</h3>';
+  if(blocked)h+='<div class="banner off">Sin conexión: la operación no sale. La app la reintenta cuando vuelve la red.</div>';
+  if(a.ui)h+='<p>'+esc(a.ui)+'</p>';
+  h+='<div><h4 style="margin-bottom:6px">Recorrido</h4><ol class="steps">'+steps(a).map(x=>'<li>'+x+'</li>').join('')+'</ol></div>';
+  if(a.pat)h+='<div class="cap"><b>Patrón:</b> '+esc(a.pat)+'</div>';
+  if(req)h+='<details open><summary>Lo que viaja: entrada</summary><div class="bd"><pre class="js">'+jh(req)+'</pre></div></details>';
+  if(res)h+='<details open><summary>Lo que regresa: salida</summary><div class="bd"><pre class="js">'+jh(res)+'</pre></div></details>';
+  if(a.err.length)h+='<div><h4 style="margin-bottom:6px">Errores posibles (propuesta)</h4><div class="chips2">'+a.err.map(x=>'<span class="k e">'+esc(x)+'</span>').join('')+'</div></div>';
+  const evs=a.inEv.concat(a.pub).filter((x,i,r)=>r.indexOf(x)===i);
+  if(evs.length)h+='<div><h4 style="margin-bottom:6px">Eventos de esta acción</h4><div style="display:grid;gap:6px">'+evs.map(e=>evBlock(e,a.id)).join('')+'</div></div>';
+  return h;
+}
+function renderInsp(){
+  const el=$('#insp');if(!el)return;const sel=S.sel&&A[S.sel.id];let h='';
+  if(sel)h+=actDetail(sel,S.sel.arg,S.sel.blocked);
+  else h+='<div class="card"><h3>Toca cualquier botón del teléfono</h3><p class="intro" style="margin-top:6px">Verás la operación, los datos que viajan, los módulos que responden y los eventos que nacen. Los números se recalculan con cada cambio.</p></div>';
+  const au=AUTOS(S.scr);
+  if(au.length)h+='<div class="card"><h4 style="margin-bottom:6px">Se ejecuta solo al abrir '+S.scr+' '+nameOf(S.scr)+'</h4><div class="chips2">'+au.map(a=>'<button type="button" class="k" data-i="'+a.id+'">'+a.id+' · '+esc(a.label)+'</button>').join('')+'</div></div>';
+  el.innerHTML=h;
+}
+function renderLog(){const el=$('#log');if(!el)return;el.innerHTML=LOG.length?LOG.map(l=>'<div class="'+l.c+'">'+esc(l.t)+'</div>').join(''):'<div>Aún no hay actividad.</div>';}
+function renderPhone(){
+  const el=$('#phone');if(!el)return;let body;
+  if(S.ui==='normal'||S.ui==='offline'||S.ui==='sinia')body=(S.ui==='offline'?'<div class="banner off">Sin conexión. Mostrando lo último guardado. Lo que escribe queda en pausa.</div>':'')+RS[S.scr]();
+  else body=stateView(S.scr,S.ui);
+  const bar=(S.scr==='R-01'||S.scr==='R-09')?'<div class="tabbar">'+TABS.map(t=>B('RA-44',ic(t[1])+'<span>'+t[0]+'</span>','',t[0],t[0]==='Rutas'?' aria-current="true"':'')).join('')+'</div>':'';
+  el.innerHTML='<div class="sb"><span>9:41</span><span>Puebla 360</span></div><div class="scr" id="screen">'+(S.toast?'<div class="toast" role="status">'+esc(S.toast)+'</div>':'')+body+'</div>'+bar;
+  el.classList.toggle('hot',HOT);
+}
+function renderPicker(){
+  $('#picker').innerHTML=Object.keys(SCR).map(k=>'<button type="button" data-scr="'+k+'"'+(S.scr===k?' aria-current="true"':'')+'>'+k.slice(2)+' '+esc(SCR[k].n)+'</button>').join('');
+  $('#states').innerHTML='<span style="font-size:12.5px;color:var(--muted)">Estado:</span>'+[['normal','Normal'],['cargando','Cargando'],['vacio','Vacío'],['error','Con error'],['exito','Éxito'],['sinia','Sin IA'],['offline','Sin conexión']].map(x=>'<button type="button" data-ui="'+x[0]+'" aria-pressed="'+(S.ui===x[0])+'">'+x[1]+'</button>').join('');
+  const s=SCR[S.scr];$('#pfoot').innerHTML='<b>'+S.scr+' '+esc(s.n)+'</b><br>API: '+esc(s.api);
+}
+function render(){renderPicker();renderPhone();renderInsp();renderLog();}
+/* ===== Pestañas ===== */
+function protoHTML(){
+  return '<p class="intro">Prueba el recorrido completo: <b>Plantear → Elegir estilo → Editar → Revisar → Empezar → En ruta → Cierre</b>. Cambia el tiempo o el presupuesto en el primer paso y verás cómo el servidor quita paradas para que quepa. Dentro de «En ruta», el recuadro punteado dorado simula un evento externo.</p>'
+  +'<div class="proto"><div class="leftcol"><div class="picker" id="picker"></div><div class="statebar" id="states"></div>'
+  +'<label class="chip"><input type="checkbox" id="hot"> Resaltar zonas tocables</label><div class="phone" id="phone"></div><div class="cap" id="pfoot"></div>'
+  +'<div class="sim"><h4>Simulación: un hecho fuera de la app</h4>'+B('RA-34','Fonda Doña Chela se llena (C-01 → E-12)','')+'<small>Funciona con la ruta A en curso y Fonda Doña Chela pendiente. Rutas lo consume y empuja el aviso.</small></div></div>'
+  +'<div class="insp"><div id="insp"></div><div class="card"><div class="filters"><h4 style="flex:1">Registro de la sesión</h4><button type="button" class="k" id="clr">Limpiar</button></div><div class="log" id="log"></div></div></div></div>';
+}
+const KS={consulta:'consulta',mutacion:'mutación',ws:'WS',evento:'evento',local:'local'};
+function rowOf(a){return '<div class="r"><span class="l">'+esc(a.label)+'</span><span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><span class="k">'+a.id+'</span><span class="k '+({consulta:'q',mutacion:'m',ws:'w',evento:'e'}[a.kind]||'')+'">'+KS[a.kind]+'</span>'+(a.go?'<span class="k q">→ '+a.go+' '+esc(nameOf(a.go))+'</span>':'')+a.pub.map(e=>'<span class="k m">⚡'+e+'</span>').join('')+'</span></div>';}
+function mapaHTML(){
+  let h='<p class="intro">Cada tarjeta es una pantalla. Cada renglón responde: «si toco este botón, ¿qué pasa?». El ciclo de vida de una ruta marca en qué momento se publica cada evento.</p>'
+  +'<div class="card"><h3>Ciclo de vida de una ruta</h3><div class="life" style="margin-top:8px"><span class="k">borrador</span><span class="arrow">→ guardar →</span><span class="k q">guardada</span><span class="k m">⚡E-11</span><span class="arrow">→ empezar →</span><span class="k w">en curso</span><span class="k m">⚡E-15</span><span class="arrow">⇄ aviso o retraso →</span><span class="k e">reajustada</span><span class="k m">⚡E-16</span><span class="arrow">→ terminar →</span><span class="k">terminada</span><span class="k m">⚡E-17</span></div><p class="cap" style="margin-top:8px">Las variantes y las ediciones son borradores y no publican nada. E-11 sale al guardar o empezar la primera vez.</p></div>';
+  ['Antes','Armar','Durante','Después'].forEach(l=>{
+    const ids=Object.keys(SCR).filter(k=>SCR[k].lane===l);
+    h+='<div><h3 style="margin-bottom:8px">'+l+'</h3><div class="scards">'+ids.map(id=>{
+      const s=SCR[id],mine=Object.values(A).filter(a=>!a.auto&&(a.scr===id||a.also.indexOf(id)>=0)),au=Object.values(A).filter(a=>a.auto&&a.scr===id);
+      return '<div class="card scard"><div class="t"><h3>'+id+' '+esc(s.n)+'</h3></div><p style="font-size:13.5px">'+esc(s.p)+'</p><div class="btnrow">'+(au.length?'<div class="r"><span class="l"><b>Al abrir (automático)</b></span><span></span></div>'+au.map(rowOf).join(''):'')+'<div class="r"><span class="l"><b>Botones</b></span><span></span></div>'+mine.map(rowOf).join('')+'</div><div class="cap">API: '+esc(s.api)+'</div><button type="button" class="k" data-goproto="'+id+'">Ver en el prototipo</button></div>';
+    }).join('')+'</div></div>';
+  });
+  return h;
+}
+function decideHTML(){
+  const P=[['code','Brief','Chips del formulario o texto libre. «Sorpréndeme» usa el perfil y valores por defecto.'],['ia','Interpretar','Solo si hay texto libre: el modelo lo convierte en un brief con esquema fijo. Si falla, se muestra el formulario.'],['code','Restricciones duras','Abierto a esa hora, presupuesto por persona, dieta, movilidad, personas y tiempo. Lo que no cumple no entra.'],['code','Candidatos','Lugares de Directorio, con menú o catálogo de Catálogo y atracciones de Museos, ya filtrados.'],['code','Puntaje','Intereses, afluencia esperada, equidad (demanda planeada que Rutas ya tiene), sello y cupón.'],['code','Solver','Mejor recorrido bajo tiempo, presupuesto y caminata. Tres variantes con pesos distintos. Traslados de Transporte, estimados.'],['ia','Explicar','Redacta el «por qué» de cada parada y el resumen, solo con hechos del solver.'],['code','Verificador','Cada cifra del texto debe existir en los datos. Si no, se usa una plantilla fija.'],['code','App','Muestra variantes. Toda edición vuelve al solver y solo recalcula: no llama al modelo.']];
+  return '<p class="intro">El principio del proyecto, aplicado a Rutas: <b>el modelo interpreta y redacta; el código decide</b>. El orden de las paradas ya no lo elige la IA: lo calcula un algoritmo repetible que se puede probar y explicar. Sin IA, la ruta sigue funcionando con textos estándar.</p>'
+  +'<div class="chips"><span class="chip blue">Azul = código determinista</span><span class="chip gold">Dorado = modelo de IA</span></div><div class="pipe">'+P.map(p=>'<div class="pst '+p[0]+'"><b>'+p[1]+'</b><span>'+p[2]+'</span></div>').join('')+'</div>'
+  +'<div class="cap"><b>Sin IA:</b> pasos 1, 3, 4, 5, 6 y una plantilla en lugar del 7. La ruta es la misma; solo cambia el texto del «por qué» (estado «Sin IA» del prototipo).</div>'
+  +'<div class="grid2"><div class="card"><h3>Qué hace el modelo</h3><ul style="margin:8px 0 0;padding-left:18px;display:grid;gap:5px"><li>Entender un texto libre y llenar el brief.</li><li>Redactar el «por qué» y el resumen con el tono de la app.</li></ul></div><div class="card"><h3>Qué no hace nunca</h3><ul style="margin:8px 0 0;padding-left:18px;display:grid;gap:5px"><li>Elegir lugares, ordenarlos o fijar horarios.</li><li>Calcular costos, duraciones o traslados.</li><li>Tocar la base de datos ni decidir el negocio_id.</li><li>Inventar un lugar: solo ve los que devuelve la API.</li></ul></div></div>'
+  +'<div><h3 style="margin-bottom:8px">Qué pesa en cada variante (pesos iniciales, por calibrar)</h3><div class="tw"><table><thead><tr><th>Factor</th><th>Qué mide</th><th>A · Cultural</th><th>B · Económica</th><th>C · Poco visitados</th></tr></thead><tbody>'+[['Intereses','Coincide con tu perfil y brief','Alto','Medio','Medio'],['Poca gente','Afluencia esperada a la hora de llegar','Alto','Medio','Alto'],['Equidad','Evita lo que ya estará lleno y mete lugares poco visitados','Medio','Bajo','Alto'],['Costo bajo','Gasto por persona','Medio','Alto','Medio'],['Sello y cupón','Paradas del pasaporte','Medio','Medio','Bajo']].map(r=>'<tr>'+r.map((x,i)=>'<td>'+(i===0?'<b>':'')+esc(x)+(i===0?'</b>':'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></div>'
+  +'<div class="cap"><b>Equidad sin ciclos:</b> Rutas calcula la demanda planeada con sus propias rutas guardadas y en curso. Afluencia no consume eventos de Rutas, así que no hay ciclo con E-13. Solo se usan agregados por zona y franja.</div>';
+}
+function evCard(e){
+  const as=Object.values(A).filter(a=>a.pub.indexOf(e.id)>=0||a.inEv.indexOf(e.id)>=0);
+  return '<div class="card" style="display:grid;gap:8px" data-evmod="'+esc(e.origen.split(' ')[0])+'"><div class="chips2"><span class="k m">'+e.id+'</span><b class="mono" style="font-size:13.5px">'+esc(e.tipo)+'</b><span class="k">v'+e.version+'</span><span class="k">origen: '+esc(e.origen)+'</span></div><div style="font-size:13px"><b>Se dispara con:</b> '+(as.length?as.map(a=>'<span class="k">'+a.id+'</span> '+esc(a.label)).join(' · '):'—')+'</div><details><summary>Sobre completo con datos de ejemplo</summary><div class="bd"><pre class="js">'+jh(envelope(e,''))+'</pre></div></details><div><h4 style="margin-bottom:4px">Quién lo consume y qué hace</h4>'+e.cons.map(c=>'<div style="font-size:13px"><b>'+esc(c.m)+'</b>: '+esc(c.t)+'</div>').join('')+'</div>'+(e.nota?'<div class="cap">'+esc(e.nota)+'</div>':'')+'</div>';
+}
+function accHTML(){
+  const pub=['E-11','E-15','E-16','E-17'].map(i=>EV[i]),inn=['E-05','E-12','E-13','C-01'].map(i=>EV[i]);
+  return '<div class="grid2"><div class="card"><h3>Qué publica Rutas</h3><p style="margin-top:6px">4 eventos: <span class="k m">E-11</span> ruta.generada (existente, con otro disparo), <span class="k m">E-15</span> ruta.iniciada, <span class="k m">E-16</span> ruta.reajustada y <span class="k m">E-17</span> ruta.finalizada. Todos de plataforma, sin <code>negocio_id</code> (D-37).</p></div><div class="card"><h3>Qué consume Rutas</h3><p style="margin-top:6px">3 eventos: <span class="k m">E-12</span> mesas, <span class="k m">E-13</span> afluencia y <span class="k m">E-05</span> sello. Los usa para vigilar la ruta en curso y empujar avisos por la suscripción <span class="k w">SUB-6</span>.</p></div></div>'
+  +'<div class="filters"><select id="fScr" aria-label="Pantalla"><option value="">Todas las pantallas</option>'+Object.keys(SCR).map(k=>'<option value="'+k+'">'+k+' '+esc(SCR[k].n)+'</option>').join('')+'</select><select id="fKind" aria-label="Tipo"><option value="">Todos los tipos</option>'+Object.keys(VIA).map(k=>'<option value="'+k+'">'+VIA[k]+'</option>').join('')+'</select><input id="fTxt" type="search" placeholder="Buscar texto" aria-label="Buscar texto"><span class="k" id="fCnt"></span></div>'
+  +'<div class="tw"><table><thead><tr><th>ID</th><th>Pantalla</th><th>Disparador</th><th>Vía</th><th>Operación</th><th>Atiende</th><th>Eventos</th><th>Destino</th></tr></thead><tbody id="accBody"></tbody></table></div>'
+  +'<div><h3 style="margin-bottom:8px">Eventos publicados por Rutas</h3><div class="scards">'+pub.map(evCard).join('')+'</div></div><div><h3 style="margin-bottom:8px">Eventos que Rutas consume</h3><div class="scards">'+inn.map(evCard).join('')+'</div></div>'
+  +'<div><h3 style="margin-bottom:8px">Suscripción hacia el teléfono</h3><div class="tw"><table><thead><tr><th>ID</th><th>Suscripción</th><th>Origen</th><th>Qué cambia</th><th>Dónde</th><th>Acción</th></tr></thead><tbody>'+SUBS.map(s=>'<tr><td><span class="k w">'+s[0]+'</span></td><td class="mono">'+esc(s[1])+'</td><td>'+esc(s[2])+'</td><td>'+esc(s[3])+'</td><td>'+esc(s[4])+'</td><td><span class="k">'+s[5]+'</span></td></tr>').join('')+'</tbody></table></div></div>'
+  +'<div><h3 style="margin-bottom:8px">Llamadas síncronas</h3><div class="tw"><table><thead><tr><th>ID</th><th>De</th><th>A</th><th>Operación</th><th>Acciones</th><th>Nota</th></tr></thead><tbody>'+SYNC.map(r=>'<tr><td><span class="k q">'+r[0]+'</span></td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td><td class="mono">'+esc(r[4])+'</td><td>'+esc(r[5])+'</td></tr>').join('')+'</tbody></table></div></div>';
+}
+function renderAcc(){
+  const fs=$('#fScr').value,fk=$('#fKind').value,ft=$('#fTxt').value.toLowerCase();
+  const L=Object.values(A).filter(a=>(!fs||a.scr===fs||a.also.indexOf(fs)>=0)&&(!fk||a.kind===fk)&&(!ft||(a.id+' '+a.label+' '+a.op+' '+a.mod).toLowerCase().indexOf(ft)>=0));
+  $('#fCnt').textContent=L.length+' de '+Object.keys(A).length;
+  $('#accBody').innerHTML=L.map(a=>'<tr class="clk" data-row="'+a.id+'" tabindex="0"><td><span class="k">'+a.id+'</span></td><td>'+(a.scr==='*'?'toda':a.scr)+'</td><td>'+esc(a.label)+'</td><td>'+kChip(a)+'</td><td class="mono">'+esc(a.op||'—')+'</td><td>'+esc(a.mod)+'</td><td>'+a.pub.map(e=>'<span class="k m">⚡'+e+'</span>').join(' ')+a.inEv.map(e=>'<span class="k e">→'+e+'</span>').join(' ')+'</td><td>'+(a.go?a.go:'—')+'</td></tr>'+(OPEN.has(a.id)?'<tr><td colspan="8"><div style="display:grid;gap:10px;padding:6px 0">'+actDetail(a,'',false)+'</div></td></tr>':'')).join('');
+}
+const OPEN=new Set();
+const PROB=[
+ ['Preferencias que no se pueden cambiar','Chips fijos: 11:00, 4 h, $300.00, caminando.','Brief editable en pocos toques, precargado del perfil, y «Sorpréndeme» para quien tiene prisa.','R-01'],
+ ['Una sola propuesta','Un resultado y nada con qué comparar.','Hasta tres variantes comparables en tiempo, costo, caminata, afluencia y sellos.','R-02'],
+ ['Edición pobre','Solo «cambiar la última parada».','Ajustar tiempo, cambiar, quitar, fijar y agregar, con aviso de si todavía cabe y qué cambia.','R-03, R-04'],
+ ['Desconfianza en la IA','No decía por qué eligió cada lugar.','«Por qué» por parada, redactado por el modelo con hechos del servidor y revisado por un verificador de cifras.','R-03'],
+ ['El plan se rompe','Una foto: si un lugar cierra o se llena, la persona queda sola.','Modo viaje con avisos de lugar lleno, afluencia alta y retraso, y opciones que caben.','R-06, R-07'],
+ ['Se guarda y se olvida','Sin seguimiento después de guardar.','Siguiente parada, cómo llegar, «ya llegué», «voy tarde» y «saltar».','R-06'],
+ ['Grupos y necesidades','Una persona promedio.','Personas, con quién y necesidades (sin gluten, caminar poco, con niños) como restricciones duras.','R-01'],
+ ['Itinerarios apretados','Sin margen ni descansos.','Ritmo, traslados visibles, barras de tiempo y dinero, y avisos antes de que sea tarde.','R-03'],
+ ['Costos poco claros','Un solo número.','Costo por persona y total del grupo, siempre «estimado».','R-03, R-05'],
+ ['Solo medio día','No cubre estancias de varios días.','Rutas de 2 o 3 días partidas por día (fase P2; hoy solo avisa).','R-01'],
+ ['Todos al mismo lugar','Todos reciben las mismas recomendaciones y horas.','Puntaje de equidad: evita lo que estará lleno y mete lugares poco visitados.','R-02 (variante C)'],
+ ['La IA decide el orden','Puede alucinar, es lenta, no se repite y no se puede probar.','Solver determinista; el modelo solo interpreta y redacta. Sin IA, la ruta sigue.','Pestaña «Cómo decide»'],
+ ['Cifras sin fuente','Duraciones y costos inventados.','Valores declarados por el negocio con respaldo por categoría, rotulados como estimados y documentados.','Pestaña «Alcance y riesgos»'],
+ ['Sin señal','La ruta no se puede usar.','Descarga la ruta y sus horarios para usarla sin conexión.','R-05'],
+ ['No se puede compartir','La ruta vive solo en el teléfono.','Enlace de solo lectura que caduca; no expone perfil ni ubicación.','R-05']
+];
+function probHTML(){return '<p class="intro">Problemas habituales de los planificadores de viaje y cómo los cubre Rutas v2. La lista sale de lo que se observó en la versión anterior y de problemas conocidos del rubro; no se hizo investigación de mercado ni pruebas con usuarios.</p><div class="tw"><table><thead><tr><th>#</th><th>Problema</th><th>Antes (v1)</th><th>Ahora (v2)</th><th>Dónde se ve</th></tr></thead><tbody>'+PROB.map((r,i)=>'<tr><td>'+(i+1)+'</td><td><b>'+esc(r[0])+'</b></td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>').join('')+'</tbody></table></div>';}
+function alcHTML(){
+  const T=(head,rows)=>'<div class="tw"><table><thead><tr>'+head.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+  return '<p class="intro">Quedan días contados para la demo y el equipo no ha dicho su disponibilidad. El corte es una propuesta.</p>'
+  +'<div><h3 style="margin-bottom:8px">Corte propuesto</h3>'+T(['Nivel','Qué entra'],[['<span class="k e">P1 · demo</span>','Brief editable, 2 variantes (A y B), editor (tiempo, cambiar, quitar, fijar, agregar con «cabe»), «por qué» con verificador, guardar, modo viaje básico (siguiente, cómo llegar, sellar, voy tarde, saltar) y aviso de lugar lleno (E-12).'],['<span class="k m">P2</span>','Variante C (poco visitados), aviso por afluencia alta (E-13), plan B de lluvia, compartir, descarga sin conexión, calificar, Mis rutas completo y rutas de varios días.'],['<span class="k">P3</span>','Aprendizaje con duraciones reales (E-17), calendario, avisos fuera de la app y afinado de la demanda planeada.']])+'</div>'
+  +'<div><h3 style="margin-bottom:8px">Datos que el solver necesita</h3>'+T(['Dato','Dueño','De dónde sale','Estado'],[['Duración de la visita','Directorio','La declara el negocio en su panel; respaldo por categoría (museo, restaurante, miscelánea). Siempre «estimado».','Por diseñar'],['Costo medio por persona','Directorio / Catálogo','Se calcula del menú o catálogo publicado; respaldo por categoría.','Por diseñar'],['Horario por día','Directorio','Ya está en la ficha.','Existe'],['Aforo o total de mesas','Verticales','Viene en C-01 (campo total).','Existe'],['Etiquetas de dieta y accesibilidad','Directorio','Las declara el negocio.','Por definir'],['Traslados','Transporte','OpenStreetMap más captura propia. Estimado; sin GTFS público.','Por confirmar'],['Afluencia','Afluencia','Conteos de ventas por franja, con mínimo por celda.','Existe (E-13)']])+'</div>'
+  +'<div><h3 style="margin-bottom:8px">Riesgos</h3>'+T(['Riesgo','Prob.','Mitigación'],[['Alcance excesivo','Alta','Cortar a P1 y mostrar lo demás en el mockup.'],['Duraciones y costos inventados','Alta','Rotular «estimado», documentar en la ficha de fuentes y usar respaldo por categoría.'],['Rutas raras del solver','Media','Casos fijos con resultado esperado; el solver es determinista y se prueba.'],['Aviso falso de «lugar lleno» por un dato atrasado','Media','Mostrar «actualizado hace X min» y no reemplazar sin confirmación.'],['Avisos solo con la app abierta','Media','Mostrar en pantalla; las notificaciones fuera de la app quedan fuera del MVP.'],['La equidad empuja a un lugar peor','Media','Máximo un lugar poco visitado por ruta A y B, con su razón visible.'],['Reidentificar a un negocio pequeño con la demanda','Baja','Solo agregados con mínimo por celda.']])+'</div>'
+  +'<div><h3 style="margin-bottom:8px">Decisiones propuestas</h3>'+T(['ID','Decisión','Estado'],[['D-39','Rutas arma el recorrido con un solver determinista; el modelo solo interpreta el texto libre y redacta el «por qué», con verificador de cifras y plantilla si falla.','<span class="k m">PROPUESTA</span>'],['D-40','Ruta viva: modo viaje con reajustes, eventos E-15, E-16 y E-17, suscripción SUB-6, y Rutas consume E-12, E-13 y E-05.','<span class="k m">PROPUESTA</span>'],['D-41','Equidad: puntaje con la demanda planeada que Rutas ya tiene y la afluencia actual. E-11 se publica al guardar o empezar. Afluencia no consume eventos de Rutas (evita un ciclo).','<span class="k m">PROPUESTA</span>']])+'</div>'
+  +'<div><h3 style="margin-bottom:8px">Hallazgos</h3>'+T(['ID','Hallazgo','Propuesta'],[['HR-1','Rutas consume E-13 y Afluencia consumiría ruta.* para la demanda: ciclo entre módulos.','Rutas calcula la demanda con sus propias tablas (D-41).'],['HR-2','En la app, A-39 publicaba E-11 al proponer; contaría rutas que nadie va a hacer.','E-11 se publica al guardar o empezar (D-41). Hay que actualizar la pantalla S-09 de la app.'],['HR-3','Rutas marca el avance con E-05, pero no todos los lugares tienen sello.','«Marcar como hecha» a mano para los demás (RA-35).'],['HR-4','«Sin gluten» y «Caminar poco» necesitan etiquetas que Directorio no tiene.','Definirlas con el dueño de Directorio; hoy solo cambian el brief.'],['HR-5','Las alertas necesitan datos frescos de mesas y afluencia.','Mostrar la antigüedad del dato y pedir confirmación.'],['HR-6','El solver necesita casos de prueba con resultado esperado.','Escribirlos junto con el diseño, antes de programar.']])+'</div>';
+}
+/* ===== Arranque ===== */
+const TABS_UI=[['proto','Prototipo',protoHTML],['mapa','Mapa de la interfaz',mapaHTML],['decide','Cómo decide',decideHTML],['acc','Acciones y eventos',accHTML],['prob','Problemas y soluciones',probHTML],['alc','Alcance y riesgos',alcHTML]];
+function showTab(id){TABS_UI.forEach(t=>{$('#p-'+t[0]).hidden=t[0]!==id;});document.querySelectorAll('#tabs .tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===id)));}
+function init(){
+  $('#tabs').innerHTML=TABS_UI.map(t=>'<button type="button" class="tab" role="tab" data-tab="'+t[0]+'">'+t[1]+'</button>').join('');
+  TABS_UI.forEach(t=>{$('#p-'+t[0]).innerHTML=t[2]();});
+  showTab('proto');renderAcc();render();
+  document.addEventListener('click',function(e){
+    const t=e.target;let el;
+    if((el=t.closest('[data-tab]'))){showTab(el.dataset.tab);return;}
+    if((el=t.closest('[data-goproto]'))){S.scr=el.dataset.goproto;S.ui='normal';S.hist=[];if(!S.stops.length){const r=mk('A');S.stops=r.stops;S.drop=r.drop;S.vk='A';}showTab('proto');render();window.scrollTo({top:0});return;}
+    if((el=t.closest('[data-act]'))){fire(el.dataset.act,el.dataset.arg);return;}
+    if((el=t.closest('[data-i]'))){S.sel={id:el.dataset.i};render();return;}
+    if((el=t.closest('[data-scr]'))){S.scr=el.dataset.scr;S.ui='normal';S.hist=[];if(!S.stops.length&&S.scr!=='R-01'&&S.scr!=='R-02'){const r=mk('A');S.stops=r.stops;S.drop=r.drop;S.vk='A';}addLog('','Saltaste a '+S.scr+' '+nameOf(S.scr)+' desde el selector');AUTOS(S.scr).forEach(a=>addLog('au','↻ al abrir '+S.scr+': '+a.id+' '+a.label));render();return;}
+    if((el=t.closest('[data-ui]'))){S.ui=el.dataset.ui;render();return;}
+    if((el=t.closest('[data-row]'))){const id=el.dataset.row;if(OPEN.has(id))OPEN.delete(id);else OPEN.add(id);renderAcc();return;}
+    if(t.id==='clr'){LOG=[];renderLog();return;}
+  });
+  document.addEventListener('keydown',function(e){if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target.closest&&e.target.closest('tr[data-row]');if(!el)return;e.preventDefault();const id=el.dataset.row;if(OPEN.has(id))OPEN.delete(id);else OPEN.add(id);renderAcc();});
+  document.addEventListener('change',function(e){const t=e.target;if(t.id==='hot'){HOT=t.checked;renderPhone();}if(t.id==='fScr'||t.id==='fKind')renderAcc();});
+  document.addEventListener('input',function(e){if(e.target.id==='fTxt')renderAcc();});
+}
+init();
+</script>
+</body>
+</html>

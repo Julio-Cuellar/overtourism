@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nombre del mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Plantilla de mockup de Negocio 360.
+   Concepto: plano técnico. Azul talavera = síncrono / acento. Dorado cempasúchil = asíncrono / secundario.
+   Reemplaza el contenido de ejemplo; conserva tokens, tema claro y oscuro, y la regla de datos inventados. */
+:root {
+  --bg: #F4F6FA;
+  --surface: #FFFFFF;
+  --surface-2: #EBEFF6;
+  --fg: #15202E;
+  --muted: #566277;
+  --line: #D6DCE8;
+  --accent: #1F4E9C;
+  --accent-soft: #E1EAF8;
+  --gold: #A8680A;
+  --gold-soft: #FAEDD0;
+  --ok: #1B7648;
+  --warn: #A94E14;
+  --err: #B3261E;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1320; --surface: #151D2D; --surface-2: #1C2639; --fg: #E6EBF4; --muted: #97A3B9;
+    --line: #29344D; --accent: #84AAF0; --accent-soft: #1A2946; --gold: #EDB24B; --gold-soft: #35290F;
+    --ok: #5CCB93; --warn: #F09A62; --err: #F2928B; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1320; --surface: #151D2D; --surface-2: #1C2639; --fg: #E6EBF4; --muted: #97A3B9;
+  --line: #29344D; --accent: #84AAF0; --accent-soft: #1A2946; --gold: #EDB24B; --gold-soft: #35290F;
+  --ok: #5CCB93; --warn: #F09A62; --err: #F2928B; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; padding-inline: 16px; padding-block: 0 56px; }
+.wrap { max-width: 1040px; margin-inline: auto; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(28px, 5vw, 40px); }
+h2 { font-size: 24px; }
+h3 { font-size: 17px; }
+p { margin: 0; }
+code { font-family: var(--font-mono); font-size: 0.88em; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { padding-block: 32px 20px; display: grid; gap: 12px; }
+.sub, .lead { color: var(--muted); max-width: 68ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); white-space: nowrap; }
+.chip.s { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+.chip.a { color: var(--gold); background: var(--gold-soft); border-color: transparent; }
+.chip.p { color: var(--warn); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+nav.idx { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); margin-inline: -16px; padding: 8px 16px; display: flex; gap: 6px; overflow-x: auto; }
+nav.idx a { text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 600; padding: 5px 11px; border-radius: 8px; white-space: nowrap; }
+nav.idx a:hover { background: var(--surface-2); color: var(--fg); }
+
+section { padding-block: 40px 8px; display: grid; gap: 18px; scroll-margin-top: 56px; }
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+figcaption { color: var(--muted); font-size: 13.5px; max-width: 80ch; }
+figcaption b { color: var(--fg); }
+.api { display: inline-block; font-family: var(--font-mono); font-size: 12px; color: var(--accent); background: var(--accent-soft); padding: 1px 8px; border-radius: 6px; margin-top: 4px; }
+.dg { overflow-x: auto; min-width: 0; }
+.dg svg { max-width: 100%; height: auto; }
+.dg .mermaid { display: flex; justify-content: center; min-width: min-content; }
+
+/* selector segmentado */
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); width: fit-content; max-width: 100%; }
+.seg button { font: 600 13px var(--font-body); padding: 7px 12px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+
+/* teléfono con estados */
+.phones { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; }
+.phone-fig { display: grid; gap: 10px; justify-items: center; background: none; border: 0; padding: 0; }
+.phone { width: min(100%, 360px); background: var(--surface); border: 1px solid var(--line); border-radius: 28px; overflow: hidden; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.14); }
+.phone-bar { display: flex; justify-content: space-between; padding: 10px 18px; font: 500 12px var(--font-mono); color: var(--muted); background: var(--surface-2); }
+.screen { padding: 16px; min-height: 400px; display: grid; align-content: start; gap: 12px; }
+.st { display: none; gap: 12px; }
+.phone[data-state="cargando"] .st-cargando,
+.phone[data-state="vacio"] .st-vacio,
+.phone[data-state="error"] .st-error,
+.phone[data-state="ok"] .st-ok,
+.phone[data-state="offline"] .st-offline { display: grid; align-content: start; }
+.card { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
+.card strong { font-family: var(--font-display); font-size: 16px; }
+.muted { color: var(--muted); font-size: 13px; }
+.btn { font: 600 14px var(--font-body); padding: 10px 16px; min-height: 44px; border-radius: 10px; border: 0; background: var(--accent); color: var(--surface); cursor: pointer; }
+.skeleton { height: 14px; border-radius: 7px; background: var(--line); animation: pulso 1.4s ease-in-out infinite; }
+.skeleton.w60 { width: 60%; }
+.msg-error { color: var(--err); font-weight: 600; }
+@keyframes pulso { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+/* mapa SVG: usa estas clases, no colores sueltos */
+.map .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.map .box.me { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.5; }
+.map .t-h { fill: var(--fg); font: 700 16px var(--font-display); }
+.map .t-s { fill: var(--muted); font: 400 12px var(--font-body); }
+.map .t-m { fill: var(--fg); font: 500 11px var(--font-mono); }
+.map .sync { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 7 5; fill: none; }
+.map .async { stroke: var(--gold); stroke-width: 2.2; fill: none; }
+.map .pill { fill: var(--surface); stroke: var(--line); }
+.map .mk-a { fill: var(--gold); }
+.map .mk-s { fill: var(--accent); }
+
+footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="chips">
+    <span class="chip p"><span class="dot"></span>Borrador · solo diseño</span>
+    <span class="chip">Datos de ejemplo inventados</span>
+  </div>
+  <h1>Nombre del mockup</h1>
+  <p class="sub">Una línea que diga qué es este mockup y de qué documento sale.</p>
+  <div class="chips">
+    <span class="chip s"><span class="dot"></span>Síncrono: llamada a la API del módulo</span>
+    <span class="chip a"><span class="dot"></span>Asíncrono: evento por el bus</span>
+  </div>
+</header>
+
+<nav class="idx" aria-label="Secciones">
+  <a href="#pantallas">Pantallas</a>
+  <a href="#arquitectura">Arquitectura</a>
+  <a href="#secuencia">Secuencia</a>
+</nav>
+
+<!-- PANTALLAS: un teléfono con selector de estados -->
+<section id="pantallas">
+  <h2>Pantallas</h2>
+  <p class="lead">Cada pantalla se muestra en sus cinco estados. Cambia el estado con los botones.</p>
+  <div class="phones">
+    <figure class="phone-fig" data-phone-states>
+      <div class="phone" data-state="ok">
+        <div class="phone-bar"><span>9:41</span><span>Ejemplo</span></div>
+        <div class="screen">
+          <div class="st st-cargando" aria-live="polite">
+            <div class="skeleton w60"></div><div class="skeleton"></div><div class="skeleton"></div>
+            <p class="muted">Cargando…</p>
+          </div>
+          <div class="st st-vacio">
+            <h3>Aún no hay nada aquí</h3>
+            <p class="muted">Cuando haya resultados aparecerán en esta pantalla.</p>
+          </div>
+          <div class="st st-error">
+            <h3 class="msg-error">No pudimos cargar esto</h3>
+            <p class="muted">Revisa tu conexión e inténtalo de nuevo.</p>
+            <button class="btn" type="button">Reintentar</button>
+          </div>
+          <div class="st st-ok">
+            <h3>Fonda Doña Chela</h3>
+            <p class="muted">Cocina típica · Dato de ejemplo</p>
+            <div class="card"><strong>Mesas libres</strong><span class="muted">3 de 12</span></div>
+            <div class="card"><strong>Horas pico</strong><span class="muted">2 a 4 de la tarde</span></div>
+            <button class="btn" type="button">Cómo llegar</button>
+          </div>
+          <div class="st st-offline">
+            <h3>Sin conexión</h3>
+            <p class="muted">Mostramos lo último que guardamos. Se actualizará al volver la señal.</p>
+          </div>
+        </div>
+      </div>
+      <div class="seg" role="group" aria-label="Estado de la pantalla">
+        <button type="button" data-set="cargando" aria-pressed="false">Cargando</button>
+        <button type="button" data-set="vacio" aria-pressed="false">Vacío</button>
+        <button type="button" data-set="error" aria-pressed="false">Error</button>
+        <button type="button" data-set="ok" aria-pressed="true">Éxito</button>
+        <button type="button" data-set="offline" aria-pressed="false">Sin conexión</button>
+      </div>
+      <figcaption><b>Qué mirar.</b> Ficha de un negocio. <span class="api">API: negocio(id)</span> <span class="api">WS: disponibilidadNegocio</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ARQUITECTURA: SVG a mano con la convención de flechas -->
+<section id="arquitectura">
+  <h2>Arquitectura</h2>
+  <p class="lead">Línea punteada azul: llamada síncrona. Línea continua dorada: evento asíncrono.</p>
+  <figure>
+    <div class="dg">
+      <svg class="map" viewBox="0 0 640 220" width="640" role="img" aria-label="Ejemplo: el módulo A llama por API al módulo B y B publica un evento al bus que escucha A.">
+        <defs>
+          <marker id="mkA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="mk-a"/></marker>
+          <marker id="mkS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="mk-s"/></marker>
+        </defs>
+        <rect x="30" y="40" width="160" height="90" rx="12" class="box"/>
+        <text x="46" y="68" class="t-h">Módulo A</text>
+        <text x="46" y="88" class="t-s">vertical</text>
+        <rect x="450" y="40" width="160" height="90" rx="12" class="box me"/>
+        <text x="466" y="68" class="t-h">Módulo B</text>
+        <text x="466" y="88" class="t-s">horizontal · este módulo</text>
+
+        <path d="M190 70 H448" class="sync" marker-end="url(#mkS)"/>
+        <rect x="262" y="60" width="116" height="20" rx="6" class="pill"/>
+        <text x="320" y="74" text-anchor="middle" class="t-m">operacion(datos)</text>
+
+        <path d="M450 105 H192" class="async" marker-end="url(#mkA)"/>
+        <rect x="262" y="95" width="116" height="20" rx="6" class="pill"/>
+        <text x="320" y="109" text-anchor="middle" class="t-m">modulo.hecho</text>
+
+        <path d="M40 190 H110" class="sync" marker-end="url(#mkS)"/>
+        <text x="122" y="194" class="t-s">Síncrono: API pública, mismo proceso</text>
+        <path d="M360 190 H430" class="async" marker-end="url(#mkA)"/>
+        <text x="442" y="194" class="t-s">Asíncrono: evento por el bus</text>
+      </svg>
+    </div>
+    <figcaption><b>Qué mirar.</b> Las etiquetas van como pastillas sobre la línea; revisa que ninguna pise otra línea. Cambia nombres, cajas y flechas por los del diseño.</figcaption>
+  </figure>
+</section>
+
+<!-- SECUENCIA: Mermaid. No ponerlo en un contenedor oculto ni usar <br/> -->
+<section id="secuencia">
+  <h2>Secuencia</h2>
+  <figure>
+    <div class="dg"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant A as Módulo A
+  participant B as Módulo B
+  A->>B: operacion(datos)
+  alt todo bien
+    B-->>A: ok
+  else error permanente
+    B-->>A: código de error
+  end
+    </pre></div>
+    <figcaption><b>Qué mirar.</b> Una sola idea por diagrama. Marca lo asíncrono en el texto.</figcaption>
+  </figure>
+</section>
+
+<footer>
+  <span>Fuentes: <code>docs/diseno/&lt;modulo&gt;.md</code> y <code>docs/BITACORA.md</code>.</span>
+  <span>Es un diseño en revisión. Todos los datos son de ejemplo inventados. Nada de aquí es un contrato aprobado.</span>
+</footer>
+</div>
+
+<!-- Mermaid: usa una versión EXACTA y verifica que exista. Para trabajar sin internet, descarga el archivo y apúntalo en local. -->
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs";
+  var oscuro = window.matchMedia("(prefers-color-scheme: dark)").matches || document.documentElement.getAttribute("data-theme") === "dark";
+  mermaid.initialize({ startOnLoad: true, theme: oscuro ? "dark" : "default", securityLevel: "strict" });
+</script>
+
+<script>
+/* Selector de estados de un teléfono */
+document.querySelectorAll("[data-phone-states]").forEach(function (caja) {
+  var telefono = caja.querySelector(".phone");
+  caja.querySelectorAll("[data-set]").forEach(function (boton) {
+    boton.addEventListener("click", function () {
+      telefono.setAttribute("data-state", boton.getAttribute("data-set"));
+      caja.querySelectorAll("[data-set]").forEach(function (otro) {
+        otro.setAttribute("aria-pressed", String(otro === boton));
+      });
+    });
+  });
+});
+</script>
+</body>
+</html>

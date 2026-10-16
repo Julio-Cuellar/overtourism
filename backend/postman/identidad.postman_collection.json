@@ -1,0 +1,3042 @@
+{
+  "info": {
+    "name": "Identidad: registro, acceso y negocios (IDN-1 e IDN-2)",
+    "description": "Pruebas del modulo de Identidad: registro en dos pasos (el formulario guarda un pre-registro y manda un codigo al correo; con el codigo se crea la cuenta), con el negocio opcional en el mismo formulario; acceso con el celular, el correo o el id, con el codigo siempre al correo; sesion con token opaco; negocio pedido por evento (pendiente hasta que responde el modulo de negocios); negocio activo (el unico negocio se activa solo); roles y permisos.\n\nCOMO CORRERLA\n1. Levanta la base (una vez, desde backend/): docker compose up -d --wait. Despues arranca el backend con el perfil de desarrollo: mvn spring-boot:run \"-Dspring-boot.run.profiles=desarrollo\". Sin ese perfil la aplicacion no arranca a proposito. Para repetir la coleccion seguidas sube los topes: \"-Dspring-boot.run.arguments=--identidad.politica.solicitudes-por-ip=1000\". Una corrida usa unos 13 de los 20 pedidos por IP cada 15 minutos.\n2. Importa esta coleccion y el entorno identidad.local (solo trae la direccion del backend). La persona ya viene simulada en las variables de la coleccion: Ana Maria Lopez Perez, con la Fonda Dona Chela (RESTAURANTE); su celular y su correo se inventan nuevos en cada corrida. Para usar otros datos, cambia esas variables o escribelos en el entorno (telefono, correo, nombre, apellidos, negocioNombre, negocioGiro).\n3. Ejecuta las carpetas 1, 2, 3, 4, 5 y 6 en orden (Runner) o con Newman. La 6 registra a una persona sin negocio y genera sus propios datos.\n\nNOTAS\n- El codigo no se manda por correo todavia: sale en la consola del backend ([CANAL SIMULADO], con el correo enmascarado) y GET /dev/canal/codigo?correo=... lo entrega. Ese endpoint y los de los pasos 1.9 y 3.3 (que simulan al modulo de negocios) no existen con el perfil produccion.\n- Los datos son inventados. Nunca uses datos de personas reales. Las cuentas viven en memoria y se pierden al reiniciar el backend; el pre-registro vive en Postgres 15 minutos. Una cuenta no se registra dos veces; por eso 1.1 inventa un celular y un correo nuevos en cada corrida.\n- Los scripts de prueba (pm.test) no se han ejecutado en Postman ni en Newman: ver docs/pruebas/identidad-preregistro.tdd.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "codigo",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "tokenAnterior",
+      "value": ""
+    },
+    {
+      "key": "codigoMalo",
+      "value": ""
+    },
+    {
+      "key": "cuentaId",
+      "value": ""
+    },
+    {
+      "key": "negocioId",
+      "value": ""
+    },
+    {
+      "key": "negocioId2",
+      "value": ""
+    },
+    {
+      "key": "telefonoB",
+      "value": ""
+    },
+    {
+      "key": "correoB",
+      "value": ""
+    },
+    {
+      "key": "telefono",
+      "value": ""
+    },
+    {
+      "key": "correo",
+      "value": ""
+    },
+    {
+      "key": "nombre",
+      "value": "Ana María"
+    },
+    {
+      "key": "apellidos",
+      "value": "López Pérez"
+    },
+    {
+      "key": "negocioNombre",
+      "value": "Fonda Doña Chela"
+    },
+    {
+      "key": "negocioGiro",
+      "value": "RESTAURANTE"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Registro de la persona y su negocio (formulario y verificacion del correo)",
+      "description": "El registro es en dos pasos. 1) El formulario (POST /registro) guarda los datos como PRE-REGISTRO, sin crear la cuenta, y manda un codigo al correo; hoy el codigo sale en la consola del backend y se lee con el endpoint de desarrollo. 2) Con el codigo (POST /registro/verificacion) se crea la cuenta, con el correo ya verificado, y se abre la sesion. El pre-registro y su codigo valen 15 minutos y se borran al verificar, al vencer y al pedir otro codigo. Identidad no registra el negocio: al verificar publica el evento negocio.registro_solicitado y el modulo de negocios lo consume; mientras responde, el negocio aparece como PENDIENTE en GET /auth/yo. Cuando responde (el paso 1.9 lo simula, solo en desarrollo) la persona queda como DUENO y, como solo tiene ese negocio, es su negocio activo sin elegir nada ni cambiar de token. La persona ya viene simulada en la coleccion (Ana Maria Lopez Perez, con la Fonda Dona Chela, giro RESTAURANTE): solo da clic. El celular y el correo se inventan nuevos en cada corrida (1.1). Para usar otros datos, cambia las variables de la coleccion o escribelos en el entorno (telefono, nombre, apellidos, correo, negocioNombre y negocioGiro: RESTAURANTE, MISCELANEA o MUSEO). Se corre en orden.",
+      "item": [
+        {
+          "name": "1.1 Llenar el formulario de registro (con el negocio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "description": "Guarda el formulario como pre-registro y manda un codigo al correo. NO crea la cuenta, no abre sesion y no pide codigo ni celular verificado antes. El bloque negocio es opcional: sin el solo se registra la persona (carpeta 6). Responde 202 con el correo y hasta cuando vale el codigo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"{{nombre}}\",\"apellidos\":\"{{apellidos}}\",\"correo\":\"{{correo}}\",\"telefono\":\"{{telefono}}\",\"aceptaAviso\":true,\"negocio\":{\"nombre\":\"{{negocioNombre}}\",\"giro\":\"{{negocioGiro}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Persona simulada: nombre, apellidos y negocio vienen en la coleccion; el celular y el correo se inventan nuevos en cada corrida",
+                  "// para que no choquen con una cuenta ya registrada. Si escribes telefono o correo en el entorno, se usan esos.",
+                  "const n = String(Math.floor(Math.random() * 10000000)).padStart(7, '0');",
+                  "if (!String(pm.environment.get('telefono') || '').trim()) { pm.collectionVariables.set('telefono', '222' + n); }",
+                  "if (!String(pm.environment.get('correo') || '').trim()) { pm.collectionVariables.set('correo', 'ana.lopez.' + n + '@example.com'); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202', function () { pm.response.to.have.status(202); });",
+                  "pm.test('no se guarda en cache (SI-17)', function () { pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store'); });",
+                  "const j = pm.response.json();",
+                  "pm.test('devuelve el correo normalizado y el vencimiento, sin token ni cuenta', function () {",
+                  "  pm.expect(j.correo).to.eql(String(pm.variables.get('correo')).trim().toLowerCase());",
+                  "  pm.expect(j.venceEn).to.match(/^\\d{4}-\\d{2}-\\d{2}T.*Z$/);",
+                  "  pm.expect(j.token).to.eql(undefined);",
+                  "  pm.expect(j.cuenta).to.eql(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Leer el codigo (consola o endpoint de desarrollo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dev/canal/codigo?correo={{correo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "canal",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "correo",
+                  "value": "{{correo}}"
+                }
+              ]
+            },
+            "description": "El canal simulado no manda correos: el codigo sale en la consola del backend, con el correo enmascarado, y este endpoint de desarrollo lo entrega. No existe con el perfil produccion."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('el codigo tiene 6 digitos y se guarda', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.match(/^\\d{6}$/);",
+                  "  pm.collectionVariables.set('codigo', j.codigo);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Verificar con un codigo incorrecto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/verificacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "verificacion"
+              ]
+            },
+            "description": "Un codigo incorrecto, vencido, agotado o de un correo sin pre-registro responden lo mismo: 401 CODIGO_INVALIDO. Cada intento fallido cuenta; a los 5 el codigo se agota.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo\":\"{{correo}}\",\"codigo\":\"{{codigoMalo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('codigoMalo', pm.collectionVariables.get('codigo') === '000000' ? '000001' : '000000');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es CODIGO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('CODIGO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 Pedir otro codigo (reenvio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/reenvio",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "reenvio"
+              ]
+            },
+            "description": "Manda un codigo nuevo al correo: el anterior ya no sirve, el nuevo vale 15 minutos mas y los intentos vuelven a cero. Responde 202 sin cuerpo haya o no pre-registro. Comparte el tope de 3 por correo cada 15 minutos con el formulario.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo\":\"{{correo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202 sin cuerpo', function () { pm.response.to.have.status(202); pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.5 Leer el codigo (consola o endpoint de desarrollo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dev/canal/codigo?correo={{correo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "canal",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "correo",
+                  "value": "{{correo}}"
+                }
+              ]
+            },
+            "description": "El canal simulado no manda correos: el codigo sale en la consola del backend, con el correo enmascarado, y este endpoint de desarrollo lo entrega. No existe con el perfil produccion."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('el codigo tiene 6 digitos y se guarda', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.match(/^\\d{6}$/);",
+                  "  pm.collectionVariables.set('codigo', j.codigo);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.6 Verificar el correo: se crea la cuenta y se abre la sesion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/verificacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "verificacion"
+              ]
+            },
+            "description": "Crea la cuenta con nombre, apellidos, correo (ya verificado) y celular, borra el pre-registro, abre la sesion y pide el negocio al modulo de negocios por evento.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo\":\"{{correo}}\",\"codigo\":\"{{codigo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('no se guarda en cache (SI-17)', function () { pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store'); });",
+                  "const j = pm.response.json();",
+                  "pm.test('el token es opaco de 43 caracteres y se guarda', function () {",
+                  "  pm.expect(j.token).to.match(/^[A-Za-z0-9_-]{43}$/);",
+                  "  pm.collectionVariables.set('token', j.token);",
+                  "  pm.collectionVariables.set('cuentaId', j.cuenta.id);",
+                  "});",
+                  "function limpio(t) { return String(t).replace(/\\s+/g, ' ').trim(); }",
+                  "pm.test('la cuenta lleva nombre, apellidos, correo y celular', function () {",
+                  "  pm.expect(j.cuenta.nombre).to.eql(limpio(pm.variables.get('nombre')));",
+                  "  pm.expect(j.cuenta.apellidos).to.eql(limpio(pm.variables.get('apellidos')));",
+                  "  pm.expect(j.cuenta.correo).to.eql(String(pm.variables.get('correo')).trim().toLowerCase());",
+                  "  pm.expect(j.cuenta.telefono).to.match(/^\\+52\\d{10}$/);",
+                  "});",
+                  "pm.test('el negocio queda PENDIENTE y todavia no existe', function () {",
+                  "  pm.expect(j.negocios).to.be.an('array').that.is.empty;",
+                  "  pm.expect(j.negociosPendientes).to.have.lengthOf(1);",
+                  "  pm.expect(j.negociosPendientes[0].estado).to.eql('PENDIENTE');",
+                  "  pm.expect(j.negociosPendientes[0].giro).to.eql(String(pm.variables.get('negocioGiro')).trim().toUpperCase());",
+                  "  pm.collectionVariables.set('negocioId', j.negociosPendientes[0].id);",
+                  "});",
+                  "pm.test('sin negocio activo todavia', function () { pm.expect(j.negocioActivo).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.7 El mismo codigo no sirve dos veces",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/verificacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "verificacion"
+              ]
+            },
+            "description": "El pre-registro se borro al verificar: el codigo es de un solo uso.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo\":\"{{correo}}\",\"codigo\":\"{{codigo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es CODIGO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('CODIGO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.8 Mi negocio sigue pendiente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "pm.test('una sola llamada dice que esta pendiente', function () {",
+                  "  pm.expect(j.negociosPendientes).to.have.lengthOf(1);",
+                  "  pm.expect(j.negocios).to.be.an('array').that.is.empty;",
+                  "  pm.expect(j.rol).to.eql(null);",
+                  "  pm.expect(j.permisos).to.be.an('array').that.is.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.9 Responde el modulo de negocios (simulado, solo desarrollo)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dev/negocios/{{negocioId}}/registrado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "negocios",
+                "{{negocioId}}",
+                "registrado"
+              ]
+            },
+            "description": "Hace las veces del modulo de negocios: responde con negocio.registrado. No existe con el perfil produccion."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.10 Ya soy DUENO y mi negocio esta activo, con el mismo token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            },
+            "description": "D-80: como es mi unico negocio, es el activo sin elegir nada ni cambiar de token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "pm.test('el negocio ya no esta pendiente y es el activo', function () {",
+                  "  pm.expect(j.negociosPendientes).to.be.an('array').that.is.empty;",
+                  "  pm.expect(j.negocios).to.have.lengthOf(1);",
+                  "  pm.expect(j.negocios[0].id).to.eql(pm.collectionVariables.get('negocioId'));",
+                  "  pm.expect(j.negocioActivo).to.eql(pm.collectionVariables.get('negocioId'));",
+                  "});",
+                  "pm.test('soy DUENO con los 16 permisos, en orden', function () {",
+                  "  pm.expect(j.rol).to.eql('DUENO');",
+                  "  pm.expect(j.permisos).to.have.lengthOf(16);",
+                  "  pm.expect(j.permisos).to.include.members(['identidad.miembro.invitar', 'clientes.cliente.anonimizar']);",
+                  "  pm.expect(j.permisos).to.eql(j.permisos.slice().sort());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.11 Roles que ofrece el giro",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "const esperados = { RESTAURANTE: 6, MISCELANEA: 4, MUSEO: 5 };",
+                  "pm.test('el primer rol es DUENO y la cantidad depende del giro', function () {",
+                  "  pm.expect(j[0].codigo).to.eql('DUENO');",
+                  "  pm.expect(j).to.have.lengthOf(esperados[String(pm.variables.get('negocioGiro')).trim().toUpperCase()]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.12 Catalogo de permisos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/permisos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permisos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "pm.test('hay 16 permisos y los sensibles estan marcados', function () {",
+                  "  pm.expect(j).to.have.lengthOf(16);",
+                  "  const anonimizar = j.find(function (p) { return p.codigo === 'clientes.cliente.anonimizar'; });",
+                  "  pm.expect(anonimizar.sensible).to.eql(true);",
+                  "  pm.expect(anonimizar.modulo).to.eql('clientes');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.13 Cambiar mi nombre",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cuenta",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cuenta"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"  Ana   Maria Prueba \"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('el nombre queda sin espacios de mas', function () { pm.expect(pm.response.json().nombre).to.eql('Ana Maria Prueba'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.14 Cerrar esta sesion",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.15 El token cerrado ya no sirve",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es NO_AUTENTICADO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const requeridos = [\"nombre\", \"apellidos\", \"negocioNombre\", \"negocioGiro\"];",
+              "const faltan = requeridos.filter(function (k) { return !String(pm.variables.get(k) || '').trim(); });",
+              "if (faltan.length) {",
+              "  throw new Error('Faltan datos en el entorno: ' + faltan.join(', ') + '. Registrar a un dueno pide nombre, apellidos, correo, celular y el nombre y el giro de su negocio. Los trae la coleccion (variables de coleccion) y el entorno puede cambiarlos; no los dejes vacios.');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Entrar con correo, id o celular",
+      "description": "El id, el correo y el celular identifican a la persona. Con cualquiera se pide el codigo, que siempre llega al correo de la cuenta (por ahora, la consola). Pedir el codigo nunca revela si la cuenta existe, y un codigo que falla responde siempre 401 CODIGO_INVALIDO. Hay un tope de 3 pedidos cada 15 minutos por lo que se escribe (celular, correo o id), y los codigos que llegan a un mismo correo tambien tienen tope de 3. Se corre en orden despues de la carpeta 1.",
+      "item": [
+        {
+          "name": "2.1 Pedir el codigo con el correo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"{{correo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202 sin cuerpo', function () { pm.response.to.have.status(202); pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Leer el codigo (consola o endpoint de desarrollo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dev/canal/codigo?correo={{correo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "canal",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "correo",
+                  "value": "{{correo}}"
+                }
+              ]
+            },
+            "description": "El canal simulado no manda correos: el codigo sale en la consola del backend, con el correo enmascarado, y este endpoint de desarrollo lo entrega. No existe con el perfil produccion."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('el codigo tiene 6 digitos y se guarda', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.match(/^\\d{6}$/);",
+                  "  pm.collectionVariables.set('codigo', j.codigo);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Iniciar sesion con el correo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"{{correo}}\",\"codigo\":\"{{codigo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "pm.test('es la misma cuenta y el token se guarda', function () {",
+                  "  pm.expect(j.cuenta.id).to.eql(pm.collectionVariables.get('cuentaId'));",
+                  "  pm.expect(j.negocioActivo).to.eql(pm.collectionVariables.get('negocioId'));",
+                  "  pm.collectionVariables.set('token', j.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Pedir el codigo con el id de la cuenta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"{{cuentaId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202 sin cuerpo', function () { pm.response.to.have.status(202); pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Leer el codigo (consola o endpoint de desarrollo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dev/canal/codigo?correo={{correo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "canal",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "correo",
+                  "value": "{{correo}}"
+                }
+              ]
+            },
+            "description": "El canal simulado no manda correos: el codigo sale en la consola del backend, con el correo enmascarado, y este endpoint de desarrollo lo entrega. No existe con el perfil produccion."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('el codigo tiene 6 digitos y se guarda', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.match(/^\\d{6}$/);",
+                  "  pm.collectionVariables.set('codigo', j.codigo);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.6 Iniciar sesion con el id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"{{cuentaId}}\",\"codigo\":\"{{codigo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "pm.test('es la misma cuenta y el token se guarda', function () {",
+                  "  pm.expect(j.cuenta.id).to.eql(pm.collectionVariables.get('cuentaId'));",
+                  "  pm.expect(j.negocioActivo).to.eql(pm.collectionVariables.get('negocioId'));",
+                  "  pm.collectionVariables.set('token', j.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.7 Pedir el codigo con el celular",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "description": "El celular tambien lleva el codigo al correo de la cuenta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"{{telefono}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202 sin cuerpo', function () { pm.response.to.have.status(202); pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.8 El codigo anterior ya no sirve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "description": "Pedir un codigo nuevo reemplaza al anterior. El de 2.5 ya se uso y este es otro pedido: falla igual que un codigo incorrecto, 401 CODIGO_INVALIDO, sin decir por que.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"{{telefono}}\",\"codigo\":\"{{codigo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es CODIGO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('CODIGO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.9 Leer el codigo (consola o endpoint de desarrollo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dev/canal/codigo?correo={{correo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "canal",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "correo",
+                  "value": "{{correo}}"
+                }
+              ]
+            },
+            "description": "El canal simulado no manda correos: el codigo sale en la consola del backend, con el correo enmascarado, y este endpoint de desarrollo lo entrega. No existe con el perfil produccion."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('el codigo tiene 6 digitos y se guarda', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.match(/^\\d{6}$/);",
+                  "  pm.collectionVariables.set('codigo', j.codigo);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.10 Iniciar sesion con el celular",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"{{telefono}}\",\"codigo\":\"{{codigo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "pm.test('es la misma cuenta y el token se guarda', function () {",
+                  "  pm.expect(j.cuenta.id).to.eql(pm.collectionVariables.get('cuentaId'));",
+                  "  pm.collectionVariables.set('token', j.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.11 Segundo pedido con el mismo correo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "description": "AS-03: se pueden pedir 3 codigos cada 15 minutos con lo mismo que se escribe. Este es el segundo con el correo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"{{correo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202 sin cuerpo', function () { pm.response.to.have.status(202); pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.12 Tercer pedido con el mismo correo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"{{correo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202 sin cuerpo', function () { pm.response.to.have.status(202); pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.13 El cuarto pedido con el mismo correo se rechaza",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "description": "El pedido numero 4 con el mismo correo en 15 minutos responde 429 TASA_EXCEDIDA, exista o no la cuenta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"{{correo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 429', function () { pm.response.to.have.status(429); });",
+                  "pm.test('el codigo de error es TASA_EXCEDIDA y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('TASA_EXCEDIDA');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.14 Un correo sin cuenta responde igual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "description": "SI-02: la respuesta es la misma exista o no la cuenta, y no se envia nada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"nadie.{{$randomInt}}@example.com\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202 sin cuerpo', function () { pm.response.to.have.status(202); pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const requeridos = [\"telefono\", \"correo\"];",
+              "const faltan = requeridos.filter(function (k) { return !String(pm.variables.get(k) || '').trim(); });",
+              "if (faltan.length) {",
+              "  throw new Error('Faltan datos en el entorno: ' + faltan.join(', ') + '. Registrar a un dueno pide nombre, apellidos, correo, celular y el nombre y el giro de su negocio. Los trae la coleccion (variables de coleccion) y el entorno puede cambiarlos; no los dejes vacios.');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Un segundo negocio y elegir el activo (IDN-2)",
+      "description": "Quien ya tiene cuenta pide otro negocio con POST /registro/negocio. Con dos negocios ya no hay uno activo por omision: se elige con PUT /auth/negocio-activo, que emite otro token y revoca el anterior. Se corre en orden despues de la carpeta 2 (usa el token con que entro).",
+      "item": [
+        {
+          "name": "3.1 Pedir otro negocio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/negocio",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "negocio"
+              ]
+            },
+            "description": "Responde 202 con el id que Identidad le asigno al negocio. Tiene un tope de 3 pedidos cada 15 minutos por cuenta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Museo de prueba\",\"giro\":\"MUSEO\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202', function () { pm.response.to.have.status(202); });",
+                  "pm.test('trae el id del negocio y se guarda', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.negocioId).to.match(/^[0-9a-f-]{36}$/);",
+                  "  pm.collectionVariables.set('negocioId2', j.negocioId);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 El segundo negocio esta pendiente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "pm.test('un negocio listo y uno pendiente', function () {",
+                  "  pm.expect(j.negocios).to.have.lengthOf(1);",
+                  "  pm.expect(j.negociosPendientes).to.have.lengthOf(1);",
+                  "  pm.expect(j.negociosPendientes[0].id).to.eql(pm.collectionVariables.get('negocioId2'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Responde el modulo de negocios (simulado, solo desarrollo)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dev/negocios/{{negocioId2}}/registrado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "negocios",
+                "{{negocioId2}}",
+                "registrado"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 Ahora tengo dos negocios",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "pm.test('dos negocios y ninguno pendiente', function () {",
+                  "  pm.expect(j.negocios).to.have.lengthOf(2);",
+                  "  pm.expect(j.negociosPendientes).to.be.an('array').that.is.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 Elegir el segundo negocio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/negocio-activo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "negocio-activo"
+              ]
+            },
+            "description": "Emite otro token y revoca el anterior (SI-07). No alarga la sesion.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"negocioId\":\"{{negocioId2}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('tokenAnterior', pm.collectionVariables.get('token'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "pm.test('el token cambia y el negocio queda activo', function () {",
+                  "  pm.expect(j.token).to.match(/^[A-Za-z0-9_-]{43}$/);",
+                  "  pm.expect(j.token).to.not.eql(pm.collectionVariables.get('tokenAnterior'));",
+                  "  pm.expect(j.negocioActivo).to.eql(pm.collectionVariables.get('negocioId2'));",
+                  "  pm.collectionVariables.set('token', j.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 El token anterior ya no sirve",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAnterior}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es NO_AUTENTICADO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.7 Los roles del segundo negocio (museo)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "const j = pm.response.json();",
+                  "pm.test('un museo ofrece 5 roles, con taquillero y guia', function () {",
+                  "  pm.expect(j).to.have.lengthOf(5);",
+                  "  pm.expect(j.map(function (r) { return r.codigo; })).to.include.members(['TAQUILLERO', 'GUIA']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.8 Un negocio que no existe",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/negocio-activo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "negocio-activo"
+              ]
+            },
+            "description": "AS-06: un negocio donde no se es miembro da el mismo error que uno que no existe.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"negocioId\":\"{{$guid}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('el codigo de error es NEGOCIO_NO_DISPONIBLE y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NEGOCIO_NO_DISPONIBLE');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.9 Un giro que no existe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/negocio",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "negocio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Fonda de prueba\",\"giro\":\"FARMACIA\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es GIRO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('GIRO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Errores del registro y del acceso",
+      "description": "No necesita datos del entorno. Los errores de forma se detectan antes de tocar nada: no se guarda un pre-registro ni se manda ningun codigo.",
+      "item": [
+        {
+          "name": "4.1 Formulario sin nombre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"apellidos\": \"Lopez Perez\", \"correo\": \"ana.prueba@example.com\", \"telefono\": \"2229000001\", \"aceptaAviso\": true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('el codigo de error es NOMBRE_REQUERIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NOMBRE_REQUERIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Formulario sin apellidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Ana\", \"correo\": \"ana.prueba@example.com\", \"telefono\": \"2229000001\", \"aceptaAviso\": true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es APELLIDOS_INVALIDOS y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('APELLIDOS_INVALIDOS');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 Formulario con un correo mal escrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Ana\", \"apellidos\": \"Lopez Perez\", \"correo\": \"sin-arroba\", \"telefono\": \"2229000001\", \"aceptaAviso\": true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es CORREO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('CORREO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 Formulario sin aceptar el aviso de privacidad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Ana\", \"apellidos\": \"Lopez Perez\", \"correo\": \"ana.prueba@example.com\", \"telefono\": \"2229000001\", \"aceptaAviso\": false}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('el codigo de error es AVISO_REQUERIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('AVISO_REQUERIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.5 Formulario con un celular invalido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Ana\", \"apellidos\": \"Lopez Perez\", \"correo\": \"ana.prueba@example.com\", \"telefono\": \"123\", \"aceptaAviso\": true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es TELEFONO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('TELEFONO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.6 Verificar sin haber llenado el formulario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/verificacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "verificacion"
+              ]
+            },
+            "description": "Sin pre-registro el error es el mismo que con un codigo incorrecto: no se delata cuales correos tienen uno.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo\":\"nadie.{{$randomInt}}@example.com\",\"codigo\":\"123456\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es CODIGO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('CODIGO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.7 Pedir el codigo con un celular invalido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"123\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es TELEFONO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('TELEFONO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.8 Pedir el codigo con un correo invalido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\":\"a@\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es CORREO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('CORREO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.9 JSON mal formado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identificador\": \"2229000000",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es SOLICITUD_INVALIDA y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('SOLICITUD_INVALIDA');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.10 Formulario en lugar de JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/codigo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "codigo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "identificador=2229000000",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 415', function () { pm.response.to.have.status(415); });",
+                  "pm.test('el codigo de error es SOLICITUD_INVALIDA y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('SOLICITUD_INVALIDA');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.11 Perfil sin token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es NO_AUTENTICADO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.12 Perfil con otro esquema (Basic)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Basic YWRtaW46YWRtaW4="
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es NO_AUTENTICADO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.13 Perfil con un token inventado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es NO_AUTENTICADO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.14 Formulario con un negocio de giro invalido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "description": "El negocio se valida en el formulario: no se guarda nada ni se manda el codigo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Ana\", \"apellidos\": \"Lopez Perez\", \"correo\": \"ana.prueba@example.com\", \"telefono\": \"2229000001\", \"aceptaAviso\": true, \"negocio\": {\"nombre\": \"Fonda\", \"giro\": \"FARMACIA\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es GIRO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('GIRO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.15 Formulario con un negocio de nombre invalido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Ana\", \"apellidos\": \"Lopez Perez\", \"correo\": \"ana.prueba@example.com\", \"telefono\": \"2229000001\", \"aceptaAviso\": true, \"negocio\": {\"nombre\": \"F\", \"giro\": \"MUSEO\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es NOMBRE_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NOMBRE_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.16 Verificar con un correo mal escrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/verificacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "verificacion"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo\":\"sin-arroba\",\"codigo\":\"123456\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es CORREO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('CORREO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.17 Reenviar el codigo a un correo mal escrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/reenvio",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "reenvio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo\":\"sin-arroba\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('el codigo de error es CORREO_INVALIDO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('CORREO_INVALIDO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.18 Roles sin sesion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es NO_AUTENTICADO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.19 Texto enorme en el nombre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "description": "SI-16: se rechaza al leer el cuerpo, con 400, sin repetir lo enviado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"apellidos\":\"Lopez\",\"correo\":\"a@example.com\",\"telefono\":\"2229000001\",\"aceptaAviso\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('es SOLICITUD_INVALIDA y no repite el texto', function () {",
+                  "  pm.expect(pm.response.json().codigo).to.eql('SOLICITUD_INVALIDA');",
+                  "  pm.expect(pm.response.text()).to.not.include('xxxxxxxxxx');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Sesiones",
+      "description": "Cierre de todas las sesiones de la cuenta. Se corre despues de la carpeta 3 (usa el token del negocio activo).",
+      "item": [
+        {
+          "name": "5.1 Cerrar todas las sesiones",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sesiones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesiones"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 El token cayo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('el codigo de error es NO_AUTENTICADO y trae un texto fijo', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.eql('NO_AUTENTICADO');",
+                  "  pm.expect(j.mensaje).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('el error no muestra trazas ni nombres internos', function () {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.not.include('Exception');",
+                  "  pm.expect(t).to.not.include('mx.negocio360');",
+                  "  pm.expect(t).to.not.include('org.springframework');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Registro de la persona sin negocio",
+      "description": "El bloque negocio es opcional: sin el solo se registra la persona. No necesita datos del entorno; el script genera un celular y un correo de prueba nuevos.",
+      "item": [
+        {
+          "name": "6.1 Llenar el formulario (sin negocio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Beto\",\"apellidos\":\"Ruiz Soto\",\"correo\":\"{{correoB}}\",\"telefono\":\"{{telefonoB}}\",\"aceptaAviso\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const n = String(Math.floor(Math.random() * 10000000)).padStart(7, '0');",
+                  "pm.collectionVariables.set('telefonoB', '223' + n);",
+                  "pm.collectionVariables.set('correoB', 'sola.' + n + '@example.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 202', function () { pm.response.to.have.status(202); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.2 Leer el codigo (consola o endpoint de desarrollo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dev/canal/codigo?correo={{correoB}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "canal",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "correo",
+                  "value": "{{correoB}}"
+                }
+              ]
+            },
+            "description": "El canal simulado no manda correos: el codigo sale en la consola del backend, con el correo enmascarado, y este endpoint de desarrollo lo entrega. No existe con el perfil produccion."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('el codigo tiene 6 digitos y se guarda', function () {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.codigo).to.match(/^\\d{6}$/);",
+                  "  pm.collectionVariables.set('codigo', j.codigo);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.3 Verificar el correo: solo se crea la persona",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/verificacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "verificacion"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo\":\"{{correoB}}\",\"codigo\":\"{{codigo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', function () { pm.response.to.have.status(201); });",
+                  "const j = pm.response.json();",
+                  "pm.test('sin negocios, sin pendientes y sin negocio activo', function () {",
+                  "  pm.expect(j.negocios).to.be.an('array').that.is.empty;",
+                  "  pm.expect(j.negociosPendientes).to.be.an('array').that.is.empty;",
+                  "  pm.expect(j.negocioActivo).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

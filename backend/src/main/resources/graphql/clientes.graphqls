@@ -1,0 +1,220 @@
+# Esquema del modulo de Clientes (Mapa de Clientes v0.2). Sin negocioId: el negocio sale del contexto (SG-02).
+# ComandoInput vive aqui mientras Clientes sea el primer modulo; los demas lo ampliaran (D-55).
+
+extend type Query {
+  # Topes (SC-03): primeros se recorta a 50 en el resolvedor. sugerirClientes devuelve como maximo 5 y exige
+  # entre 2 y 80 caracteres. Ver LimitesDeConsulta.
+  clientes(texto: String, filtro: FiltroClientes = TODOS, primeros: Int! = 20, despues: String): ClienteConexion!
+  cliente(id: ID!): Cliente
+  historialCliente(clienteId: ID!, primeros: Int! = 20, despues: String): CompraConexion!
+  consentimientosCliente(clienteId: ID!): [Consentimiento!]!
+  sugerirClientes(texto: String!): [ClienteSugerido!]!
+  panoramaClientes: PanoramaClientes!
+  avisoPrivacidadVigente: AvisoPrivacidad
+  solicitudesArco(estado: EstadoSolicitud, primeros: Int! = 20, despues: String): SolicitudArcoConexion!
+}
+
+enum FiltroClientes { TODOS FRECUENTES INACTIVOS NUEVOS CON_CONSENTIMIENTO }
+enum Finalidad { CONTACTO_MENSAJERIA PROMOCIONES }
+enum EstadoConsentimiento { OTORGADO REVOCADO }
+enum FormaConsentimiento { EXPRESO TACITO }
+enum MedioConsentimiento { VERBAL PANEL APP_TURISTA }
+enum OrigenCliente { PANEL VISITANTE }
+enum EstadoCliente { ACTIVO ANONIMIZADO }
+enum EstadoActividad { RECIENTE FRECUENTE INACTIVO }
+enum EstadoCompra { APLICADA REVERTIDA OMITIDA }
+enum DerechoArco { ACCESO RECTIFICACION CANCELACION OPOSICION }
+enum EstadoSolicitud { RECIBIDA COMUNICADA EJECUTADA CERRADA VENCIDA }
+enum ResultadoSolicitud { PROCEDENTE PARCIAL IMPROCEDENTE }
+enum MedioRecepcion { PRESENCIAL CORREO OTRO }
+
+# Listas y sugerencias: solo telefono enmascarado, sin correo ni fecha de nacimiento (SC-02).
+type ClienteResumen {
+  id: ID!
+  nombreCompleto: String!
+  telefonoEnmascarado: String
+  compras: Int!
+  totalComprado: Decimal!
+  ticketPromedio: Decimal!
+  ultimaCompraEn: DateTime
+  estado: EstadoActividad!
+}
+
+type ClienteSugerido {
+  id: ID!
+  nombreCompleto: String!
+  telefonoEnmascarado: String
+}
+
+# Ficha completa: solo la devuelve cliente(id), que deja una fila de acceso (P-05).
+type Cliente {
+  id: ID!
+  nombre: String!
+  apellidos: String
+  telefono: String
+  correo: String
+  fechaNacimiento: Date
+  notas: String
+  origen: OrigenCliente!
+  estado: EstadoCliente!
+  avisoVersion: Int!
+  resumen: ClienteResumen!
+  version: Int!
+}
+
+type ClienteConexion {
+  nodos: [ClienteResumen!]!
+  pageInfo: PageInfo!
+}
+
+type CompraVista {
+  ventaId: ID!
+  monto: Decimal
+  ocurridoEn: DateTime
+  estado: EstadoCompra!
+}
+
+type CompraConexion {
+  nodos: [CompraVista!]!
+  pageInfo: PageInfo!
+}
+
+type Consentimiento {
+  finalidad: Finalidad!
+  estado: EstadoConsentimiento!
+  forma: FormaConsentimiento!
+  medio: MedioConsentimiento!
+  avisoVersion: Int!
+  registradoEn: DateTime!
+}
+
+type PanoramaClientes {
+  total: Int!
+  nuevos30Dias: Int!
+  frecuentes: Int!
+  inactivos: Int!
+  conConsentimiento: Int!
+  arcoPorVencer: Int!
+}
+
+type FinalidadAviso {
+  codigo: String!
+  requiereConsentimiento: Boolean!
+}
+
+type AvisoPrivacidad {
+  version: Int!
+  responsableNombre: String!
+  responsableDomicilio: String!
+  finalidades: [FinalidadAviso!]!
+  textoSimplificado: String!
+  textoIntegral: String!
+  contactoArco: String!
+  vigenteDesde: DateTime!
+}
+
+type SolicitudArco {
+  id: ID!
+  derecho: DerechoArco!
+  clienteId: ID
+  recibidaEn: Date!
+  responderAntesDe: Date!
+  ampliada: Boolean!
+  comunicadaEn: Date
+  ejecutarAntesDe: Date
+  ejecutadaEn: Date
+  resultado: ResultadoSolicitud
+  motivo: String
+  estado: EstadoSolicitud!
+}
+
+type SolicitudArcoConexion {
+  nodos: [SolicitudArco!]!
+  pageInfo: PageInfo!
+}
+
+# Exactamente una variante por solicitud (SG-17).
+input ComandoInput @oneOf {
+  registrarCliente: RegistrarClienteInput
+  editarCliente: EditarClienteInput
+  registrarConsentimiento: RegistrarConsentimientoInput
+  anonimizarCliente: AnonimizarClienteInput
+  publicarAvisoPrivacidad: PublicarAvisoInput
+  registrarSolicitudArco: RegistrarSolicitudArcoInput
+  ampliarSolicitudArco: AmpliarSolicitudArcoInput
+  resolverSolicitudArco: ResolverSolicitudArcoInput
+}
+
+input ConsentimientoInput {
+  finalidad: Finalidad!
+  medio: MedioConsentimiento!
+}
+
+input RegistrarClienteInput {
+  nombre: String!
+  apellidos: String
+  telefono: String
+  correo: String
+  fechaNacimiento: Date
+  notas: String
+  avisoVersion: Int!
+  consentimientos: [ConsentimientoInput!]
+}
+
+input EditarClienteInput {
+  clienteId: ID!
+  version: Int!
+  nombre: String
+  apellidos: String
+  telefono: String
+  correo: String
+  fechaNacimiento: Date
+  notas: String
+  solicitudArcoId: ID
+}
+
+input RegistrarConsentimientoInput {
+  clienteId: ID!
+  finalidad: Finalidad!
+  estado: EstadoConsentimiento!
+  medio: MedioConsentimiento!
+  avisoVersion: Int!
+}
+
+input AnonimizarClienteInput {
+  clienteId: ID!
+  solicitudArcoId: ID
+}
+
+input FinalidadAvisoInput {
+  codigo: String!
+  requiereConsentimiento: Boolean!
+}
+
+input PublicarAvisoInput {
+  responsableNombre: String!
+  responsableDomicilio: String!
+  finalidades: [FinalidadAvisoInput!]!
+  textoSimplificado: String!
+  textoIntegral: String!
+  contactoArco: String!
+}
+
+input RegistrarSolicitudArcoInput {
+  derecho: DerechoArco!
+  clienteId: ID
+  recibidaEn: Date!
+  medio: MedioRecepcion!
+}
+
+input AmpliarSolicitudArcoInput {
+  solicitudId: ID!
+  justificacion: String!
+}
+
+input ResolverSolicitudArcoInput {
+  solicitudId: ID!
+  resultado: ResultadoSolicitud!
+  motivo: String
+  identidadVerificada: Boolean!
+}

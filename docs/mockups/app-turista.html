@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App del turista — mockup detallado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6FA; --surface:#FFFFFF; --surface-2:#EBEFF6; --fg:#15202E; --muted:#566277; --line:#D6DCE8;
+  --accent:#1F4E9C; --accent-soft:#E1EAF8; --gold:#A8680A; --gold-soft:#FAEDD0;
+  --ok:#1B7648; --ok-soft:#DDF1E6; --warn:#A94E14; --err:#B3261E; --err-soft:#FBE3E1; --bezel:#1B2433;
+  --font-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --font-body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D1320; --surface:#151D2D; --surface-2:#1C2639; --fg:#E6EBF4; --muted:#97A3B9; --line:#29344D;
+  --accent:#84AAF0; --accent-soft:#1A2946; --gold:#EDB24B; --gold-soft:#35290F;
+  --ok:#5CCB93; --ok-soft:#12301F; --warn:#F09A62; --err:#F2928B; --err-soft:#3A1B19; --bezel:#3A475F; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0D1320; --surface:#151D2D; --surface-2:#1C2639; --fg:#E6EBF4; --muted:#97A3B9; --line:#29344D;
+  --accent:#84AAF0; --accent-soft:#1A2946; --gold:#EDB24B; --gold-soft:#35290F;
+  --ok:#5CCB93; --ok-soft:#12301F; --warn:#F09A62; --err:#F2928B; --err-soft:#3A1B19; --bezel:#3A475F; color-scheme:dark;}
+*{box-sizing:border-box}
+html{scroll-padding-top:64px}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--font-body)}
+h1,h2,h3,h4{font-family:var(--font-display);line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:clamp(1.7rem,4vw,2.5rem)} h2{font-size:1.5rem} h3{font-size:1.1rem} h4{font-size:.95rem}
+p{margin:0}
+code,pre,.mono{font-family:var(--font-mono);font-size:12.5px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:1280px;margin-inline:auto;padding-inline:16px}
+header.top{padding-block:24px 14px;display:grid;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:12.5px;font-weight:500}
+.chip.gold{background:var(--gold-soft);color:var(--gold);border-color:transparent}
+.chip.blue{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.lead{color:var(--muted);max-width:75ch}
+nav.menu{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line)}
+nav.menu .in{display:flex;gap:4px;overflow-x:auto;padding-block:8px;align-items:center}
+nav.menu button.tab{border:0;background:transparent;padding:8px 14px;border-radius:99px;font-weight:600;color:var(--muted);white-space:nowrap}
+nav.menu button.tab[aria-selected="true"]{background:var(--accent);color:var(--bg)}
+nav.menu .sp{flex:1}
+.themebtn{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13px;white-space:nowrap}
+main{padding-block:22px 56px}
+section.pane{display:grid;gap:18px}
+section.pane[hidden]{display:none}
+section.pane>*{min-width:0}
+.intro{color:var(--muted);max-width:80ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+.cap{font-size:13px;color:var(--muted);border-left:3px solid var(--gold);padding-left:10px;max-width:85ch}
+.cap b{color:var(--fg)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:7px 9px;border-bottom:1px solid var(--line)}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--surface-2)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.tw table{min-width:820px}
+tr.clk{cursor:pointer} tr.clk:hover td{background:var(--accent-soft)}
+.k{display:inline-block;border-radius:6px;padding:0 6px;font-family:var(--font-mono);font-size:12px;background:var(--surface-2);border:1px solid var(--line);color:var(--fg)}
+.k.q{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.k.m{background:var(--gold-soft);color:var(--gold);border-color:transparent}
+.k.w{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.k.e{background:var(--err-soft);color:var(--err);border-color:transparent}
+button.k{cursor:pointer}
+pre.js{margin:0;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;max-height:340px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
+.js .jk{color:var(--accent)} .js .js_{color:var(--ok)} .js .jn{color:var(--gold)}
+details{border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+details>summary{cursor:pointer;padding:7px 11px;font-weight:600;font-size:13.5px}
+details>.bd{padding:0 11px 11px;display:grid;gap:8px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filters select,.filters input{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px;min-width:0}
+.proto{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:22px;align-items:start}
+.leftcol{display:grid;gap:12px;min-width:0}
+.picker{display:flex;flex-wrap:wrap;gap:5px}
+.picker button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:3px 8px;font-size:12.5px}
+.picker button[aria-current="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.statebar{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.statebar button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:2px 10px;font-size:12.5px}
+.statebar button[aria-pressed="true"]{background:var(--gold-soft);color:var(--gold);border-color:var(--gold)}
+.phone{width:100%;max-width:372px;margin-inline:auto;height:740px;border:9px solid var(--bezel);border-radius:40px;background:var(--surface);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sb{display:flex;justify-content:space-between;padding:7px 18px 3px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.scr{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 14px 16px;display:flex;flex-direction:column;gap:11px;position:relative}
+.scr>*{flex-shrink:0}
+.tabbar{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface)}
+.tabbar button{border:0;background:transparent;padding:7px 0 8px;font-size:10.5px;display:grid;justify-items:center;gap:1px;color:var(--muted)}
+.tabbar button[aria-current="true"]{color:var(--accent);font-weight:600}
+.ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic.s{width:15px;height:15px}
+.phone.hot [data-act]{outline:2px dashed var(--gold);outline-offset:2px}
+.topbar{display:flex;align-items:center;gap:8px;min-height:30px}
+.topbar h3{flex:1;font-size:1.05rem}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:32px;height:32px;display:grid;place-items:center;padding:0}
+.pbtn{border:0;background:var(--accent);color:var(--bg);font-weight:600;border-radius:12px;padding:10px 14px;text-align:center;width:100%}
+.pbtn.alt{background:var(--surface-2);color:var(--fg);border:1px solid var(--line)}
+.pbtn.gold{background:var(--gold);color:var(--bg)}
+.pbtn.dng{background:var(--err-soft);color:var(--err);border:1px solid var(--err)}
+.pbtn.sm{padding:6px 10px;font-size:13px;width:auto;border-radius:9px}
+.pbtn[disabled]{opacity:.45;cursor:not-allowed}
+.pchip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 11px;font-size:13px;white-space:nowrap}
+.pchip[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.hscroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:3px}
+.chips2{display:flex;flex-wrap:wrap;gap:6px}
+.pcard{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);text-align:left;padding:0;display:block;width:100%}
+.pcard .im{height:70px;background:linear-gradient(135deg,var(--accent-soft),var(--gold-soft));display:grid;place-items:center;color:var(--accent)}
+.pcard .im .ic{width:30px;height:30px}
+.pcard .tx{padding:8px 11px 10px;display:grid;gap:4px}
+.pcard b{font-family:var(--font-display);font-size:1rem}
+.meta{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12px;color:var(--muted);align-items:center}
+.tag{border-radius:6px;padding:0 6px;font-size:11.5px;background:var(--surface-2);color:var(--muted)}
+.tag.ok{background:var(--ok-soft);color:var(--ok)} .tag.gold{background:var(--gold-soft);color:var(--gold)} .tag.blue{background:var(--accent-soft);color:var(--accent)} .tag.err{background:var(--err-soft);color:var(--err)}
+.live{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ok);font-weight:600}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;animation:pl 1.6s infinite}
+@keyframes pl{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.live i,.skel{animation:none}}
+.box{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2);display:grid;gap:5px;font-size:13px}
+.box.gold{background:var(--gold-soft);border-color:transparent}
+.box.ok{background:var(--ok-soft);border-color:transparent}
+.box.err{background:var(--err-soft);border-color:transparent;color:var(--err)}
+.hero{height:108px;border-radius:14px;background:linear-gradient(140deg,var(--accent),var(--gold));display:flex;align-items:flex-end;padding:10px 12px;color:#fff;font-family:var(--font-display);font-size:1.25rem}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:7px 4px;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.mrow{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.mrow b{font-variant-numeric:tabular-nums}
+.stamps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stamp{aspect-ratio:1;border-radius:50%;border:2px dashed var(--line);display:grid;place-items:center;color:var(--muted);font-size:11px}
+.stamp.on{border:2px solid var(--gold);background:var(--gold-soft);color:var(--gold)}
+.viewf{aspect-ratio:1;max-height:230px;border-radius:16px;background:var(--surface-2);position:relative;display:grid;place-items:center;border:3px solid var(--gold);text-align:center;padding:14px;color:var(--muted);font-size:13px}
+.qr{width:170px;height:170px;margin-inline:auto;background:#fff;padding:8px;border-radius:12px;border:1px solid var(--line);display:block}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:2px solid var(--line);border-radius:18px 18px 0 0;padding:14px;display:grid;gap:9px;box-shadow:0 -8px 24px rgba(0,0,0,.18);z-index:5}
+.toast{position:absolute;left:14px;right:14px;top:8px;background:var(--fg);color:var(--bg);border-radius:12px;padding:9px 12px;font-size:13px;z-index:8}
+.banner{border-radius:10px;padding:7px 10px;font-size:12.5px;background:var(--gold-soft);color:var(--gold)}
+.banner.off{background:var(--err-soft);color:var(--err)}
+.skel{height:64px;border-radius:12px;background:linear-gradient(90deg,var(--surface-2),var(--line),var(--surface-2));background-size:200% 100%;animation:sk 1.4s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.map{border-radius:14px;border:1px solid var(--line);background:var(--surface-2);width:100%;display:block}
+.sim{border:2px dashed var(--gold);border-radius:12px;padding:10px;display:grid;gap:7px;background:var(--gold-soft)}
+.sim h4{color:var(--gold)}
+.sim button{border:1px solid var(--gold);background:var(--surface);border-radius:9px;padding:6px 9px;text-align:left;font-size:13px}
+.insp{position:sticky;top:64px;display:grid;gap:12px;max-height:calc(100vh - 80px);overflow:auto;padding-right:2px;min-width:0}
+.insp .hd{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.steps{margin:0;padding-left:20px;display:grid;gap:5px;font-size:13.5px}
+.steps li::marker{color:var(--gold);font-weight:700}
+.log{display:grid;gap:3px;font-size:12.5px;max-height:220px;overflow:auto;font-family:var(--font-mono)}
+.log div{padding:3px 6px;border-radius:6px;background:var(--surface-2);overflow-wrap:anywhere}
+.log .ev{background:var(--gold-soft);color:var(--gold)} .log .au{opacity:.7} .log .bl{background:var(--err-soft);color:var(--err)}
+.scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:12px}
+.scard{display:grid;gap:7px;align-content:start}
+.scard .t{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.btnrow{display:grid;gap:4px;font-size:13px}
+.btnrow .r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;border-top:1px dashed var(--line);padding-top:4px}
+.btnrow .r span.l{min-width:0;overflow-wrap:anywhere}
+.path{display:flex;flex-wrap:wrap;gap:12px;counter-reset:p;padding-top:8px}
+.path .st{flex:1 1 170px;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 10px 10px;display:grid;gap:4px;font-size:13px;position:relative;align-content:start}
+.path .st::before{counter-increment:p;content:counter(p);position:absolute;top:-10px;left:10px;background:var(--gold);color:var(--bg);border-radius:99px;font-size:12px;font-weight:700;width:20px;height:20px;display:grid;place-items:center}
+.svgwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.svgwrap svg{display:block;min-width:900px;width:100%;height:auto}
+svg text{font-family:var(--font-body);fill:var(--fg)}
+svg text.mono{font-family:var(--font-mono)}
+footer{border-top:1px solid var(--line);padding-block:20px;color:var(--muted);font-size:13px;display:grid;gap:5px}
+@media (max-width:900px){.proto{grid-template-columns:minmax(0,1fr)}.insp{position:static;max-height:none}}
+</style>
+</head>
+<body>
+<header class="wrap top">
+  <div class="chips">
+    <span class="chip gold">Borrador · solo diseño</span>
+    <span class="chip blue">Datos de ejemplo inventados</span>
+    <span class="chip">Operaciones y eventos: PROPUESTA (aún no existe el esquema)</span>
+    <span class="chip">2026-10-08</span>
+  </div>
+  <h1>App del turista: interfaz, acciones y eventos</h1>
+  <p class="lead">Un teléfono de ejemplo donde cada botón enseña qué operación lanza, qué datos viajan, qué módulos responden, qué eventos nacen y quién reacciona. Es un diseño en revisión: nada aquí se conecta a un servidor.</p>
+</header>
+<nav class="menu" aria-label="Secciones">
+  <div class="wrap in" role="tablist" id="tabs"></div>
+</nav>
+<main class="wrap">
+  <section class="pane" id="p-proto" role="tabpanel"></section>
+  <section class="pane" id="p-mapa" role="tabpanel" hidden></section>
+  <section class="pane" id="p-acciones" role="tabpanel" hidden></section>
+  <section class="pane" id="p-eventos" role="tabpanel" hidden></section>
+  <section class="pane" id="p-com" role="tabpanel" hidden></section>
+  <section class="pane" id="p-hall" role="tabpanel" hidden></section>
+</main>
+<footer class="wrap">
+  <div><b>Fuentes:</b> <code>docs/BITACORA.md</code> (nueve puntos del pivote, D-01 a D-32), <code>docs/diseno/inventario.md</code> (sobre común de eventos y reglas R1 a R6) y el plan de funcionalidades F-01 a F-16 de esta sesión.</div>
+  <div><b>Rotulado:</b> negocios y personas inventados; los datos de transporte son ilustrativos y estimados (no existe GTFS público; los medios de pago de los autobuses están por confirmar). Es un diseño en revisión, no un producto.</div>
+</footer>
+<script>
+"use strict";
+/* ===== Constantes de ejemplo (todo inventado) ===== */
+const NEG='0192f3a0-7c10-7000-8000-00000000f001', NEG2='0192f3a0-7c10-7000-8000-00000000f002', NEG3='0192f3a0-7c10-7000-8000-00000000f003';
+const VIS='0192f3a0-7c10-7000-8000-00000000a001', RUTA='0192f3a0-7c10-7000-8000-00000000b001';
+const CUP='0192f3a0-7c10-7000-8000-00000000c001', VTA='0192f3a0-7c10-7000-8000-00000000d001';
+const NEGS=[
+ {id:'chela',uuid:NEG,nombre:'Fonda Doña Chela',cat:'Restaurante',sub:['Gastronomía típica','Comida corrida'],precio:'$$',cal:'4.6',res:128,dist:350,afl:'BAJO',ic:'fork'},
+ {id:'museo',uuid:NEG2,nombre:'Museo Talavera Viva',cat:'Museo',sub:['Arte','Historia'],precio:'$',cal:'4.7',res:85,dist:600,afl:'MEDIO',ic:'museum'},
+ {id:'santa',uuid:'0192f3a0-7c10-7000-8000-00000000f004',nombre:'Cocina Santa Clara',cat:'Restaurante',sub:['Comida corrida','Mixto'],precio:'$$',cal:'4.4',res:61,dist:900,afl:'ALTO',ic:'fork'},
+ {id:'lupe',uuid:NEG3,nombre:'Dulces Doña Lupe',cat:'Miscelánea',sub:['Dulces típicos'],precio:'$',cal:'4.5',res:44,dist:450,afl:'BAJO',ic:'shop'}
+];
+/* Contenido de la ficha según el giro (todo inventado) */
+const CATALOGOS={chela:[['Mole poblano con pollo','145.00'],['Chalupas (orden de 5)','85.00'],['Agua de horchata','35.00']],lupe:[['Camote poblano (pieza)','20.00'],['Tortitas de Santa Clara (caja de 6)','55.00'],['Cocadas (bolsa)','40.00'],['Jamoncillo (barra)','30.00']]};
+const MUSEO={historia:'Un museo de ejemplo dedicado a la talavera poblana: muestra cómo cambió el oficio de la cerámica desde el virreinato hasta hoy, con piezas, pinturas, documentos y las herramientas de un taller.',atracciones:[['Pinturas','12 obras','Sala 2 · retratos y escenas de la vida en los talleres'],['Objetos antiguos','30 piezas','Sala 1 · vajillas, azulejos y jarrones de varias épocas'],['Escritos y documentos','8 documentos','Sala 3 · ordenanzas y cartas de maestros ceramistas'],['Herramientas de taller','15 piezas','Sala 4 · tornos, pinceles y moldes']]};
+const SALAS=[
+ {n:'Sala 1 · Objetos antiguos',es:'Aquí empieza el recorrido. Mira los azulejos de la pared izquierda: cada color se lograba con minerales distintos. Fíjate en el azul, el más costoso.',en:'The tour starts here. Look at the tiles on the left wall: each color came from a different mineral. Notice the blue, the most expensive one.'},
+ {n:'Sala 2 · Pinturas',es:'Las 12 obras muestran talleres y maestros. Busca el cuadro del horno: se ve cómo se cocían las piezas.',en:'The 12 works show workshops and master potters. Find the painting of the kiln: it shows how pieces were fired.'},
+ {n:'Sala 3 · Escritos y documentos',es:'Cartas y ordenanzas que fijaban cómo debía hacerse la talavera. Algunas firmas son de maestros ceramistas.',en:'Letters and rules that set how talavera had to be made. Some signatures belong to master potters.'},
+ {n:'Sala 4 · Herramientas de taller',es:'Tornos, pinceles y moldes. Al final puedes ver un torno completo, como el que usaba un taller de la época.',en:'Wheels, brushes and molds. At the end you can see a complete wheel, like the one a workshop used back then.'}
+];
+const TOURS={
+ hoy:[{id:'r1',h:'10:00',n:'Cerámica y color',idm:'Español',dur:60,cap:15,asis:12},{id:'r2',h:'11:30',n:'Pintura y escritos',idm:'English',dur:60,cap:15,asis:0},{id:'r3',h:'13:00',n:'Taller y herramientas',idm:'Español',dur:45,cap:15,asis:15},{id:'r4',h:'16:30',n:'Cerámica y color',idm:'Español',dur:60,cap:15,asis:5}],
+ manana:[{id:'r5',h:'10:30',n:'Cerámica y color',idm:'English',dur:60,cap:15,asis:3},{id:'r6',h:'12:00',n:'Pintura y escritos',idm:'Español',dur:60,cap:15,asis:0}]
+};
+const asisOf=t=>S.asis[t.id]!==undefined?S.asis[t.id]:t.asis;
+function estadoTour(t){const a=asisOf(t);return a>=t.cap?['LLENO','Lleno','err']:a===0?['VACIO','Vacío','blue']:a/t.cap>=0.8?['CASI_LLENO','Casi lleno','gold']:['DISPONIBLE','Disponible','ok'];}
+const AFL={BAJO:'Poco concurrido',MEDIO:'Afluencia media',ALTO:'Muy concurrido'};
+
+/* ===== Pantallas ===== */
+const SCR={
+ 'S-01':{n:'Bienvenida',lane:'Acceso',f:'F-01',p:'Primera pantalla: entrar con el teléfono o explorar sin cuenta.',api:'Ninguna'},
+ 'S-02':{n:'Código de acceso',lane:'Acceso',f:'F-01',p:'Pide y valida el código de 6 dígitos. Sin contraseñas.',api:'REST POST /auth/codigo · POST /auth/verificar'},
+ 'S-03':{n:'Cuestionario',lane:'Acceso',f:'F-02',p:'Tipo de visitante, de 3 a 5 intereses y estilo de viaje.',api:'guardarPerfil'},
+ 'S-04':{n:'Inicio',lane:'Descubrir',f:'F-03 F-04 F-07 F-08',tab:'S-04',p:'Recomendaciones, búsqueda, categorías y estado en vivo.',api:'inicio · buscarNegocios · negocios · WS afluenciaNegocio'},
+ 'S-05':{n:'Filtros',lane:'Descubrir',f:'F-04',p:'Categoría, subcategoría, tipo de viaje, presupuesto y día o noche.',api:'negocios(filtros)'},
+ 'S-06':{n:'Mapa',lane:'Descubrir',f:'F-06',tab:'S-06',p:'Negocios cercanos. La ubicación viaja en la consulta y no se guarda.',api:'negociosCerca · establecerConsentimiento'},
+ 'S-07':{n:'Ficha del negocio',lane:'Detalle',f:'F-03 F-05 F-08 F-09',p:'Información, menú, mesas y afluencia en vivo, y accesos a sello, ruta y cupón.',api:'negocio · catalogoPublico (menú o catálogo) · atracciones (museos) · WS disponibilidadNegocio · WS afluenciaNegocio'},
+ 'S-08':{n:'Reseñas',lane:'Detalle',f:'F-10',p:'Lista de reseñas y formulario para quien tiene sello.',api:'resenas · puedoResenar · prepararResena / confirmarResena'},
+ 'S-09':{n:'Ruta con IA',lane:'Planear',f:'F-11',tab:'S-09',p:'Pide una ruta; el modelo propone y el servidor valida horarios, duración y costos.',api:'generarRuta · reemplazarParada · guardarRuta'},
+ 'S-10':{n:'Transporte',lane:'Planear',f:'F-13',p:'Cómo llegar. Todo rotulado como estimado.',api:'comoLlegar'},
+ 'S-11':{n:'Pasaporte',lane:'Incentivos',f:'F-14 F-15',tab:'S-11',p:'Sellos, progreso y cupones.',api:'miPasaporte · activarPasaporte · prepararCupon / confirmarCupon'},
+ 'S-12':{n:'Escáner de sello',lane:'Incentivos',f:'F-14',p:'Lee el QR del negocio y pide confirmar antes de sellar.',api:'prepararSello · confirmarSello'},
+ 'S-13':{n:'Cupón con QR',lane:'Incentivos',f:'F-15',p:'QR para mostrar en caja. Cambia solo cuando la caja lo canjea.',api:'cupon · WS cuponActualizado'},
+ 'S-14':{n:'Perfil y privacidad',lane:'Cuenta',f:'F-01 F-02',tab:'S-14',p:'Intereses, ubicación, idioma, borrado de datos y cierre de sesión.',api:'establecerConsentimiento · prepararBorrado / confirmarBorrado · establecerIdioma'},
+ 'S-15':{n:'Recorrido en solitario',lane:'Detalle',f:'F-17',p:'Guía por salas en el idioma de la persona, para explorar el museo por su cuenta.',api:'recorridoSolitario · paqueteGuia · establecerIdioma'},
+ 'S-16':{n:'Recorridos con guía',lane:'Detalle',f:'F-17',p:'Agenda de recorridos guiados con las personas inscritas y si está lleno o vacío.',api:'recorridosGuiados · WS cupoRecorridos'}
+};
+const TABS=[['A-16','S-04','Explorar','compass'],['A-17','S-06','Mapa','map'],['A-18','S-09','Rutas','route'],['A-19','S-11','Pasaporte','ticket'],['A-20','S-14','Perfil','user']];
+
+/* ===== Acciones ===== */
+const VIA={local:'Solo en el dispositivo',consulta:'GraphQL · consulta',mutacion:'GraphQL · mutación',rest:'REST',ws:'WebSocket · suscripción',evento:'Evento simulado'};
+const A={};
+function act(id,scr,label,o){A[id]=Object.assign({id,scr,label,kind:'local',mod:'—',op:'',sync:[],pub:[],cons:[],inEv:[],err:[],go:null,ui:'',req:null,res:null,pat:'',also:[],auto:false},o||{});}
+
+act('A-01','S-01','Explorar sin cuenta',{go:'S-04',ui:'Entra como invitado: ve el directorio, pero no puede sellar, reseñar ni canjear.'});
+act('A-02','S-01','Entrar con mi teléfono',{go:'S-02',ui:'Abre la pantalla del código.'});
+act('A-03','S-02','Enviar código',{kind:'rest',mod:'visitantes (acceso)',op:'POST /auth/codigo',req:{telefono:'+52 000 000 0000'},res:{ok:true,expira_en_s:300},err:['DEMASIADOS_INTENTOS','TELEFONO_INVALIDO'],ui:'Aparecen los 6 dígitos y la cuenta regresiva. El canal de envío (SMS o mensajería) está por definir.'});
+act('A-04','S-02','Verificar',{kind:'rest',mod:'visitantes (acceso)',op:'POST /auth/verificar',req:{telefono:'+52 000 000 0000',codigo:'123456'},res:{ok:true,sesion:{expira_en_s:2592000},visitante:{id:VIS,nuevo:true}},pub:['E-01'],err:['CODIGO_INVALIDO','CODIGO_EXPIRADO'],go:'S-03',ui:'Si es nuevo va al cuestionario; si no, al inicio. El visitante_id sale de la sesión, nunca de un campo que mande el cliente.'});
+act('A-05','S-03','Elegir tipo de visitante',{req:{tipo_visitante:'NACIONAL'},ui:'Marca Local, Nacional o Extranjero. Se guarda hasta pulsar «Guardar».'});
+act('A-06','S-03','Marcar o quitar un interés',{req:{interes:'GASTRONOMIA_LOCAL'},err:['INTERESES_FUERA_DE_RANGO'],ui:'Cuenta de 3 a 5. «Guardar» se habilita dentro del rango; el servidor vuelve a validar.'});
+act('A-07','S-03','Elegir estilo de viaje',{req:{estilo_viaje:'RELAJADO'},ui:'Relajado, Aventurero o Ruta cultural.'});
+act('A-08','S-03','Guardar y ver recomendaciones',{kind:'mutacion',mod:'visitantes',op:'guardarPerfil(entrada)',req:{tipo_visitante:'NACIONAL',intereses:['GASTRONOMIA_LOCAL','CULTURA_Y_ARTE','FESTIVIDADES'],estilo_viaje:'RELAJADO'},res:{ok:true,version_cuestionario:1},pub:['E-02'],err:['INTERESES_FUERA_DE_RANGO','OPCION_DESCONOCIDA'],go:'S-04',ui:'Aterriza en Inicio con «Para ti» personalizado.',pat:'Excepción propuesta: preparar y confirmar encadenados en un solo toque (D-35).'});
+act('A-09','S-03','Omitir por ahora',{go:'S-04',ui:'Sin perfil, el inicio muestra recomendaciones generales. Se puede llenar después desde Perfil.'});
+act('A-10','S-04','Al abrir: cargar inicio',{auto:true,kind:'consulta',mod:'directorio',op:'inicio(filtros, ubicacion?)',sync:['visitantes.perfilDe(visitanteId)','directorio.recomendados(perfil, filtros, ubicacion?)'],req:{filtros:{categoria:null,abierto_ahora:false,afluencia_max:null},ubicacion:{lat:19.04,lng:-98.2,precision_m:40},pagina:{tam:10}},res:{tarjetas:[{id:NEG,nombre:'Fonda Doña Chela',categoria:'RESTAURANTE',subcategorias:['GASTRONOMIA_TIPICA','COMIDA_CORRIDA'],precio:'$$',calificacion:'4.6',distancia_m:350,abierto:true,afluencia:'BAJO',mesas_libres:4}]},err:['SIN_RESULTADOS'],ui:'Pinta «Para ti». La ubicación solo viaja en esta consulta y no se guarda.'});
+act('A-11','S-04','Buscar con texto libre',{kind:'consulta',mod:'rutas',op:'buscarNegocios(texto)',sync:['rutas.interpretarBusqueda(texto): el modelo devuelve filtros con esquema fijo','directorio.buscar(filtros)'],req:{texto:'mole poblano'},res:{filtros_entendidos:{texto:'mole',categoria:'RESTAURANTE',subcategorias:['GASTRONOMIA_TIPICA']},tarjetas:[{id:NEG,nombre:'Fonda Doña Chela'}]},err:['IA_NO_DISPONIBLE (cae a búsqueda por texto simple)'],ui:'La app muestra «Entendí:» con los filtros. El modelo solo traduce el texto a filtros; el código ejecuta la búsqueda.'});
+act('A-12','S-04','Chip de categoría',{kind:'consulta',mod:'directorio',op:'negocios(filtros)',req:{filtros:{categoria:'MUSEO'}},res:{total:1,tarjetas:['…']},ui:'La lista se filtra en el servidor, para que orden y paginación sean los mismos en todos los teléfonos.'});
+act('A-13','S-04','Chips «Abierto ahora» y «Poco concurrido»',{kind:'consulta',mod:'directorio',op:'negocios(filtros)',req:{filtros:{abierto_ahora:true,afluencia_max:'BAJO'}},res:{total:2,tarjetas:['…']},ui:'«Poco concurrido» usa el nivel que Afluencia calcula con las ventas (E-13): es agregado y nunca identifica a un cliente.'});
+act('A-14','S-04','Filtros',{go:'S-05',ui:'Abre la hoja de filtros.'});
+act('A-15','S-04','Tarjeta de un negocio (abrir la ficha)',{also:['S-06','S-09'],kind:'consulta',mod:'directorio',op:'negocio(id)',sync:['directorio.ficha(id)'],req:{id:NEG},res:{id:NEG,nombre:'Fonda Doña Chela',categoria:'RESTAURANTE',subcategorias:['GASTRONOMIA_TIPICA','COMIDA_CORRIDA'],horario_hoy:'09:00-18:00',calificacion:'4.6',total_resenas:128,afluencia:{nivel:'BAJO',pico:'14:00-16:00'},disponibilidad:{tipo:'MESAS',libres:4,total:12},cupon_disponible:true},err:['NEGOCIO_NO_ENCONTRADO'],go:'S-07',ui:'Abre la ficha y, al llegar, se activan las dos suscripciones en vivo (A-28 y A-29).'});
+act('A-16','*','Barra inferior · Explorar',{go:'S-04'});
+act('A-17','*','Barra inferior · Mapa',{go:'S-06'});
+act('A-18','*','Barra inferior · Rutas',{go:'S-09'});
+act('A-19','*','Barra inferior · Pasaporte',{go:'S-11'});
+act('A-20','*','Barra inferior · Perfil',{go:'S-14'});
+act('A-21','S-05','Marcar un filtro',{req:{filtro:'GASTRONOMIA_TIPICA'},ui:'Cambia la selección en el teléfono. No consulta hasta pulsar «Aplicar».'});
+act('A-22','S-05','Limpiar',{ui:'Quita todos los filtros marcados.'});
+act('A-23','S-05','Aplicar filtros',{kind:'consulta',mod:'directorio',op:'negocios(filtros)',req:{filtros:{categoria:'RESTAURANTE',subcategorias:['GASTRONOMIA_TIPICA'],tipo_viaje:['FAMILIAR'],presupuesto_max:'$$',momento:'DIA'}},res:{total:2,tarjetas:['…']},go:'S-04',ui:'Vuelve al inicio con la lista filtrada.'});
+act('A-24','S-06','Al abrir: cargar el mapa',{auto:true,kind:'consulta',mod:'directorio',op:'negociosCerca(centro, radio_m, filtros)',req:{centro:{lat:19.04,lng:-98.2},radio_m:1200,filtros:{}},res:{pines:[{id:NEG,lat:19.041,lng:-98.199,categoria:'RESTAURANTE'},{id:NEG2,lat:19.043,lng:-98.202,categoria:'MUSEO'}]},err:['UBICACION_NO_AUTORIZADA'],ui:'Sin permiso de ubicación, centra el mapa en el Centro Histórico y lo avisa.'});
+act('A-25','S-06','Buscar en esta zona',{kind:'consulta',mod:'directorio',op:'negociosCerca(centro, radio_m, filtros)',req:{centro:{lat:19.045,lng:-98.205},radio_m:800,filtros:{}},res:{pines:['…']},ui:'Repite la consulta con el centro del mapa visible.'});
+act('A-26','S-06','Tocar un pin',{req:{negocio_id:NEG},ui:'Muestra una vista previa abajo. «Ver ficha» usa A-15.'});
+act('A-27','S-06','Usar mi ubicación',{also:['S-14'],kind:'mutacion',mod:'visitantes',op:'establecerConsentimiento(tipo, otorgado)',req:{tipo:'UBICACION',otorgado:true,version_texto:1},res:{ok:true},ui:'Primero pide el permiso del teléfono; después registra el consentimiento (auditoría dentro de Visitantes, sin evento). Las coordenadas nunca se guardan.'});
+act('A-28','S-07','Al abrir: suscribirse a mesas libres',{auto:true,kind:'ws',mod:'directorio',op:'disponibilidadNegocio(negocioId)',req:{negocioId:NEG},res:{tipo:'MESAS',libres:4,total:12,abierto:true,actualizado_en:'2026-10-15T18:20:00Z'},cons:['E-12'],ui:'El número cambia solo cuando el restaurante lo cambia (C-01 → E-12). La suscripción se cancela al salir de la ficha.'});
+act('A-29','S-07','Al abrir: suscribirse a afluencia',{auto:true,kind:'ws',mod:'directorio',op:'afluenciaNegocio(negocioId)',req:{negocioId:NEG},res:{nivel:'BAJO',franja:'14:00-16:00'},cons:['E-13'],ui:'Actualiza «Poco concurrido» y la hora pico sin recargar.'});
+act('A-30','S-07','Pestaña «Menú» o «Catálogo»',{kind:'consulta',mod:'catálogo',op:'catalogoPublico(negocioId)',req:{negocioId:NEG},res:{etiqueta:'Menú',tipo_negocio:'RESTAURANTE',items:[{producto_id:'0192f3a0-7c10-7000-8000-0000000000a1',nombre:'Mole poblano con pollo',precio:'145.00',moneda:'MXN'},{producto_id:'0192f3a0-7c10-7000-8000-0000000000a2',nombre:'Chalupas (orden de 5)',precio:'85.00',moneda:'MXN'},{producto_id:'0192f3a0-7c10-7000-8000-0000000000a3',nombre:'Agua de horchata',precio:'35.00',moneda:'MXN'}]},err:['CATALOGO_NO_PUBLICADO'],ui:'Solo para restaurantes (pestaña «Menú», platillos) y misceláneas (pestaña «Catálogo», productos). Los dos los atiende Catálogo, dueño de los productos; el negocio decide qué publica. Los museos no usan esta pestaña. Operación nueva que el dueño de Catálogo debe aceptar.'});
+act('A-31','S-07','Pestaña «Reseñas»',{go:'S-08',ui:'Abre la lista de reseñas.'});
+act('A-32','S-07','Cómo llegar',{go:'S-10',ui:'Abre Transporte con este negocio como destino.'});
+act('A-33','S-07','Agregar a mi ruta',{kind:'mutacion',mod:'rutas',op:'agregarParada(negocioId)',req:{negocio_id:NEG},res:{borrador:{paradas:1}},err:['NEGOCIO_NO_ENCONTRADO'],ui:'Guarda la parada en un borrador. La ruta con IA la toma en cuenta (A-39). Sin evento: todavía no es una ruta generada.'});
+act('A-34','S-07','Escanear sello',{also:['S-08','S-11'],go:'S-12',ui:'Abre el escáner. Requiere sesión iniciada.'});
+act('A-35','S-07','Cupones de este lugar',{kind:'consulta',mod:'pasaporte',op:'cuponesDisponibles(negocioId)',req:{negocio_id:NEG},res:{cupones:[{campana_id:'0192f3a0-7c10-7000-8000-00000000c100',tipo:'PORCENTAJE',valor:'10.00',tope:'50.00',requiere_sello:true,vigente_hasta:'2026-10-31'}]},go:'S-11',ui:'Lleva al pasaporte, donde se reclama.'});
+act('A-36','S-08','Al abrir: cargar reseñas',{auto:true,kind:'consulta',mod:'reseñas',op:'resenas(negocioId, pagina)',req:{negocioId:NEG,pagina:{tam:10}},res:{total:128,items:[{id:'0192f3a0-7c10-7000-8000-0000000000e1',calificacion:5,texto:'Mole espeso y buena atención.',con_sello:true,respuesta:null}]},ui:'La lista la guarda Reseñas. El promedio de la ficha lo guarda Directorio (E-09).'});
+act('A-37','S-08','Escribir reseña',{kind:'consulta',mod:'reseñas',op:'puedoResenar(negocioId)',req:{negocioId:NEG},res:{puede:false,motivo:'RESENA_SIN_SELLO'},err:['RESENA_SIN_SELLO','RESENA_DUPLICADA'],inEv:['E-05'],ui:'Reseñas responde con su propia tabla de habilitaciones, que llena al consumir sello.otorgado (E-05). Sin sello, manda a escanear. Hay un retraso de segundos entre el sello y poder reseñar.'});
+act('A-38','S-08','Publicar reseña',{kind:'mutacion',mod:'reseñas',op:'prepararResena → confirmarResena',req:{preparar:{negocio_id:NEG,calificacion:5,texto:'Mole espeso y atención rápida.'},confirmar:{token:'tok-resena-ejemplo'}},res:{resena_id:'0192f3a0-7c10-7000-8000-0000000000e2',publicada:true},pub:['E-09'],err:['RESENA_SIN_SELLO','RESENA_DUPLICADA','TOKEN_EXPIRADO','TEXTO_NO_PERMITIDO'],ui:'El promedio de la ficha cambia cuando Directorio consume E-09, no dentro de esta llamada.',pat:'preparar → confirmar (token de un solo uso, 5 min; D-23)'});
+act('A-39','S-09','Generar mi ruta',{kind:'mutacion',mod:'rutas',op:'generarRuta(preferencias)',sync:['visitantes.perfilDe(visitanteId)','directorio.buscar(filtros)','directorio.disponibilidad(ids)','transporte.estimarTraslado(origen, destino, modo)','modelo de IA ⇄ herramientas /ia/v1 de solo lectura'],req:{preferencias:{inicio:'11:00',duracion_h:4,presupuesto_max:'300.00',modo:'CAMINANDO',incluir:[NEG]}},res:{ruta_id:RUTA,estimada:true,total:{costo:'280.00',moneda:'MXN',minutos:219},paradas:[{orden:1,negocio_id:NEG2,llegada:'11:00',duracion_min:90,costo_est:'60.00'},{orden:2,negocio_id:NEG,llegada:'12:45',duracion_min:75,costo_est:'180.00'},{orden:3,negocio_id:NEG3,llegada:'14:09',duracion_min:30,costo_est:'40.00'}],traslados:[{de:1,a:2,min:15,modo:'CAMINANDO',estimado:true},{de:2,a:3,min:9,modo:'CAMINANDO',estimado:true}]},pub:['E-11'],err:['RUTA_SIN_RESULTADOS','IA_NO_DISPONIBLE','PRESUPUESTO_INSUFICIENTE'],ui:'El modelo propone el orden con herramientas de lectura; el código valida que los ids existan y estén abiertos, y calcula duración y costo. Cuentas: 60.00 + 180.00 + 40.00 = 280.00; 90 + 15 + 75 + 9 + 30 = 219 min.'});
+act('A-40','S-09','Cambiar esta parada',{kind:'mutacion',mod:'rutas',op:'reemplazarParada(rutaId, orden)',sync:['directorio.buscar(filtros)','transporte.estimarTraslado(...)'],req:{ruta_id:RUTA,orden:3},res:{paradas:['…'],estimada:true},err:['RUTA_SIN_RESULTADOS'],ui:'Pide una alternativa para esa posición. Mismas validaciones del servidor.'});
+act('A-41','S-09','Guardar ruta',{kind:'mutacion',mod:'rutas',op:'guardarRuta(rutaId)',req:{ruta_id:RUTA},res:{guardada:true},ui:'La deja en «Mis rutas». Sin evento: la ruta ya se anunció al generarla (E-11).'});
+act('A-42','S-10','Al abrir: calcular el traslado',{auto:true,kind:'consulta',mod:'transporte',op:'comoLlegar(origen, destino)',req:{origen:{lat:19.04,lng:-98.2},destino_negocio_id:NEG},res:{opciones:[{modo:'CAMINANDO',minutos_est:12,costo:'0.00',estimado:true},{modo:'RUTA',linea:'1 (ilustrativa)',minutos_est:18,costo:'POR_CONFIRMAR',estimado:true}],pago:{medios:['TARJETA_PREPAGADA'],estado:'POR_CONFIRMAR'}},err:['SIN_OPCIONES'],ui:'Todo se rotula como estimado: no hay GTFS público; los datos salen de OpenStreetMap más captura propia.'});
+act('A-43','S-10','Elegir una opción de traslado',{req:{modo:'CAMINANDO'},ui:'Resalta la opción elegida.'});
+act('A-44','S-11','Al abrir: cargar pasaporte',{auto:true,kind:'consulta',mod:'pasaporte',op:'miPasaporte',res:{activo:true,sellos:[],meta:8,cupones:[]},err:['SESION_REQUERIDA'],ui:'Sin sesión, ofrece iniciar (A-02).'});
+act('A-45','S-11','Activar mi pasaporte',{kind:'mutacion',mod:'pasaporte',op:'activarPasaporte',req:{},res:{pasaporte_id:'0192f3a0-7c10-7000-8000-000000009001',activo:true},pub:['E-04'],err:['SESION_REQUERIDA','YA_ACTIVO'],ui:'Crea el pasaporte vacío: 0 de 8 sellos.'});
+act('A-46','S-11','Reclamar cupón',{kind:'mutacion',mod:'pasaporte',op:'prepararCupon → confirmarCupon',req:{preparar:{campana_id:'0192f3a0-7c10-7000-8000-00000000c100',negocio_id:NEG},confirmar:{token:'tok-cupon-ejemplo'}},res:{cupon_id:CUP,codigo:'CUP-7K3Q-0042'},pub:['E-06'],err:['CUPON_NO_VIGENTE','REQUIERE_SELLO','YA_RECLAMADO','TOKEN_EXPIRADO'],ui:'El cupón aparece en el pasaporte y también llega por la suscripción (SUB-3).',pat:'preparar → confirmar'});
+act('A-47','S-11','Ver cupón',{kind:'consulta',mod:'pasaporte',op:'cupon(id)',req:{id:CUP},res:{id:CUP,estado:'VIGENTE',codigo:'CUP-7K3Q-0042',qr:'token firmado (ejemplo)',tipo:'PORCENTAJE',valor:'10.00',tope:'50.00',vence:'2026-10-31'},go:'S-13'});
+act('A-48','S-12','Leer el QR del negocio',{kind:'mutacion',mod:'pasaporte',op:'prepararSello(qrToken)',sync:['directorio.validarQrNegocio(qrToken)'],req:{qr_token:'qr1.negocio-f001.2026-10-15T18:25Z.firma-ejemplo'},res:{negocio_id:NEG,nombre:'Fonda Doña Chela',token_confirmacion:'tok-sello-ejemplo',expira_en_s:300},err:['QR_INVALIDO','QR_EXPIRADO','SELLO_REPETIDO'],ui:'En el teléfono real lo dispara la cámara; aquí es un botón. Muestra «¿Sellar?» con el nombre que devuelve el servidor, no el que dice el QR.',pat:'preparar → confirmar'});
+act('A-49','S-12','Confirmar sello',{kind:'mutacion',mod:'pasaporte',op:'confirmarSello(token)',req:{token:'tok-sello-ejemplo'},res:{sello_id:'0192f3a0-7c10-7000-8000-0000000000b5',total_sellos:1,meta:8},pub:['E-05'],err:['TOKEN_EXPIRADO','SELLO_REPETIDO'],go:'S-11',ui:'Regresa al pasaporte con el sello nuevo. Reseñas y Gobierno reaccionan después, de forma asíncrona.'});
+act('A-50','S-12','Cancelar',{ui:'Cierra la hoja. El token de preparación expira solo.'});
+act('A-51','S-13','Al abrir: suscribirse al cupón',{auto:true,kind:'ws',mod:'pasaporte',op:'cuponActualizado(cuponId)',req:{cuponId:CUP},res:{estado:'VIGENTE'},cons:['E-07','E-08'],ui:'Cuando la caja canjee, la pantalla cambia sola.'});
+act('A-52','S-13','Mostrar en caja',{ui:'Sube el brillo y mantiene la pantalla encendida (función del dispositivo).'});
+act('A-53','S-13','SIMULACIÓN: la caja canjea el cupón',{kind:'evento',mod:'ventas → pasaporte',op:'pasaporte.canjearCupon(...) lo llama Ventas',sync:['ventas → pasaporte.canjearCupon(codigo, negocioId, ventaId, subtotal)'],req:{codigo:'CUP-7K3Q-0042',negocio_id:NEG,venta_id:VTA,subtotal:'230.00'},res:{aplicado:true,descuento:'23.00',total:'207.00'},pub:['E-07'],cons:['E-07'],err:['CUPON_NO_VIGENTE','CUPON_YA_CANJEADO'],ui:'No es un botón de la app: quien cobra escanea el QR en su caja. Cuenta $230.00 − cupón $23.00 = $207.00. La app se entera por la suscripción. Después Ventas publica venta.registrada y los demás módulos reaccionan.'});
+act('A-54','S-14','Editar mis intereses',{go:'S-03',ui:'Reabre el cuestionario con las respuestas actuales.'});
+act('A-55','S-14','Desactivar ubicación',{kind:'mutacion',mod:'visitantes',op:'establecerConsentimiento(tipo, otorgado)',req:{tipo:'UBICACION',otorgado:false,version_texto:1},res:{ok:true},ui:'La app deja de mandar coordenadas en las consultas.'});
+act('A-56','S-14','Cambiar idioma',{also:['S-15'],kind:'mutacion',mod:'visitantes',op:'establecerIdioma(idioma)',req:{idioma:'en'},res:{ok:true,idioma:'en'},err:['IDIOMA_NO_DISPONIBLE'],ui:'Cambia el idioma de la guía en solitario y de los textos que tengan traducción. Idiomas del ejemplo: español de México y English; el resto está por definir.'});
+act('A-57','S-14','Borrar mis datos',{kind:'mutacion',mod:'visitantes',op:'prepararBorrado',req:{},res:{token_confirmacion:'tok-borrado-ejemplo',expira_en_s:300,resumen:'Se borrarán perfil, reseñas, sellos y rutas.'},ui:'Muestra la hoja de confirmación.',pat:'preparar → confirmar'});
+act('A-58','S-14','Cerrar sesión',{kind:'rest',mod:'visitantes (acceso)',op:'POST /auth/cerrar',req:{},res:{ok:true},go:'S-01'});
+act('A-59','*','← Atrás',{ui:'Vuelve a la pantalla anterior.'});
+act('A-60','*','Al iniciar sesión: suscribirse a respuestas',{auto:true,kind:'ws',mod:'reseñas',op:'respuestasAMisResenas',res:{resena_id:'0192f3a0-7c10-7000-8000-0000000000e2',negocio:'Fonda Doña Chela'},cons:['E-10'],ui:'Muestra un aviso cuando un negocio responde una reseña tuya.'});
+act('A-61','S-07','SIMULACIÓN: el restaurante cambia sus mesas',{kind:'evento',mod:'restaurantes → directorio',op:'(evento) negocio.disponibilidad_cambiada',req:{tipo:'MESAS',libres:3,total:12,abierto:true},res:{},inEv:['C-01'],pub:['E-12'],cons:['E-12'],ui:'Restaurantes (vertical) publica C-01; Directorio lo consume, actualiza su proyección y publica E-12; la ficha lo recibe por la suscripción A-28.'});
+act('A-62','S-08','SIMULACIÓN: el negocio responde tu reseña',{kind:'evento',mod:'panel del locatario → reseñas',op:'responderResena(resenaId, texto)',req:{resena_id:'0192f3a0-7c10-7000-8000-0000000000e2',texto:'¡Gracias por venir!'},res:{ok:true},pub:['E-10'],cons:['E-10'],ui:'El panel del locatario responde; Reseñas publica E-10 y la app recibe un aviso por A-60.'});
+act('A-63','S-08','Calificar con estrellas',{req:{calificacion:5},ui:'Elige de 1 a 5.'});
+act('A-64','S-14','Confirmar borrado',{kind:'mutacion',mod:'visitantes',op:'confirmarBorrado(token)',req:{token:'tok-borrado-ejemplo'},res:{ok:true,solicitado_en:'2026-10-15T19:02:10Z'},pub:['E-03'],go:'S-01',ui:'Cierra la sesión. Reseñas, Pasaporte y Rutas anonimizan o borran lo suyo al consumir E-03.',pat:'preparar → confirmar'});
+act('A-65','S-14','Cancelar',{ui:'Cierra la hoja sin borrar nada.'});
+act('A-66','S-07','Pestaña «Información»',{ui:'Muestra datos generales, horario y subcategorías.'});
+act('A-67','S-07','Pestaña «Atracciones» (solo museos)',{kind:'consulta',mod:'museos',op:'atracciones(negocioId, idioma)',req:{negocioId:NEG2,idioma:'es-MX'},res:{historia:'Un museo de ejemplo dedicado a la talavera poblana…',atracciones:[{categoria:'PINTURAS',cantidad:12,sala:2},{categoria:'OBJETOS_ANTIGUOS',cantidad:30,sala:1},{categoria:'ESCRITOS_Y_DOCUMENTOS',cantidad:8,sala:3},{categoria:'HERRAMIENTAS_DE_TALLER',cantidad:15,sala:4}]},err:['CONTENIDO_NO_PUBLICADO'],ui:'Cuenta la historia del museo y qué hay para ver. Un museo no tiene menú ni catálogo: su contenido lo da Museos, no Catálogo. Si falta la traducción, se muestra en español y se avisa.'});
+act('A-68','S-07','Pestaña «Recorridos» (solo museos)',{ui:'Muestra las dos opciones: recorrido en solitario o con guía.'});
+act('A-69','S-07','Recorrido en solitario',{kind:'consulta',mod:'museos',op:'recorridoSolitario(negocioId, idioma)',req:{negocioId:NEG2,idioma:'es-MX'},res:{salas:[{orden:1,nombre:'Sala 1 · Objetos antiguos',texto:'Aquí empieza el recorrido…'}],idiomas:['es-MX','en'],descargable:true},err:['IDIOMA_NO_DISPONIBLE'],go:'S-15',ui:'Abre la guía para explorar por tu cuenta. Usa el idioma del perfil y se puede cambiar en la misma pantalla.'});
+act('A-70','S-07','Recorridos con guía',{kind:'consulta',mod:'museos',op:'recorridosGuiados(negocioId, fecha)',req:{negocioId:NEG2,fecha:'2026-10-15'},res:{recorridos:[{id:'0192f3a0-7c10-7000-8000-0000000000f4',hora:'11:30',nombre:'Pintura y escritos',idioma_guia:'en',duracion_min:60,asistentes:0,capacidad:15,estado:'VACIO'}]},err:['SIN_RECORRIDOS'],go:'S-16',ui:'Abre la agenda del día. El estado lo calcula el servidor: vacío, disponible, casi lleno (80% o más) o lleno.'});
+act('A-71','S-16','Al abrir: suscribirse a los cupos',{auto:true,kind:'ws',mod:'museos',op:'cupoRecorridos(negocioId, fecha)',req:{negocioId:NEG2,fecha:'2026-10-15'},res:{recorrido_id:'0192f3a0-7c10-7000-8000-0000000000f4',asistentes:1,capacidad:15,estado:'DISPONIBLE'},cons:['E-14'],ui:'Las personas y el estado de cada recorrido cambian solos cuando el museo registra a alguien.'});
+act('A-72','S-15','Siguiente sala',{ui:'Avanza a la siguiente sala. La guía no sabe dónde estás: tú decides cuándo avanzar (detección por QR de sala: por definir).'});
+act('A-73','S-15','Descargar para usar sin conexión',{kind:'consulta',mod:'museos',op:'paqueteGuia(negocioId, idioma)',req:{negocioId:NEG2,idioma:'es-MX'},res:{version:'2026-10-01',salas:4,tamano_aprox:'2.4 MB (ejemplo)'},ui:'Guarda el texto de la guía en el teléfono: las salas de un museo suelen tener mala señal. No guarda datos personales.'});
+act('A-74','S-16','Elegir día',{kind:'consulta',mod:'museos',op:'recorridosGuiados(negocioId, fecha)',req:{negocioId:NEG2,fecha:'2026-10-16'},res:{recorridos:['…']},ui:'Cambia entre hoy y mañana.'});
+act('A-75','S-16','SIMULACIÓN: una persona se une al recorrido de las 11:30',{kind:'evento',mod:'panel del museo → museos',op:'registrarAsistente(recorridoId)',req:{recorrido_id:'0192f3a0-7c10-7000-8000-0000000000f4'},res:{asistentes:1,capacidad:15},pub:['E-14'],cons:['E-14'],ui:'No es un botón de la app: el personal del museo registra a una persona. Museos publica E-14 y la agenda cambia en la pantalla.'});
+/* ===== Eventos (publicados por módulos a causa de la app) ===== */
+const EV={};
+function ev(id,tipo,origen,o){EV[id]=Object.assign({id,tipo,version:1,origen,neg:true,datos:{},cons:[],nota:'',kind:'pub'},o);}
+const APP='App del turista (WebSocket)', PANEL='Panel del locatario (canal)';
+ev('E-01','visitante.registrado','visitantes',{neg:false,datos:{visitante_id:VIS,idioma:'es-MX',canal:'APP'},cons:[{m:'gobierno',t:'Cuenta visitantes nuevos por día. Solo agregados.'}],nota:'El visitante_id es un seudónimo; no viaja teléfono ni nombre.'});
+ev('E-02','visitante.perfil_actualizado','visitantes',{neg:false,datos:{visitante_id:VIS,tipo_visitante:'NACIONAL',intereses:['GASTRONOMIA_LOCAL','CULTURA_Y_ARTE','FESTIVIDADES'],estilo_viaje:'RELAJADO',version_cuestionario:1},cons:[{m:'gobierno',t:'Perfil agregado de visitantes, con mínimo de personas por celda.'}]});
+ev('E-03','visitante.borrado_solicitado','visitantes',{neg:false,datos:{visitante_id:VIS,solicitado_en:'2026-10-15T19:02:10Z'},cons:[{m:'reseñas',t:'Anonimiza al autor de sus reseñas.'},{m:'pasaporte',t:'Anonimiza sellos y cupones; conserva el conteo.'},{m:'rutas',t:'Borra sus rutas.'}],nota:'Es la cadena que cumple el derecho al borrado sin que Visitantes toque datos ajenos (R1).'});
+ev('E-04','pasaporte.activado','pasaporte',{neg:false,datos:{pasaporte_id:'0192f3a0-7c10-7000-8000-000000009001',visitante_id:VIS},cons:[{m:'gobierno',t:'Cuenta pasaportes activos.'}]});
+ev('E-05','sello.otorgado','pasaporte',{datos:{sello_id:'0192f3a0-7c10-7000-8000-0000000000b5',pasaporte_id:'0192f3a0-7c10-7000-8000-000000009001',visitante_id:VIS,metodo:'QR'},cons:[{m:'reseñas',t:'Crea una habilitación para reseñar este negocio (su propia tabla).'},{m:'gobierno',t:'Visita verificada por zona y hora, agregada.'},{m:PANEL,t:'El locatario ve «una visita con pasaporte».'}]});
+ev('E-06','cupon.emitido','pasaporte',{datos:{cupon_id:CUP,campana_id:'0192f3a0-7c10-7000-8000-00000000c100',visitante_id:VIS,tipo:'PORCENTAJE',valor:'10.00',tope:'50.00',vence_en:'2026-10-31T23:59:59Z'},cons:[{m:APP,t:'Suscripción cuponActualizado: el cupón aparece en el pasaporte.'}]});
+ev('E-07','cupon.canjeado','pasaporte',{datos:{cupon_id:CUP,visitante_id:VIS,venta_id:VTA,descuento:{monto:'23.00',moneda:'MXN'},canjeado_en:'2026-10-15T18:40:12Z'},cons:[{m:APP,t:'Suscripción cuponActualizado: la pantalla pasa a «Canjeado».'},{m:'gobierno',t:'Canjes por zona y monto agregado.'},{m:PANEL,t:'El locatario ve el canje en su resumen.'}],nota:'correlacion_id = venta_id. Dinero como cadena decimal.'});
+ev('E-08','cupon.expirado','pasaporte',{datos:{cupon_id:CUP,vencio_en:'2026-10-31T23:59:59Z'},cons:[{m:APP,t:'Suscripción cuponActualizado: el cupón pasa a «Vencido».'}]});
+ev('E-09','resena.publicada','reseñas',{datos:{resena_id:'0192f3a0-7c10-7000-8000-0000000000e2',calificacion:5,con_sello:true},cons:[{m:'directorio',t:'Recalcula el promedio y el total que muestra la ficha.'},{m:PANEL,t:'Aviso de reseña nueva al locatario.'}],nota:'No lleva el texto: el consumidor lo pide a la API si lo necesita (los eventos llevan hechos, no entidades).'});
+ev('E-10','resena.respondida','reseñas',{datos:{resena_id:'0192f3a0-7c10-7000-8000-0000000000e2',respondida_en:'2026-10-15T20:10:00Z'},cons:[{m:APP,t:'Suscripción respuestasAMisResenas: aviso a la persona que reseñó.'}]});
+ev('E-11','ruta.generada','rutas',{neg:false,datos:{ruta_id:RUTA,visitante_id:VIS,paradas:[{orden:1,negocio_id:NEG2,llegada_estimada:'11:00',duracion_min:90},{orden:2,negocio_id:NEG,llegada_estimada:'12:45',duracion_min:75},{orden:3,negocio_id:NEG3,llegada_estimada:'14:09',duracion_min:30}],estimada:true,modelo:'POR_DEFINIR'},cons:[{m:'gobierno',t:'Flujo planeado por zona. Nunca por negocio individual.'}],nota:'Un solo evento tiene varios negocios: por eso no lleva negocio_id en el sobre (hallazgo H-1).'});
+ev('E-12','directorio.disponibilidad_actualizada','directorio',{datos:{tipo:'MESAS',libres:4,total:12,abierto:true,actualizado_en:'2026-10-15T18:20:00Z'},cons:[{m:APP,t:'Suscripción disponibilidadNegocio: cambia el número de la ficha.'}]});
+ev('E-13','afluencia.nivel_actualizado','afluencia',{datos:{franja_inicio:'14:00',franja_fin:'16:00',nivel:'BAJO'},cons:[{m:'directorio',t:'Guarda el nivel para filtros y tarjetas.'},{m:APP,t:'Suscripción afluenciaNegocio: cambia la etiqueta de la ficha.'}],nota:'Se calcula con conteos de ventas por franja. No lleva montos ni clientes.'});
+ev('E-14','museos.cupo_recorrido_actualizado','museos (vertical)',{datos:{recorrido_id:'0192f3a0-7c10-7000-8000-0000000000f4',fecha:'2026-10-15',hora:'11:30',asistentes:1,capacidad:15,estado:'DISPONIBLE',actualizado_en:'2026-10-15T17:21:30Z'},cons:[{m:APP,t:'Suscripción cupoRecorridos: cambian las personas y el estado de ese recorrido.'},{m:PANEL,t:'El museo ve su propia agenda actualizada.'}],nota:'Lo publica un vertical y solo lo consume el canal. Ningún módulo horizontal lo consume, así que R4 se respeta. El estado se calcula en el servidor: VACIO, DISPONIBLE, CASI_LLENO (80% o más) o LLENO.'});
+/* ===== Eventos que los módulos de plataforma consumen de otros ===== */
+ev('C-01','negocio.disponibilidad_cambiada','restaurantes (también museos y misceláneos)',{kind:'in',datos:{tipo:'MESAS',libres:3,total:12,abierto:true,actualizado_en:'2026-10-15T18:21:30Z'},cons:[{m:'directorio',t:'Actualiza su proyección y publica E-12.'}],nota:'Evento genérico: su esquema vive en «compartido» y no conoce giros (tipo MESAS, AFORO o ATENCION). Así Directorio, que es horizontal, no depende de ningún vertical (R4).'});
+ev('C-02','venta.registrada','ventas',{kind:'in',datos:{venta_id:VTA,ocurrido_en:'2026-10-15T18:40:12Z',total:'207.00'},cons:[{m:'afluencia',t:'Suma 1 al conteo de la franja. Usa solo negocio_id y ocurrido_en.'}],nota:'El contrato completo es de Ventas y está pendiente de congelar con su dueño. Aquí solo se listan los campos que Afluencia necesita.'});
+ev('C-03','venta.anulada','ventas',{kind:'in',datos:{venta_id:VTA,ocurrido_en:'2026-10-15T18:44:00Z'},cons:[{m:'afluencia',t:'Resta 1 al conteo de la franja.'}],nota:'Puede llegar antes que venta.registrada: Afluencia debe tolerar el desorden (marca de anulación previa, como en D-19).'});
+const SUBS=[
+ ['SUB-1','disponibilidadNegocio(negocioId)','E-12','Mesas libres en la ficha','S-07','A-28'],
+ ['SUB-2','afluenciaNegocio(negocioId)','E-13','Etiqueta «Poco concurrido» y hora pico','S-07 · S-04','A-29'],
+ ['SUB-3','cuponActualizado(cuponId)','E-06 · E-07 · E-08','Cupón nuevo, canjeado o vencido','S-13 · S-11','A-51'],
+ ['SUB-4','respuestasAMisResenas','E-10','Aviso cuando un negocio responde','toda la app','A-60'],
+ ['SUB-5','cupoRecorridos(negocioId, fecha)','E-14','Personas y estado (vacío, disponible, casi lleno, lleno) de cada recorrido con guía','S-16','A-71']
+];
+function envelope(e){
+  const n=String(e.id.slice(2));
+  return {id:'0192f3a0-8a00-7000-8000-00000000'+(e.id[0]==='C'?'c0':'e0')+n,tipo:e.tipo,version:e.version,negocio_id:e.neg?NEG:null,origen:e.origen.split(' ')[0],ocurrido_en:'2026-10-15T18:40:12Z',correlacion_id:e.id==='E-07'?VTA:'0192f3a0-7c10-7000-8000-00000000cc'+n,causa_id:null,datos:e.datos};
+}
+/* ===== Llamadas síncronas entre módulos (R2 y R6) ===== */
+const SYNC=[
+ ['L-01','canal','visitantes','guardarPerfil · perfilDe · establecerConsentimiento · prepararBorrado/confirmarBorrado · /auth/*','A-03 A-04 A-08 A-27 A-55 A-57 A-64','El canal no es módulo: puede llamar a cualquier API pública'],
+ ['L-02','canal','directorio','inicio · negocios · negocio · negociosCerca','A-10 A-12 A-13 A-15 A-23 A-24 A-25','Lectura'],
+ ['L-03','canal','catálogo','catalogoPublico(negocioId) — operación nueva','A-30','Catálogo es dueño de los productos (R1). Pendiente con su dueño'],
+ ['L-04','canal','reseñas','resenas · puedoResenar · prepararResena/confirmarResena','A-36 A-37 A-38','Escritura con preparar → confirmar'],
+ ['L-05','canal','pasaporte','miPasaporte · activarPasaporte · prepararSello/confirmarSello · cuponesDisponibles · prepararCupon/confirmarCupon · cupon','A-35 A-44 A-45 A-46 A-47 A-48 A-49','Escritura con preparar → confirmar'],
+ ['L-06','canal','rutas','buscarNegocios · agregarParada · generarRuta · reemplazarParada · guardarRuta','A-11 A-33 A-39 A-40 A-41','El modelo de IA nunca es llamado desde el canal'],
+ ['L-07','canal','transporte','comoLlegar(origen, destino)','A-42','Datos estimados'],
+ ['L-08','rutas','visitantes','perfilDe(visitanteId)','A-10 A-39','Horizontal → horizontal (R6): síncrono = API pública'],
+ ['L-09','rutas','directorio','buscar(filtros) · disponibilidad(ids)','A-11 A-39 A-40','Lectura'],
+ ['L-10','rutas','transporte','estimarTraslado(origen, destino, modo)','A-39 A-40','Lectura; resultado «estimado»'],
+ ['L-11','rutas','modelo de IA','El modelo pide herramientas /ia/v1 de solo lectura (buscar_negocios, ver_ficha, ver_disponibilidad, estimar_traslado)','A-11 A-39','El modelo interpreta, el código decide: el código valida ids, horarios, duración y costo'],
+ ['L-12','pasaporte','directorio','validarQrNegocio(qrToken)','A-48','Directorio es dueño de los negocios y de la clave del QR'],
+ ['L-13','ventas','pasaporte','canjearCupon(codigo, negocioId, ventaId, subtotal)','A-53','R6. Único camino de canje: Pasaporte no consume eventos de Ventas, para no crear un ciclo'],
+ ['L-14','reseñas','directorio','existeNegocio(id)','A-38','Lectura'],
+ ['L-15','canal','museos (vertical)','atracciones · recorridoSolitario · paqueteGuia · recorridosGuiados','A-67 A-69 A-70 A-73 A-74','El canal compone la ficha de un museo con Directorio (datos generales) y Museos (contenido propio del giro). Directorio no conoce a Museos']
+];
+/* ===== Hallazgos y decisiones propuestas ===== */
+const HALL=[
+ ['H-1','Alta','El sobre común exige negocio_id «siempre presente», pero E-01 a E-04 y E-11 no pertenecen a un negocio (E-11 trae varios).','D-37: negocio_id opcional en eventos de plataforma sin negocio. visitante_id es un seudónimo y nunca lleva teléfono ni nombre. Hay que cambiar el §7.1 de inventario.md.'],
+ ['H-2','Alta','R4 choca con «mesas disponibles»: Directorio es horizontal y las mesas viven en Restaurantes.','D-33: los verticales publican eventos genéricos (negocio.disponibilidad_cambiada, C-01) definidos en «compartido». Nadie horizontal conoce un giro.'],
+ ['H-3','Alta','Si Pasaporte consumiera venta.registrada y Ventas llamara a Pasaporte, habría un ciclo entre módulos.','D-34: el canje es una sola llamada síncrona de Ventas a Pasaporte, idempotente por (negocio, cuponId, ventaId). Pasaporte no consume eventos de Ventas.'],
+ ['H-4','Media','La app no debería publicar ni consumir eventos del bus: saltaría R1 y R3 desde el cliente.','D-35: la app solo manda comandos (GraphQL y REST) y recibe por 5 suscripciones. Escrituras con preparar → confirmar: reseña, sello, cupón y borrado. Excepción propuesta: perfil y consentimientos, encadenados en un toque.'],
+ ['H-5','Media','Un QR fijo de sello se puede fotografiar y reutilizar desde casa.','D-36: QR firmado, con vencimiento corto y rotativo, que el panel del locatario muestra. Falta diseñar esa pantalla del panel.'],
+ ['H-6','Media','Reseñas necesita saber si hubo sello. En el plan anterior lo resolvía llamando a Pasaporte.','D-38 (cambia lo dicho antes): Reseñas consume sello.otorgado y guarda su propia tabla de habilitaciones. Cuesta una consistencia eventual: el sello y poder reseñar tardan segundos; la UI lo tolera (A-37).'],
+ ['H-7','Media','El canje lo ejecuta quien cobra, no el turista. Falta la pantalla «escanear cupón» en la caja del panel y el cambio en Ventas.','Hay que acordar el contrato con el dueño de Ventas y de Caja (L-13). Sin eso el camino dorado no cierra.'],
+ ['H-8','Media','La ubicación va en cada consulta. Un registro de accesos del servidor o del proxy podría guardarla sin querer.','Regla de diseño: las coordenadas se excluyen de los registros y de la auditoría. Hay que verificarlo cuando exista código.'],
+ ['H-9','Baja','«Poco concurrido» podría reidentificar si un negocio vende muy poco.','Afluencia publica niveles (BAJO, MEDIO, ALTO) con un mínimo de ventas por franja; por debajo se omite. El mínimo está por definir.'],
+ ['H-10','Baja','Los datos de transporte son estimados y los medios de pago de los autobuses no están confirmados.','Se rotulan «estimado» y «por confirmar». La sesión paralela de transporte debe confirmar el contrato de comoLlegar.'],
+ ['H-11','Media','La ficha de un museo mezcla datos de Directorio con contenido de Museos (atracciones, recorridos), pero Directorio no puede llamar a un vertical (R4).','D-42: el canal compone la ficha según el giro y llama a Museos directamente. Directorio no conoce a Museos y ningún horizontal depende de él.'],
+ ['H-12','Media','La guía en solitario necesita contenido en varios idiomas y no está definido quién lo escribe ni quién lo traduce.','D-43: el museo entrega español; los otros idiomas son opcionales y, si faltan, se muestra español con aviso. Una traducción automática con IA solo sería aceptable rotulada como tal; queda abierta.'],
+ ['H-13','Media','El cupo de los recorridos con guía depende de que el museo registre a las personas; sin ese dato la agenda miente.','D-44: la agenda es informativa; el museo registra asistentes en su panel (pantalla nueva por diseñar). Reservar desde la app queda fuera de alcance hasta que se decida.'],
+ ['H-14','Baja','«Cuando está dentro»: saber en qué sala está la persona exigiría ubicación o un QR por sala.','La guía no usa ubicación: la persona avanza sala por sala. El QR por sala queda por definir.'],
+ ['H-15','Baja','Las salas de un museo suelen tener poca señal.','«Descargar para usar sin conexión» guarda solo el texto de la guía, sin datos personales (A-73).']
+];
+const DECS=[
+ ['D-33','Los verticales publican eventos genéricos de disponibilidad definidos en «compartido»; los horizontales los consumen sin conocer giros.'],
+ ['D-34','Canje de cupón: Ventas llama a Pasaporte de forma síncrona; Pasaporte no consume eventos de Ventas.'],
+ ['D-35','La app no publica ni consume eventos del bus: manda comandos y recibe por 5 suscripciones. Preparar → confirmar en reseña, sello, cupón y borrado; excepción propuesta para perfil y consentimientos.'],
+ ['D-36','El QR de sello es firmado y rotativo, con vencimiento corto.'],
+ ['D-37','negocio_id es opcional en el sobre de los eventos de plataforma que no pertenecen a un negocio; visitante_id es un seudónimo.'],
+ ['D-38','Reseñas consume sello.otorgado y guarda sus propias habilitaciones (no llama a Pasaporte).'],
+ ['D-42','La ficha cambia según el giro: restaurantes ven «Menú», misceláneas ven «Catálogo de productos» (los dos los atiende Catálogo con catalogoPublico) y museos ven «Atracciones» y «Recorridos» (los atiende Museos). El canal compone la ficha; Directorio no conoce a los verticales.'],
+ ['D-43','Recorrido en solitario: guía por salas en el idioma del perfil, descargable para usar sin conexión y sin usar ubicación. El museo entrega español; otros idiomas son opcionales y la traducción automática, si se usa, va rotulada.'],
+ ['D-44','Recorridos con guía: agenda informativa con personas inscritas y estado (vacío, disponible, casi lleno, lleno). El museo registra asistentes en su panel y Museos publica museos.cupo_recorrido_actualizado (E-14). Reservar desde la app queda fuera de alcance.']
+];
+/* ===== Utilidades ===== */
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function jh(o){
+  return esc(JSON.stringify(o,null,2)).replace(/(&quot;[^&]*?&quot;)(:)?|(-?\b\d+(?:\.\d+)?\b)|\b(true|false|null)\b/g,function(m,str,col){
+    if(str) return col?'<span class="jk">'+str+'</span>:':'<span class="js_">'+str+'</span>';
+    return '<span class="jn">'+m+'</span>';
+  });
+}
+const IC={
+ search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+ pin:'<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+ star:'<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+ qr:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h3M20 17v4"/>',
+ ticket:'<path d="M3 9V6h18v3a3 3 0 0 0 0 6v3H3v-3a3 3 0 0 0 0-6z"/><path d="M13 6v12"/>',
+ route:'<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+ compass:'<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
+ bus:'<rect x="4" y="3" width="16" height="14" rx="2"/><path d="M4 11h16M7 21v-4M17 21v-4"/>',
+ back:'<path d="m15 18-6-6 6-6"/>',
+ filter:'<path d="M4 6h16M7 12h10M10 18h4"/>',
+ check:'<path d="m5 12 5 5 9-10"/>',
+ map:'<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
+ fork:'<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3c-2 2-3 5-3 8h3v10"/>',
+ museum:'<path d="M3 10 12 4l9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/>',
+ shop:'<path d="M4 9h16l-1-5H5zM5 9v11h14V9M9 20v-6h6v6"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ cam:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'
+};
+const ic=(n,c)=>'<svg class="ic'+(c?' '+c:'')+'" viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>';
+const B=(act,inner,cls,arg,extra)=>'<button type="button" class="'+(cls||'')+'" data-act="'+act+'"'+(arg!==undefined&&arg!==''?' data-arg="'+esc(arg)+'"':'')+(extra||'')+'>'+inner+'</button>';
+const kChip=a=>'<span class="k '+({consulta:'q',mutacion:'m',ws:'w',rest:'m',evento:'e',local:''}[a.kind]||'')+'">'+VIA[a.kind]+'</span>';
+const nameOf=s=>SCR[s]?SCR[s].n:s;
+const curNeg=()=>NEGS.find(n=>n.id===S.neg)||NEGS[0];
+
+/* ===== Estado del teléfono ===== */
+function fresh(){return {scr:'S-01',hist:[],ui:'normal',logged:false,codeSent:false,tipo:'NACIONAL',ints:new Set(['GASTRONOMIA_LOCAL','CULTURA_Y_ARTE']),estilo:'RELAJADO',perfil:false,cat:'Todo',abierto:false,poco:false,q:'',fsel:new Set(),pin:null,loc:false,neg:'chela',tab:'info',enRuta:false,stars:5,form:false,bloq:false,resenaPub:false,ruta:false,rutaGuardada:false,opt:'CAMINANDO',pasaporte:false,sellos:[],cuponRec:false,scan:'idle',cuponCanj:false,mesas:4,toast:'',borrar:false,sel:null,idioma:'es-MX',sala:0,dia:'hoy',asis:{},descargada:false};}
+let S=fresh(); let LOG=[]; let HOT=false;
+const INTS=[['GASTRONOMIA_LOCAL','Gastronomía local'],['CULTURA_Y_ARTE','Cultura y arte'],['FESTIVIDADES','Festividades'],['VIDA_NOCTURNA','Vida nocturna'],['FAMILIAR','Plan familiar'],['PRESUPUESTO_BAJO','Presupuesto bajo'],['HISTORIA','Historia'],['NATURALEZA','Naturaleza']];
+const FIL=[['Categoría',[['RESTAURANTE','Restaurante'],['MUSEO','Museo'],['MISCELANEA','Miscelánea']]],['Subcategoría',[['GASTRONOMIA_TIPICA','Gastronomía típica'],['GLUTEN_FREE','Sin gluten'],['VERANO','Verano'],['MIXTO','Mixto'],['COMIDA_CORRIDA','Comida corrida'],['EXTRANJERA','Extranjera'],['HISTORIA','Historia'],['CULTURA','Cultura'],['ARTE','Arte']]],['Tipo de viaje',[['CULTURA_Y_ARTE','Cultura y arte'],['FESTIVIDADES','Festividades'],['FAMILIAR','Familiar'],['NOCHE','Noche'],['DIA','Día']]],['Presupuesto',[['$','$'],['$$','$$'],['$$$','$$$']]]];
+const STOPS=[{id:'museo',t:'11:00',min:90,costo:'60.00'},{id:'chela',t:'12:45',min:75,costo:'180.00'},{id:'lupe',t:'14:09',min:30,costo:'40.00'}];
+const TRAS=[15,9];
+const STX={
+ 'S-04':{vacio:['No encontramos lugares','Ningún negocio cumple los filtros. Quita alguno o cambia la búsqueda.'],error:['No pudimos cargar el inicio','Hubo un fallo del servidor. Mostramos lo último guardado si existe.'],exito:['Filtros aplicados','2 lugares encontrados.']},
+ 'S-07':{vacio:['Sin información','Este negocio todavía no publica su ficha.'],error:['Este lugar ya no está disponible','NEGOCIO_NO_ENCONTRADO: pudo cerrar o dejar la plataforma.'],exito:['Parada agregada','Quedó en tu borrador de ruta.']},
+ 'S-08':{vacio:['Aún no hay reseñas','Sé la primera persona en reseñar. Necesitas un sello de este lugar.'],error:['No pudimos publicar tu reseña','TOKEN_EXPIRADO: vuelve a pulsar «Publicar reseña».'],exito:['Reseña publicada','Gracias. El promedio se actualiza en unos segundos.']},
+ 'S-09':{vacio:['No encontramos una ruta','RUTA_SIN_RESULTADOS: prueba con más tiempo o más presupuesto.'],error:['La IA no está disponible','IA_NO_DISPONIBLE: te mostramos rutas sugeridas hechas por el equipo, sin IA.'],exito:['Ruta lista','Horarios y costos validados por el servidor.']},
+ 'S-11':{vacio:['Tu pasaporte está vacío','Escanea el QR de un negocio afiliado para tu primer sello.'],error:['No pudimos cargar tu pasaporte','SESION_REQUERIDA o fallo del servidor. Intenta de nuevo.'],exito:['Sello obtenido','Ya cuenta para tu pasaporte.']},
+ 'S-12':{vacio:['Sin cámara','Da permiso a la cámara para escanear.'],error:['Ese código ya venció','QR_EXPIRADO: pide al negocio que te muestre el vigente (cambia cada pocos minutos).'],exito:['Sello obtenido','Fonda Doña Chela.']},
+ 'S-15':{vacio:['Esta guía aún no está lista','CONTENIDO_NO_PUBLICADO: el museo todavía no publica su guía.'],error:['No pudimos cargar la guía','Si ya la descargaste, usamos la última versión guardada en tu teléfono.'],exito:['Guía descargada','Ya puedes usarla sin conexión.']},
+ 'S-16':{vacio:['Hoy no hay recorridos con guía','SIN_RECORRIDOS: prueba mañana o usa el recorrido en solitario.'],error:['No pudimos cargar la agenda','Intenta de nuevo en unos segundos.'],exito:['Agenda actualizada','Los cupos se actualizan solos.']},
+ 'S-13':{vacio:['No tienes cupones','Reclama uno en tu pasaporte.'],error:['Este cupón ya no es válido','CUPON_NO_VIGENTE: venció o ya se usó.'],exito:['Cupón canjeado','Cuenta $230.00 − cupón $23.00 = $207.00.']}
+};
+const STD={vacio:['Nada por aquí todavía','No hay datos para mostrar.'],error:['No pudimos cargar','Hubo un problema con el servidor. Intenta de nuevo.'],exito:['Listo','La operación se completó.']};
+
+/* ===== Efectos de cada acción sobre el teléfono ===== */
+const tog=(set,k)=>{if(set.has(k))set.delete(k);else set.add(k);};
+const FX={
+ 'A-03':()=>{S.codeSent=true;},
+ 'A-04':()=>{S.logged=true;},
+ 'A-05':t=>{S.tipo=t;},
+ 'A-06':i=>{if(S.ints.has(i))S.ints.delete(i);else if(S.ints.size<5)S.ints.add(i);else S.toast='Máximo 5 intereses';},
+ 'A-07':e=>{S.estilo=e;},
+ 'A-08':()=>{S.perfil=true;},
+ 'A-11':()=>{S.q='mole poblano';S.cat='Todo';},
+ 'A-12':c=>{S.cat=c;S.q='';},
+ 'A-13':k=>{if(k==='abierto')S.abierto=!S.abierto;else S.poco=!S.poco;},
+ 'A-15':id=>{S.neg=id||'chela';S.tab='info';S.form=false;S.bloq=false;},
+ 'A-21':f=>{tog(S.fsel,f);},
+ 'A-22':()=>{S.fsel.clear();},
+ 'A-25':()=>{S.toast='Zona actualizada';},
+ 'A-26':id=>{S.pin=id;},
+ 'A-27':()=>{S.loc=true;S.toast='Ubicación activada. No se guarda el recorrido.';},
+ 'A-55':()=>{S.loc=false;},
+ 'A-30':()=>{S.tab='menu';},
+ 'A-66':()=>{S.tab='info';},
+ 'A-33':()=>{S.enRuta=true;S.toast='Agregado a tu ruta';},
+ 'A-37':()=>{if(S.sellos.includes(S.neg)){S.form=true;S.bloq=false;}else{S.bloq=true;S.form=false;}},
+ 'A-38':()=>{S.resenaPub=true;S.form=false;},
+ 'A-39':()=>{S.ruta=true;},
+ 'A-40':()=>{S.toast='Buscando otra parada…';},
+ 'A-41':()=>{S.rutaGuardada=true;S.toast='Ruta guardada en «Mis rutas»';},
+ 'A-43':o=>{S.opt=o;},
+ 'A-45':()=>{S.pasaporte=true;},
+ 'A-46':()=>{S.cuponRec=true;},
+ 'A-48':()=>{S.scan='leido';},
+ 'A-49':()=>{if(!S.sellos.includes(S.neg))S.sellos.push(S.neg);S.scan='idle';S.toast='Sello obtenido: '+curNeg().nombre;},
+ 'A-50':()=>{S.scan='idle';},
+ 'A-52':()=>{S.toast='Brillo al máximo (función del dispositivo)';},
+ 'A-53':()=>{S.cuponCanj=true;S.toast='Cupón canjeado en caja';},
+ 'A-56':l=>{S.idioma=l||(S.idioma==='en'?'es-MX':'en');S.toast='Idioma: '+(S.idioma==='en'?'English (ejemplo)':'Español (México)');},
+ 'A-67':()=>{S.tab='atr';},
+ 'A-68':()=>{S.tab='rec';},
+ 'A-69':()=>{S.sala=0;},
+ 'A-70':()=>{S.dia='hoy';},
+ 'A-72':()=>{S.sala=(S.sala+1)%SALAS.length;},
+ 'A-73':()=>{S.descargada=true;S.toast='Guía descargada (ejemplo): 2.4 MB';},
+ 'A-74':d=>{S.dia=d||'hoy';},
+ 'A-75':()=>{S.asis.r2=Math.min(15,(S.asis.r2!==undefined?S.asis.r2:0)+1);S.toast='Se unió una persona al recorrido de las 11:30';},
+ 'A-57':()=>{S.borrar=true;},
+ 'A-58':()=>{S.logged=false;},
+ 'A-61':()=>{S.mesas=S.mesas===4?3:4;S.toast='Mesas libres: '+S.mesas;},
+ 'A-62':()=>{S.toast=S.resenaPub?'Fonda Doña Chela respondió tu reseña':'Un negocio respondió una reseña (no es tuya: tú no recibirías este aviso)';},
+ 'A-63':n=>{S.stars=+n;},
+ 'A-64':()=>{const l=S;S=fresh();S.sel=l.sel;},
+ 'A-65':()=>{S.borrar=false;}
+};
+const GUARD={
+ 'A-53':()=>S.cuponRec?'':'Primero hay que reclamar un cupón en Pasaporte (necesita un sello).',
+ 'A-48':()=>S.logged?'':'Inicia sesión para sellar.',
+ 'A-49':()=>S.logged?'':'Inicia sesión para sellar.'
+};
+const AUTOS=id=>Object.values(A).filter(a=>a.auto&&(a.scr===id||(a.scr==='*'&&S.logged)));
+function addLog(c,t){LOG.unshift({c,t});if(LOG.length>40)LOG.pop();}
+function goto(s,tabNav){
+  if(tabNav)S.hist=[];else if(S.scr!==s)S.hist.push(S.scr);
+  S.scr=s;S.ui='normal';
+  AUTOS(s).forEach(a=>addLog('au','↻ al abrir '+s+': '+a.id+' '+a.label));
+  const sc=$('#screen'); if(sc)sc.scrollTop=0;
+}
+function fire(id,arg){
+  const a=A[id]; if(!a)return;
+  S.toast='';
+  if(S.ui==='offline'&&a.kind!=='local'){addLog('bl','✕ '+id+' bloqueada: sin conexión (la app reintenta al volver la red)');S.sel={id,arg,blocked:true};render();return;}
+  const g=GUARD[id]?GUARD[id]():'';
+  if(g){addLog('bl','✕ '+id+': '+g);S.toast=g;S.sel={id,arg};render();return;}
+  S.sel={id,arg};
+  addLog('',id+' · '+a.label+(arg?' ('+arg+')':''));
+  if(id==='A-59'){const p=S.hist.pop();if(p){S.scr=p;S.ui='normal';}render();return;}
+  if(FX[id])FX[id](arg);
+  a.inEv.forEach(e=>addLog('ev','→ entra '+e+' '+EV[e].tipo));
+  a.pub.forEach(e=>addLog('ev','⚡ '+e+' '+EV[e].tipo+' → '+EV[e].cons.map(c=>c.m).join(', ')));
+  const dest=id==='A-04'?'S-03':a.go;
+  if(dest)goto(dest,/^A-(16|17|18|19|20)$/.test(id));
+  render();
+}
+/* ===== Pantallas del teléfono ===== */
+const tbar=(t,back)=>'<div class="topbar">'+(back===false?'':B('A-59',ic('back','s'),'iconbtn','',' aria-label="Atrás"'))+'<h3>'+esc(t)+'</h3></div>';
+const tagAfl=n=>'<span class="tag '+(n.afl==='ALTO'?'err':n.afl==='BAJO'?'ok':'gold')+'">'+AFL[n.afl]+'</span>';
+function negCard(n){
+  const cerrado=n.id==='lupe';
+  return B('A-15','<span class="im">'+ic(n.ic)+'</span><span class="tx"><b>'+n.nombre+'</b><span class="meta"><span>'+n.cat+' · '+n.sub[0]+'</span><span>'+n.precio+'</span><span>'+ic('star','s')+' '+n.cal+'</span><span>'+n.dist+' m</span></span><span class="meta"><span class="tag '+(cerrado?'err':'ok')+'">'+(cerrado?'Cerrado ahora':'Abierto')+'</span>'+tagAfl(n)+(n.id==='chela'?'<span class="tag blue">'+S.mesas+' mesas libres</span>':'')+'</span></span>','pcard',n.id);
+}
+function listaInicio(){
+  let L=NEGS.slice();
+  if(S.q)L=L.filter(n=>n.id==='chela');
+  if(S.cat!=='Todo')L=L.filter(n=>n.cat===S.cat);
+  if(S.abierto)L=L.filter(n=>n.id!=='lupe');
+  if(S.poco)L=L.filter(n=>n.afl==='BAJO');
+  return L;
+}
+const SR={
+'S-01':()=>'<div style="flex:1;display:grid;align-content:center;gap:14px;text-align:center"><div style="font-family:var(--font-display);font-size:2.3rem;line-height:1;color:var(--accent)">Puebla 360</div><p style="color:var(--muted)">Descubre Puebla como la viven quienes la hacen: fondas, museos y tiendas de barrio.</p><div class="hero" style="justify-content:center;align-items:center">'+ic('compass')+'</div>'+B('A-02','Entrar con mi teléfono','pbtn')+B('A-01','Explorar sin cuenta','pbtn alt')+'<small style="color:var(--muted)">Sin contraseñas: te mandamos un código. Al entrar aceptas el aviso de privacidad (texto por definir).</small></div>',
+'S-02':()=>tbar('Tu código')+'<p style="color:var(--muted);font-size:13px">Te enviamos un código de 6 dígitos a tu teléfono.</p><div class="box"><span class="mono">+52 000 000 0000</span><small>Teléfono de ejemplo</small></div>'+(S.codeSent?'<div class="chips2">'+[1,2,3,4,5,6].map(i=>'<span class="pchip" style="width:38px;text-align:center">'+i+'</span>').join('')+'</div><small style="color:var(--muted)">Expira en 4:59</small>'+B('A-04','Verificar','pbtn'):B('A-03','Enviar código','pbtn')),
+'S-03':()=>{const n=S.ints.size;return tbar('Cuéntanos qué te gusta')+'<div class="meta"><span class="tag blue">1 Tipo</span><span class="tag blue">2 Intereses</span><span class="tag blue">3 Estilo</span></div><h4>Soy visitante…</h4><div class="chips2">'+[['LOCAL','Local'],['NACIONAL','Nacional'],['EXTRANJERO','Extranjero']].map(x=>B('A-05',x[1],'pchip',x[0],' aria-pressed="'+(S.tipo===x[0])+'"')).join('')+'</div><h4>Me interesa (de 3 a 5)</h4><div class="chips2">'+INTS.map(x=>B('A-06',x[1],'pchip',x[0],' aria-pressed="'+S.ints.has(x[0])+'"')).join('')+'</div><small style="color:var(--muted)">'+n+' de 5 elegidos'+(n<3?' · elige al menos 3':'')+'</small><h4>Mi estilo de viaje</h4><div class="chips2">'+[['RELAJADO','Relajado'],['AVENTURERO','Aventurero'],['RUTA_CULTURAL','Ruta cultural']].map(x=>B('A-07',x[1],'pchip',x[0],' aria-pressed="'+(S.estilo===x[0])+'"')).join('')+'</div><div style="display:grid;gap:6px;margin-top:auto">'+B('A-08','Guardar y ver recomendaciones','pbtn','',n<3||n>5?' disabled':'')+B('A-09','Omitir por ahora','pbtn alt')+'</div>';},
+'S-04':()=>{const L=listaInicio();return '<div class="topbar"><div style="flex:1"><small style="color:var(--muted)">'+ic('pin','s')+' Centro Histórico (ejemplo)</small><h3>Hola, visitante</h3></div>'+B('A-14',ic('filter'),'iconbtn','',' aria-label="Filtros"')+'</div>'+B('A-11',ic('search','s')+' '+(S.q?esc(S.q):'Busca: «mole poblano»…'),'pbtn alt','',' style="text-align:left;font-weight:500"')+(S.q?'<div class="box ok"><b>Entendí:</b> Restaurante · Gastronomía típica · «mole»<small>El modelo solo tradujo tu texto a filtros; la búsqueda la hizo el servidor.</small></div>':'')+'<div class="hscroll">'+['Todo','Restaurante','Museo','Miscelánea'].map(c=>B('A-12',c,'pchip',c,' aria-pressed="'+(S.cat===c&&!S.q)+'"')).join('')+'</div><div class="hscroll">'+B('A-13','Abierto ahora','pchip','abierto',' aria-pressed="'+S.abierto+'"')+B('A-13','Poco concurrido','pchip','poco',' aria-pressed="'+S.poco+'"')+'</div>'+(S.perfil?'<h4>Para ti</h4>':'<h4>Recomendados</h4>')+(L.length?L.map(negCard).join(''):'<div class="box">Ningún lugar cumple esos filtros.</div>')+(S.logged?'':'<div class="box gold"><span>Entra para sellar tu pasaporte, reseñar y usar cupones.</span>'+B('A-02','Entrar','pbtn sm')+'</div>');},
+'S-05':()=>tbar('Filtros')+FIL.map(g=>'<h4>'+g[0]+'</h4><div class="chips2">'+g[1].map(x=>B('A-21',x[1],'pchip',x[0],' aria-pressed="'+S.fsel.has(x[0])+'"')).join('')+'</div>').join('')+'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:auto">'+B('A-22','Limpiar','pbtn alt')+B('A-23','Aplicar'+(S.fsel.size?' ('+S.fsel.size+')':''),'pbtn')+'</div>',
+'S-06':()=>{const P={chela:[110,120],museo:[205,70],santa:[235,205],lupe:[120,220]};const pins=NEGS.map(n=>'<g data-act="A-26" data-arg="'+n.id+'" role="button" tabindex="0" aria-label="'+n.nombre+'" style="cursor:pointer"><circle cx="'+P[n.id][0]+'" cy="'+P[n.id][1]+'" r="'+(S.pin===n.id?15:12)+'" style="fill:'+(S.pin===n.id?'var(--gold)':'var(--accent)')+'"/><text x="'+P[n.id][0]+'" y="'+(P[n.id][1]+4)+'" text-anchor="middle" font-size="11" style="fill:var(--bg)">'+n.nombre.split(' ').pop().charAt(0)+'</text></g>').join('');const pn=NEGS.find(n=>n.id===S.pin);return '<div class="topbar"><h3>Mapa</h3></div>'+(S.loc?'':'<div class="banner">Activa tu ubicación para ver lo más cercano. Sin ella, centramos el mapa en el Centro Histórico.</div>')+'<svg class="map" viewBox="0 0 320 290" role="img" aria-label="Mapa de ejemplo con cuatro negocios"><g stroke="var(--line)" stroke-width="10" stroke-linecap="round" fill="none"><path d="M0 70 L320 90"/><path d="M0 170 L320 150"/><path d="M0 250 L320 240"/><path d="M70 0 L90 290"/><path d="M180 0 L170 290"/><path d="M265 0 L250 290"/></g>'+(S.loc?'<circle cx="150" cy="150" r="7" style="fill:var(--ok)"/><circle cx="150" cy="150" r="14" style="fill:none;stroke:var(--ok)"/>':'')+pins+'</svg><div style="display:flex;gap:8px;flex-wrap:wrap">'+(S.loc?'':B('A-27','Usar mi ubicación','pbtn sm'))+B('A-25','Buscar en esta zona','pbtn alt sm')+'</div>'+(pn?'<div class="box"><b>'+pn.nombre+'</b><span class="meta"><span>'+pn.cat+'</span><span>'+pn.dist+' m</span>'+tagAfl(pn)+'</span>'+B('A-15','Ver ficha','pbtn sm',pn.id)+'</div>':'<small style="color:var(--muted)">Toca un pin para ver una vista previa.</small>');},
+'S-07':()=>{const n=curNeg();const rest=n.cat==='Restaurante';const chela=n.id==='chela';
+ const info='<div class="meta"><span>'+ic('pin','s')+' Dirección de ejemplo, Centro</span></div><div class="meta"><span>'+ic('clock','s')+' Hoy '+(n.id==='lupe'?'10:00–19:00 · abre a las 10:00':'09:00–18:00')+'</span></div><div class="chips2">'+n.sub.map(s=>'<span class="tag blue">'+s+'</span>').join('')+'</div>';
+ const items=CATALOGOS[n.id];const museo=n.cat==='Museo';const etq=rest?'Menú':'Catálogo';
+ const menu=items?'<div class="meta"><span class="tag blue">'+(rest?'Platillos':'Productos')+'</span></div><div>'+items.map(x=>'<div class="mrow"><span>'+x[0]+'</span><b>$'+x[1]+'</b></div>').join('')+'</div><small style="color:var(--muted)">Precios publicados por el negocio desde su Catálogo.</small>':'<div class="box">Este negocio no ha publicado su '+(rest?'menú':'catálogo')+'. (CATALOGO_NO_PUBLICADO)</div>';
+ const atr='<div class="box"><b>Historia del museo</b><span>'+MUSEO.historia+'</span></div><h4>Qué hay para ver</h4>'+MUSEO.atracciones.map(a=>'<div class="mrow"><span>'+a[0]+'<br><small style="color:var(--muted)">'+a[2]+'</small></span><b>'+a[1]+'</b></div>').join('')+'<small style="color:var(--muted)">Contenido en '+(S.idioma==='en'?'English (ejemplo)':'español')+'.</small>';
+ const rec='<div class="box"><b>Recorrido en solitario</b><span>Una guía en tu idioma para explorar el museo por tu cuenta cuando estés dentro.</span><span class="meta"><span class="tag blue">Español</span><span class="tag blue">English (ejemplo)</span></span>'+B('A-69','Abrir la guía','pbtn sm')+'</div><div class="box"><b>Con guía</b><span>Agenda de recorridos guiados, con las personas inscritas y si está lleno o vacío.</span>'+B('A-70','Ver la agenda','pbtn sm')+'</div>';
+ return tbar('Ficha del negocio')+'<div class="hero">'+n.nombre+'</div><div class="meta"><span>'+n.cat+' · '+n.precio+'</span><span>'+ic('star','s')+' '+n.cal+' ('+(n.res+(n.id==='chela'&&S.resenaPub?1:0))+' reseñas)</span><span>'+n.dist+' m</span></div>'
+ +(rest?'<div class="box"><div class="meta"><span class="live"><i></i>En vivo</span><span>Mesas libres</span></div><b style="font-size:1.5rem;font-variant-numeric:tabular-nums">'+S.mesas+' de 12</b></div>':'')
+ +(museo?'<div class="box"><div class="meta"><span class="live"><i></i>En vivo</span><span>Aforo del museo</span></div><b style="font-size:1.3rem">Moderado</b></div>':'')
+ +(n.id==='lupe'?'<div class="box"><div class="meta"><span class="live"><i></i>En vivo</span><span>Atención ahora</span></div><b style="font-size:1.3rem">Sin fila</b></div>':'')
+ +'<div class="meta">'+tagAfl(n)+'<span class="live"><i></i>en vivo</span></div>'
+ +'<div style="display:flex;gap:6px;flex-wrap:wrap">'+B('A-32',ic('bus','s')+' Cómo llegar','pbtn alt sm')+B('A-33',S.enRuta?'En tu ruta ✓':'Agregar a mi ruta','pbtn alt sm')+B('A-34',ic('qr','s')+' Escanear sello','pbtn sm')+'</div>'
+ +'<div class="seg">'+B('A-66','Información','',undefined,' aria-pressed="'+(S.tab==='info')+'"')+(museo?B('A-67','Atracciones','',undefined,' aria-pressed="'+(S.tab==='atr')+'"')+B('A-68','Recorridos','',undefined,' aria-pressed="'+(S.tab==='rec')+'"'):B('A-30',etq,'',undefined,' aria-pressed="'+(S.tab==='menu')+'"'))+B('A-31','Reseñas','',undefined,' aria-pressed="false"')+'</div>'
+ +(S.tab==='menu'&&!museo?menu:S.tab==='atr'&&museo?atr:S.tab==='rec'&&museo?rec:info)
+ +(chela?'<div class="box gold"><b>Cupón: 10% de descuento</b><small>Tope $50.00 · requiere sello · vigente hasta el 31 oct 2026</small>'+B('A-35','Ver cupones','pbtn sm')+'</div>':'');},
+'S-15':()=>{const n=curNeg();const s=SALAS[S.sala];const en=S.idioma==='en';return tbar('Recorrido en solitario')+'<small style="color:var(--muted)">'+n.nombre+'</small><div class="chips2">'+B('A-56','Español (México)','pchip','es-MX',' aria-pressed="'+!en+'"')+B('A-56','English (ejemplo)','pchip','en',' aria-pressed="'+en+'"')+'</div>'+(en?'<div class="banner">Idioma de ejemplo: las traducciones reales están por definir.</div>':'')+'<div class="meta"><span class="tag blue">Sala '+(S.sala+1)+' de '+SALAS.length+'</span><span class="tag">Explorando por tu cuenta</span></div><div class="box"><b>'+s.n+'</b><span>'+(en?s.en:s.es)+'</span></div><div style="display:flex;gap:6px;flex-wrap:wrap">'+B('A-72',S.sala<SALAS.length-1?'Siguiente sala':'Volver a la primera sala','pbtn sm')+B('A-73',S.descargada?'Guía descargada ✓':'Descargar para usar sin conexión','pbtn alt sm')+'</div><small style="color:var(--muted)">No necesita cuenta ni ubicación. La guía no sabe en qué sala estás: tú avanzas.</small>';},
+'S-16':()=>{const n=curNeg();const L=TOURS[S.dia];return tbar('Recorridos con guía')+'<small style="color:var(--muted)">'+n.nombre+'</small><div class="seg">'+B('A-74','Hoy','','hoy',' aria-pressed="'+(S.dia==='hoy')+'"')+B('A-74','Mañana','','manana',' aria-pressed="'+(S.dia==='manana')+'"')+'</div><div class="meta"><span class="live"><i></i>cupos en vivo</span></div>'+L.map(t=>{const e=estadoTour(t);const a=asisOf(t);return '<div class="box"><span class="meta"><b style="font-size:1.05rem">'+t.h+'</b><span>'+t.dur+' min</span><span class="tag blue">Guía en '+t.idm+'</span></span><b>'+t.n+'</b><span class="meta"><span style="font-variant-numeric:tabular-nums">'+a+' de '+t.cap+' personas</span><span class="tag '+e[2]+'">'+e[1]+'</span></span></div>';}).join('')+'<div class="banner">El museo registra a las personas de cada recorrido en su panel. Para unirte, llega unos minutos antes. Reservar desde la app: por definir.</div>';},
+'S-08':()=>{const n=curNeg();const has=S.sellos.includes(n.id);return tbar('Reseñas · '+n.nombre)+'<div class="box"><b style="font-size:1.4rem">'+n.cal+' '+ic('star','s')+'</b><small>'+(n.res+(S.resenaPub&&n.id==='chela'?1:0))+' reseñas · cada una viene de una visita con sello</small></div>'+'<div class="box"><div class="meta"><span class="tag ok">Visita verificada</span><span>5 '+ic('star','s')+'</span></div><span>«Mole espeso y buena atención.»</span></div>'+(S.resenaPub?'<div class="box ok"><div class="meta"><span class="tag ok">Tu reseña</span><span>'+S.stars+' '+ic('star','s')+'</span></div><span>«Mole espeso y atención rápida.»</span></div>':'')
+ +(S.bloq?'<div class="box err"><b>Necesitas un sello de este lugar</b><small>RESENA_SIN_SELLO. Escanea el QR del mostrador y vuelve.</small>'+B('A-34','Escanear sello','pbtn sm')+'</div>':'')
+ +(S.form?'<div class="box"><b>Tu calificación</b><div class="chips2">'+[1,2,3,4,5].map(i=>B('A-63',i+' ★','pchip',String(i),' aria-pressed="'+(S.stars===i)+'"')).join('')+'</div><span style="font-size:13px">«Mole espeso y atención rápida.»</span>'+B('A-38','Publicar reseña','pbtn gold')+'</div>':(S.resenaPub?'':B('A-37',has?'Escribir reseña (tienes sello)':'Escribir reseña','pbtn')));},
+'S-09':()=>{let h='<div class="topbar"><h3>Ruta con IA</h3></div>';if(!S.ruta){return h+'<div class="box"><b>Tus preferencias</b><div class="chips2"><span class="tag blue">Inicio 11:00</span><span class="tag blue">4 horas</span><span class="tag blue">Hasta $300.00</span><span class="tag blue">Caminando</span>'+(S.enRuta?'<span class="tag gold">Incluir: Fonda Doña Chela</span>':'')+'</div><small>Se usan tus intereses del cuestionario'+(S.perfil?'.':' (aún sin llenar: ruta general).')+'</small></div>'+B('A-39','Generar mi ruta','pbtn gold')+'<small style="color:var(--muted)">La IA propone el orden. El servidor comprueba que cada lugar exista y esté abierto, y calcula duración y costo.</small>';}
+ h+='<div class="meta"><span class="tag gold">Hecha con IA</span><span class="tag">Estimado</span></div>';
+ STOPS.forEach((s,i)=>{const n=NEGS.find(x=>x.id===s.id);h+=(i?'<div class="meta" style="padding-left:8px">↓ '+TRAS[i-1]+' min caminando (estimado)</div>':'')+'<div class="box"><span class="meta"><b>'+s.t+'</b><span>'+s.min+' min</span><span>≈ $'+s.costo+'</span></span>'+B('A-15','<b>'+n.nombre+'</b>','pbtn alt sm',n.id,' style="text-align:left"')+'</div>';});
+ return h+'<div class="box ok"><b>Total ≈ $280.00 · 3 h 39 min</b><small>60.00 + 180.00 + 40.00 = 280.00 · 90 + 15 + 75 + 9 + 30 = 219 min</small></div><div style="display:flex;gap:6px;flex-wrap:wrap">'+B('A-40','Cambiar la última parada','pbtn alt sm')+B('A-41',S.rutaGuardada?'Guardada ✓':'Guardar ruta','pbtn sm')+'</div>';},
+'S-10':()=>{const n=curNeg();const O=[['CAMINANDO','Caminando','12 min (est.)','$0.00'],['RUTA','Línea RUTA 1 (ilustrativa)','18 min (est.)','por confirmar']];return tbar('Cómo llegar')+'<small style="color:var(--muted)">Destino: '+n.nombre+'</small><div class="banner">Datos ilustrativos y estimados. No hay GTFS público; los medios de pago de los autobuses están por confirmar.</div>'+O.map(o=>B('A-43','<span class="tx"><b>'+o[1]+'</b><span class="meta"><span>'+o[2]+'</span><span>Costo: '+o[3]+'</span></span></span>','pcard',o[0],S.opt===o[0]?' style="border-color:var(--accent);background:var(--accent-soft)"':'')).join('')+'<div class="box"><b>Medios de pago</b><small>Tarjeta prepagada RUTA. Otros medios: por confirmar.</small></div>';},
+'S-11':()=>{let h='<div class="topbar"><h3>Pasaporte</h3></div>';if(!S.logged)return h+'<div class="box gold"><b>Inicia sesión para usar tu pasaporte</b>'+B('A-02','Entrar con mi teléfono','pbtn sm')+'</div>';
+ if(!S.pasaporte)return h+'<div class="box"><b>Sella tus visitas, gana cupones</b><small>Cada negocio afiliado te da un sello al escanear su QR. Con tus sellos desbloqueas descuentos.</small></div>'+B('A-45','Activar mi pasaporte','pbtn gold');
+ h+='<div class="box"><b style="font-size:1.3rem;font-variant-numeric:tabular-nums">'+S.sellos.length+' de 8 sellos</b><div class="stamps">'+[0,1,2,3,4,5,6,7].map(i=>'<div class="stamp'+(i<S.sellos.length?' on':'')+'">'+(i<S.sellos.length?ic('check','s'):i+1)+'</div>').join('')+'</div></div>'+B('A-34',ic('qr','s')+' Escanear un sello','pbtn sm');
+ h+='<h4>Cupones</h4>';
+ if(S.cuponRec)h+='<div class="box gold"><b>10% en Fonda Doña Chela</b><small>Tope $50.00 · vence el 31 oct 2026</small><span class="meta"><span class="tag '+(S.cuponCanj?'ok':'blue')+'">'+(S.cuponCanj?'Canjeado':'Vigente')+'</span></span>'+B('A-47','Ver cupón','pbtn sm')+'</div>';
+ else if(S.sellos.includes('chela'))h+='<div class="box gold"><b>10% en Fonda Doña Chela</b><small>Desbloqueado con tu sello · tope $50.00</small>'+B('A-46','Reclamar cupón','pbtn sm')+'</div>';
+ else h+='<small style="color:var(--muted)">Consigue un sello en un negocio afiliado para desbloquear sus cupones.</small>';
+ return h;},
+'S-12':()=>{const n=curNeg();return tbar('Escanear sello')+'<div class="viewf"><div>'+ic('cam')+'<br>Apunta al QR del mostrador de <b>'+n.nombre+'</b>.<br><small>Aquí es un botón: el mockup no usa cámara.</small></div></div>'+(S.logged?'':'<div class="banner">Inicia sesión para sellar.</div>')+B('A-48','Leer el QR del negocio','pbtn')+(S.scan==='leido'?'<div class="sheet"><b>¿Sellar '+n.nombre+'?</b><small>El nombre lo confirmó el servidor. Tienes 5 minutos para confirmar.</small>'+B('A-49','Confirmar sello','pbtn gold')+B('A-50','Cancelar','pbtn alt')+'</div>':'');},
+'S-13':()=>{let c='';const sd=[7,13,5];let x=7;for(let i=0;i<21;i++)for(let j=0;j<21;j++){x=(x*1103515245+12345)&0x7fffffff;const f=(i<7&&j<7)||(i<7&&j>13)||(i>13&&j<7);if(!f&&(x>>8)%2)c+='<rect x="'+j+'" y="'+i+'" width="1" height="1"/>';}
+ const fp=[[0,0],[14,0],[0,14]].map(p=>'<rect x="'+p[0]+'" y="'+p[1]+'" width="7" height="7"/><rect x="'+(p[0]+1)+'" y="'+(p[1]+1)+'" width="5" height="5" fill="#fff"/><rect x="'+(p[0]+2)+'" y="'+(p[1]+2)+'" width="3" height="3"/>').join('');
+ return tbar('Mi cupón')+'<svg class="qr" viewBox="0 0 21 21" role="img" aria-label="QR de ejemplo del cupón" shape-rendering="crispEdges" fill="#111">'+c+fp+'</svg><div class="box"><b>10% de descuento · Fonda Doña Chela</b><small>Tope $50.00 · CUP-7K3Q-0042 (ejemplo)</small><span class="meta"><span class="live"><i></i>en vivo</span><span class="tag '+(S.cuponCanj?'ok':'blue')+'">'+(S.cuponCanj?'Canjeado ✓':'Vigente')+'</span></span></div>'+(S.cuponCanj?'<div class="box ok"><b>Canjeado en caja</b><small>Cuenta $230.00 − cupón $23.00 = $207.00</small></div>':B('A-52','Mostrar en caja','pbtn'));},
+'S-14':()=>{let h='<div class="topbar"><h3>Perfil</h3></div>';if(!S.logged)h+='<div class="box gold"><b>Estás como invitado</b>'+B('A-02','Entrar con mi teléfono','pbtn sm')+'</div>';else h+='<div class="box"><b>Visitante verificado</b><small>Cuenta de ejemplo · sin nombre ni teléfono a la vista</small></div>';
+ h+='<h4>Mis intereses</h4><div class="chips2">'+(S.ints.size?INTS.filter(x=>S.ints.has(x[0])).map(x=>'<span class="tag blue">'+x[1]+'</span>').join(''):'<small style="color:var(--muted)">Aún sin intereses.</small>')+'</div>'+B('A-54','Editar mis intereses','pbtn alt sm')
+ +'<h4>Privacidad</h4><div class="mrow"><span>Ubicación</span>'+(S.loc?B('A-55','Activada · desactivar','pbtn alt sm'):B('A-27','Desactivada · activar','pbtn alt sm'))+'</div><div class="mrow"><span>Idioma</span>'+B('A-56',S.idioma==='en'?'English (ejemplo)':'Español (México)','pbtn alt sm')+'</div>'
+ +(S.logged?B('A-58','Cerrar sesión','pbtn alt')+B('A-57','Borrar mis datos','pbtn dng'):'');
+ if(S.borrar)h+='<div class="sheet"><b>¿Borrar tus datos?</b><small>Se borrarán perfil, reseñas, sellos y rutas. Esto no se puede deshacer.</small>'+B('A-64','Confirmar borrado','pbtn dng')+B('A-65','Cancelar','pbtn alt')+'</div>';
+ return h;}
+};
+function stateView(scr,st){
+  if(st==='cargando')return '<div class="skel"></div><div class="skel"></div><div class="skel"></div><small style="color:var(--muted)">Cargando… (la pantalla ya sabe qué operación espera)</small>';
+  const t=(STX[scr]&&STX[scr][st])||STD[st];
+  const err=st==='error';
+  return '<div style="flex:1;display:grid;align-content:center;justify-items:center;text-align:center;gap:10px"><div class="box '+(err?'err':st==='exito'?'ok':'')+'" style="width:100%"><b>'+esc(t[0])+'</b><small>'+esc(t[1])+'</small></div><button type="button" class="pbtn alt sm" data-ui="normal">'+(err?'Reintentar':'Volver a la pantalla')+'</button></div>';
+}
+/* ===== Inspector: qué pasa al tocar un botón ===== */
+function evDatos(e){const d=JSON.parse(JSON.stringify(e.datos));if((e.id==='E-12'||e.id==='C-01')&&d.libres!==undefined)d.libres=S.mesas;if(e.id==='E-14'){const t=TOURS.hoy[1];d.asistentes=asisOf(t);d.estado=estadoTour(t)[0];}return d;}
+function evBlock(id){
+  const e=EV[id];const env=envelope(e);env.datos=evDatos(e);
+  return '<details><summary><span class="k m">'+id+'</span> '+esc(e.tipo)+' <span class="k">v'+e.version+'</span> · origen '+esc(e.origen)+'</summary><div class="bd"><pre class="js">'+jh(env)+'</pre>'+e.cons.map(c=>'<div style="font-size:13px"><b>'+esc(c.m)+'</b>: '+esc(c.t)+'</div>').join('')+(e.nota?'<div class="cap">'+esc(e.nota)+'</div>':'')+'</div></details>';
+}
+function steps(a){
+  const s=[];
+  if(a.kind==='local')s.push('En el teléfono: no sale ninguna llamada.');
+  else if(a.kind==='evento')s.push('Hecho externo a la app (no es un botón). Lo provoca otro módulo o la caja.');
+  else s.push('<b>App → canal</b> por '+VIA[a.kind]+': <span class="mono">'+esc(a.op)+'</span>'+(a.mod!=='—'?' · atiende <b>'+esc(a.mod)+'</b>':''));
+  a.inEv.forEach(e=>s.push('Entra por el bus <span class="k e">'+e+'</span> '+esc(EV[e].tipo)+' → '+EV[e].cons.map(c=>'<b>'+esc(c.m)+'</b>').join(', ')));
+  a.sync.forEach(x=>s.push('<span class="k q">sync</span> '+esc(x)));
+  a.pub.forEach(e=>s.push('Publica <span class="k m">'+e+'</span> '+esc(EV[e].tipo)+' (outbox, misma transacción). Reaccionan: '+EV[e].cons.map(c=>'<b>'+esc(c.m)+'</b>').join(', ')));
+  a.cons.forEach(e=>s.push('La app recibe por WebSocket <span class="k w">'+e+'</span> '+esc(EV[e].tipo)));
+  if(a.go)s.push('Navega a <b>'+a.go+' '+nameOf(a.go)+'</b>.');
+  return s;
+}
+function actDetail(a,arg,blocked){
+  const req=a.id==='A-61'?{tipo:'MESAS',libres:S.mesas,total:12,abierto:true}:a.req;
+  let h='<div class="hd"><span class="k">'+a.id+'</span>'+kChip(a)+(a.scr!=='*'?'<span class="chip">'+a.scr+' '+nameOf(a.scr)+'</span>':'<span class="chip">toda la app</span>')+(arg?'<span class="k">arg: '+esc(arg)+'</span>':'')+'</div><h3>'+esc(a.label)+'</h3>';
+  if(blocked)h+='<div class="banner off">Sin conexión: la operación no sale. La app la reintenta cuando vuelve la red y no confirma nada que el servidor no haya confirmado.</div>';
+  if(a.ui)h+='<p>'+esc(a.ui)+'</p>';
+  h+='<div><h4 style="margin-bottom:6px">Recorrido</h4><ol class="steps">'+steps(a).map(x=>'<li>'+x+'</li>').join('')+'</ol></div>';
+  if(a.pat)h+='<div class="cap"><b>Patrón:</b> '+esc(a.pat)+'</div>';
+  if(req)h+='<details open><summary>Lo que viaja: entrada</summary><div class="bd"><pre class="js">'+jh(req)+'</pre></div></details>';
+  if(a.res)h+='<details open><summary>Lo que regresa: salida</summary><div class="bd"><pre class="js">'+jh(a.res)+'</pre></div></details>';
+  if(a.err.length)h+='<div><h4 style="margin-bottom:6px">Errores posibles (propuesta)</h4><div class="chips2">'+a.err.map(x=>'<span class="k e">'+esc(x)+'</span>').join('')+'</div></div>';
+  const evs=a.inEv.concat(a.pub,a.cons).filter((x,i,r)=>r.indexOf(x)===i);
+  if(evs.length)h+='<div><h4 style="margin-bottom:6px">Eventos de esta acción</h4><div style="display:grid;gap:6px">'+evs.map(evBlock).join('')+'</div></div>';
+  return h;
+}
+function renderInsp(){
+  const el=$('#insp');if(!el)return;
+  const sel=S.sel&&A[S.sel.id];
+  let h='';
+  if(sel)h+=actDetail(sel,S.sel.arg,S.sel.blocked);
+  else h+='<div class="card"><h3>Toca cualquier botón del teléfono</h3><p class="intro" style="margin-top:6px">Aquí verás la operación, los datos que viajan, los módulos que responden y los eventos que nacen. Activa «Resaltar zonas tocables» para ver qué se puede pulsar.</p></div>';
+  const au=AUTOS(S.scr);
+  if(au.length)h+='<div class="card"><h4 style="margin-bottom:6px">Se ejecuta solo al abrir '+S.scr+' '+nameOf(S.scr)+'</h4><div class="chips2">'+au.map(a=>'<button type="button" class="k" data-i="'+a.id+'">'+a.id+' · '+esc(a.label)+'</button>').join('')+'</div></div>';
+  el.innerHTML=h;
+}
+function renderLog(){
+  const el=$('#log');if(!el)return;
+  el.innerHTML=LOG.length?LOG.map(l=>'<div class="'+l.c+'">'+esc(l.t)+'</div>').join(''):'<div>Aún no hay actividad.</div>';
+}
+function renderPhone(){
+  const el=$('#phone');if(!el)return;
+  const sc=SR[S.scr];let body;
+  if(S.ui==='normal'||S.ui==='offline')body=(S.ui==='offline'?'<div class="banner off">Sin conexión. Mostrando lo último guardado. Las acciones que escriben quedan en pausa.</div>':'')+sc();
+  else body=stateView(S.scr,S.ui);
+  const tab=SCR[S.scr].tab;
+  const bar=tab?'<div class="tabbar">'+TABS.map(t=>B(t[0],ic(t[3])+'<span>'+t[2]+'</span>','',undefined,t[1]===tab?' aria-current="true"':'')).join('')+'</div>':'';
+  el.innerHTML='<div class="sb"><span>9:41</span><span>Puebla 360</span></div><div class="scr" id="screen">'+(S.toast?'<div class="toast" role="status">'+esc(S.toast)+'</div>':'')+body+'</div>'+bar;
+  el.classList.toggle('hot',HOT);
+}
+function renderPicker(){
+  $('#picker').innerHTML=Object.keys(SCR).map(k=>'<button type="button" data-scr="'+k+'"'+(S.scr===k?' aria-current="true"':'')+' title="'+esc(SCR[k].n)+'">'+k.slice(2)+' '+esc(SCR[k].n)+'</button>').join('');
+  $('#states').innerHTML='<span style="font-size:12.5px;color:var(--muted)">Estado:</span>'+[['normal','Normal'],['cargando','Cargando'],['vacio','Vacío'],['error','Con error'],['exito','Éxito'],['offline','Sin conexión']].map(x=>'<button type="button" data-ui="'+x[0]+'" aria-pressed="'+(S.ui===x[0])+'">'+x[1]+'</button>').join('');
+  const s=SCR[S.scr];$('#pfoot').innerHTML='<b>'+S.scr+' '+esc(s.n)+'</b> · '+esc(s.f)+'<br>API: '+esc(s.api);
+}
+function render(){renderPicker();renderPhone();renderInsp();renderLog();}
+/* ===== Pestaña: prototipo ===== */
+function protoHTML(){
+  return '<p class="intro">Toca los botones del teléfono. A la derecha ves la operación, lo que viaja, los módulos que responden y los eventos que nacen. Los recuadros punteados dorados de abajo no son botones de la app: son hechos que ocurren fuera de ella.</p>'
+  +'<div class="proto"><div class="leftcol"><div class="picker" id="picker" aria-label="Ir a una pantalla"></div><div class="statebar" id="states"></div>'
+  +'<label class="chip"><input type="checkbox" id="hot"> Resaltar zonas tocables</label>'
+  +'<div class="phone" id="phone"></div><div class="cap" id="pfoot"></div>'
+  +'<div class="sim"><h4>Simulaciones: hechos fuera de la app</h4>'
+  +B('A-61','Un restaurante cambia sus mesas libres (C-01 → E-12)','')+B('A-53','La caja canjea el cupón (L-13 → E-07)','')+B('A-62','El negocio responde una reseña (E-10)','')+B('A-75','Una persona se une al recorrido de las 11:30 de un museo (E-14)','')
+  +'<small>Sirven para ver cómo un evento llega a la pantalla sin que la persona toque nada.</small></div></div>'
+  +'<div class="insp"><div id="insp"></div><div class="card"><div class="filters"><h4 style="flex:1">Registro de la sesión</h4><button type="button" class="k" id="clr">Limpiar</button></div><div class="log" id="log"></div></div></div></div>';
+}
+/* ===== Pestaña: mapa de la interfaz ===== */
+const GOLD=[
+ ['S-03','Cuestionario','A-08 guardarPerfil','E-02'],
+ ['S-04','Inicio → ficha','A-15 negocio(id)',''],
+ ['S-07','Ficha en vivo','A-28 mesas libres por WebSocket','E-12'],
+ ['S-09','Ruta con IA','A-39 generarRuta','E-11'],
+ ['S-12','Sello','A-49 confirmarSello','E-05'],
+ ['S-13','Cupón en caja','A-53 Ventas llama a canjearCupon','E-07'],
+ ['','Fuera de la app: se registra la venta','venta.registrada → Restaurantes descuenta insumos por receta (Inventario), Afluencia suma 1, Gobierno agrega','']
+];
+const KS={consulta:'consulta',mutacion:'mutación',ws:'WS',rest:'REST',evento:'evento',local:'local'};
+function rowOf(a){
+  return '<div class="r"><span class="l">'+esc(a.label)+'</span><span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><span class="k">'+a.id+'</span><span class="k '+({consulta:'q',mutacion:'m',ws:'w',rest:'m',evento:'e'}[a.kind]||'')+'">'+KS[a.kind]+'</span>'+(a.go?'<span class="k q">→ '+a.go+' '+esc(nameOf(a.go))+'</span>':'')+a.pub.map(e=>'<span class="k m">⚡'+e+'</span>').join('')+'</span></div>';
+}
+function mapaHTML(){
+  let h='<p class="intro">Cada tarjeta es una pantalla. Cada renglón responde: «si toco este botón, ¿qué pasa?». Los chips dicen qué acción es, de qué tipo, a dónde navega y qué evento publica (⚡). Las operaciones son propuestas.</p>';
+  h+='<div><h3>Camino dorado propuesto</h3><p class="intro" style="margin-bottom:6px">Un solo hilo que toca todo el ecosistema. Es una propuesta: el camino dorado de la demo sigue sin definirse.</p><div class="path">'+GOLD.map(g=>'<div class="st"><b>'+(g[0]?g[0]+' ':'')+esc(g[1])+'</b><span>'+esc(g[2])+'</span>'+(g[3]?'<span><span class="k m">⚡'+g[3]+'</span></span>':'')+(g[0]?'<button type="button" class="k" data-goproto="'+g[0]+'">Ver en el prototipo</button>':'')+'</div>').join('')+'</div></div>';
+  h+='<div class="card"><h3>Barra inferior (en las 5 pantallas principales)</h3><div class="btnrow" style="margin-top:6px">'+TABS.map(t=>'<div class="r"><span class="l">'+t[2]+'</span><span><span class="k">'+t[0]+'</span> <span class="k q">→ '+t[1]+' '+esc(nameOf(t[1]))+'</span></span></div>').join('')+'</div><p class="cap" style="margin-top:8px">Tocar una pestaña reinicia el historial de «Atrás». Las pantallas con pestaña son Inicio, Mapa, Rutas, Pasaporte y Perfil.</p></div>';
+  ['Acceso','Descubrir','Detalle','Planear','Incentivos','Cuenta'].forEach(l=>{
+    const ids=Object.keys(SCR).filter(k=>SCR[k].lane===l);
+    h+='<div><h3 style="margin-bottom:8px">'+l+'</h3><div class="scards">'+ids.map(id=>{
+      const s=SCR[id];const mine=Object.values(A).filter(a=>!a.auto&&(a.scr===id||a.also.indexOf(id)>=0));const au=Object.values(A).filter(a=>a.auto&&a.scr===id);
+      return '<div class="card scard"><div class="t"><h3>'+id+' '+esc(s.n)+'</h3><span class="k">'+esc(s.f)+'</span></div><p style="font-size:13.5px">'+esc(s.p)+'</p>'
+      +'<div class="btnrow">'+(au.length?'<div class="r"><span class="l"><b>Al abrir (automático)</b></span><span></span></div>'+au.map(rowOf).join(''):'')+'<div class="r"><span class="l"><b>Botones</b></span><span></span></div>'+mine.map(rowOf).join('')+'</div>'
+      +'<div class="cap">API: '+esc(s.api)+'</div><button type="button" class="k" data-goproto="'+id+'">Ver en el prototipo</button></div>';
+    }).join('')+'</div></div>';
+  });
+  return h;
+}
+/* ===== Pestaña: acciones ===== */
+const OPEN=new Set();
+function accionesHTML(){
+  return '<p class="intro">Las '+Object.keys(A).length+' acciones de la app. Filtra y toca una fila para ver su recorrido, su entrada y salida y sus eventos.</p>'
+  +'<div class="filters"><select id="fScr" aria-label="Pantalla"><option value="">Todas las pantallas</option>'+Object.keys(SCR).map(k=>'<option value="'+k+'">'+k+' '+esc(SCR[k].n)+'</option>').join('')+'<option value="*">Toda la app</option></select>'
+  +'<select id="fKind" aria-label="Tipo"><option value="">Todos los tipos</option>'+Object.keys(VIA).map(k=>'<option value="'+k+'">'+VIA[k]+'</option>').join('')+'</select>'
+  +'<select id="fEv" aria-label="Eventos"><option value="">Con o sin eventos</option><option value="pub">Publican eventos</option><option value="cons">Reciben eventos por WS</option></select>'
+  +'<input id="fTxt" type="search" placeholder="Buscar texto" aria-label="Buscar texto"><span class="k" id="fCnt"></span></div>'
+  +'<div class="tw"><table><thead><tr><th>ID</th><th>Pantalla</th><th>Disparador</th><th>Vía</th><th>Operación</th><th>Atiende</th><th>Eventos</th><th>Destino</th></tr></thead><tbody id="accBody"></tbody></table></div>';
+}
+function renderAcc(){
+  const fs=$('#fScr').value,fk=$('#fKind').value,fe=$('#fEv').value,ft=$('#fTxt').value.toLowerCase();
+  let L=Object.values(A).filter(a=>(!fs||a.scr===fs||a.also.indexOf(fs)>=0)&&(!fk||a.kind===fk)&&(!fe||(fe==='pub'?a.pub.length:a.cons.length))&&(!ft||(a.id+' '+a.label+' '+a.op+' '+a.mod).toLowerCase().indexOf(ft)>=0));
+  $('#fCnt').textContent=L.length+' de '+Object.keys(A).length;
+  $('#accBody').innerHTML=L.map(a=>'<tr class="clk" data-row="'+a.id+'" tabindex="0"><td><span class="k">'+a.id+'</span></td><td>'+(a.scr==='*'?'toda':a.scr)+'</td><td>'+esc(a.label)+'</td><td>'+kChip(a)+'</td><td class="mono">'+esc(a.op||'—')+'</td><td>'+esc(a.mod)+'</td><td>'+a.pub.map(e=>'<span class="k m">⚡'+e+'</span>').join(' ')+a.cons.map(e=>'<span class="k w">⇣'+e+'</span>').join(' ')+a.inEv.map(e=>'<span class="k e">→'+e+'</span>').join(' ')+'</td><td>'+(a.go?a.go:'—')+'</td></tr>'+(OPEN.has(a.id)?'<tr><td colspan="8"><div style="display:grid;gap:10px;padding:6px 0">'+actDetail(a,'',false)+'</div></td></tr>':'')).join('');
+}
+/* ===== Pestaña: eventos ===== */
+function evCard(e){
+  const as=Object.values(A).filter(a=>a.pub.indexOf(e.id)>=0||a.cons.indexOf(e.id)>=0||a.inEv.indexOf(e.id)>=0);
+  const env=envelope(e);
+  return '<div class="card" style="display:grid;gap:8px" data-evmod="'+esc(e.origen.split(' ')[0])+'"><div class="chips2"><span class="k m">'+e.id+'</span><b class="mono" style="font-size:13.5px">'+esc(e.tipo)+'</b><span class="k">v'+e.version+'</span><span class="k">origen: '+esc(e.origen)+'</span></div>'
+  +'<div style="font-size:13px"><b>Se dispara con:</b> '+(as.length?as.map(a=>'<span class="k">'+a.id+'</span> '+esc(a.label)).join(' · '):'—')+'</div>'
+  +'<details><summary>Sobre completo con datos de ejemplo</summary><div class="bd"><pre class="js">'+jh(env)+'</pre></div></details>'
+  +'<div><h4 style="margin-bottom:4px">Quién lo consume y qué hace</h4>'+e.cons.map(c=>'<div style="font-size:13px"><b>'+esc(c.m)+'</b>: '+esc(c.t)+'</div>').join('')+'</div>'+(e.nota?'<div class="cap">'+esc(e.nota)+'</div>':'')+'</div>';
+}
+function eventosHTML(){
+  const P=Object.values(EV).filter(e=>e.kind==='pub'),C=Object.values(EV).filter(e=>e.kind==='in');
+  const mods=Array.from(new Set(P.map(e=>e.origen.split(' ')[0])));
+  return '<div class="grid2"><div class="card"><h3>Qué hace la app con el bus</h3><ul style="margin:8px 0 0;padding-left:18px;display:grid;gap:5px"><li><b>Publica: nada.</b> La app manda comandos por GraphQL o REST; los módulos publican los eventos.</li><li><b>Consume: nada directamente.</b> Recibe una proyección por 5 suscripciones WebSocket.</li><li>Así no se salta R1 (datos de cada módulo) ni R3 (ID y consumidores idempotentes) desde un teléfono. <span class="k">D-35</span></li></ul></div>'
+  +'<div class="card"><h3>Cuántos hay</h3><p style="margin-top:6px">'+P.length+' eventos publicados por '+mods.length+' módulos a causa de la app, '+C.length+' eventos que esos módulos consumen de otros y '+SUBS.length+' suscripciones hacia el teléfono.</p></div></div>'
+  +'<div><h3 style="margin-bottom:8px">Suscripciones hacia el teléfono (WebSocket)</h3><div class="tw"><table><thead><tr><th>ID</th><th>Suscripción</th><th>Evento de origen</th><th>Qué cambia en pantalla</th><th>Dónde</th><th>Acción</th></tr></thead><tbody>'+SUBS.map(s=>'<tr><td><span class="k w">'+s[0]+'</span></td><td class="mono">'+esc(s[1])+'</td><td>'+esc(s[2])+'</td><td>'+esc(s[3])+'</td><td>'+esc(s[4])+'</td><td><span class="k">'+s[5]+'</span></td></tr>').join('')+'</tbody></table></div></div>'
+  +'<div class="filters"><h3 style="margin-right:8px">Eventos publicados</h3><select id="fMod" aria-label="Módulo"><option value="">Todos los módulos</option>'+mods.map(m=>'<option>'+m+'</option>').join('')+'</select></div><div class="scards" id="evList">'+P.map(evCard).join('')+'</div>'
+  +'<div><h3 style="margin-bottom:8px">Eventos que los módulos de plataforma consumen de otros</h3><div class="scards">'+C.map(evCard).join('')+'</div></div>'
+  +'<div class="card"><h3>Sobre común</h3><p class="intro" style="margin:6px 0">Es el de <code>inventario.md</code> §7.1. Los datos llevan hechos con IDs, dinero como cadena decimal y fechas ISO-8601. Cambio propuesto: <code>negocio_id</code> opcional para eventos sin negocio (H-1).</p><pre class="js">'+jh(envelope(EV['E-05']))+'</pre></div>';
+}
+/* ===== Pestaña: comunicación ===== */
+function commSvg(){
+  const W=1020,bx=250,bw=190,bh=54,gp=14,y0=22,bar=660;
+  const M=[['catalogo','catálogo','catalogoPublico'],['directorio','directorio','fichas · filtros · mapa'],['visitantes','visitantes','perfil · consentimientos'],['pasaporte','pasaporte','sellos · cupones'],['resenas','reseñas','reseñas · habilitaciones'],['rutas','rutas','rutas · búsqueda con IA'],['transporte','transporte','cómo llegar'],['museos','museos (vertical)','atracciones · recorridos'],['afluencia','afluencia','horas pico'],['gobierno','gobierno','tablero agregado']];
+  const Y={};M.forEach((m,i)=>{Y[m[0]]=y0+i*(bh+gp);});
+  const H=y0+M.length*(bh+gp)+34,cy=Math.round(H/2-12);
+  const PUB={visitantes:'E-01 E-02 E-03',pasaporte:'E-04 E-05 E-06 E-07 E-08',resenas:'E-09 E-10',rutas:'E-11',directorio:'E-12',afluencia:'E-13',museos:'E-14'};
+  const CON={directorio:'C-01 E-09 E-13',resenas:'E-05 E-03',pasaporte:'E-03',rutas:'E-03',afluencia:'C-02 C-03',gobierno:'E-01 E-02 E-04 E-05 E-07 E-11'};
+  const gold='stroke:var(--gold);stroke-width:2;fill:none',blue='stroke:var(--accent);stroke-width:1.6;stroke-dasharray:6 4;fill:none';
+  let s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Mapa de comunicación: la app llama a ocho módulos de forma síncrona y recibe cinco suscripciones; los módulos se hablan por el bus de eventos"><defs><marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--accent)"/></marker><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--gold)"/></marker></defs>';
+  s+='<rect x="'+bar+'" y="8" width="14" height="'+(H-40)+'" rx="7" style="fill:var(--gold-soft);stroke:var(--gold)"/><text x="'+(bar+7)+'" y="'+(H/2)+'" transform="rotate(-90 '+(bar+7)+' '+(H/2)+')" text-anchor="middle" font-size="11" style="fill:var(--gold)">BUS DE EVENTOS</text>';
+  s+='<rect x="10" y="'+(cy-70)+'" width="150" height="140" rx="14" style="fill:var(--accent-soft);stroke:var(--accent)"/><text x="85" y="'+(cy-36)+'" text-anchor="middle" font-size="14" font-weight="700">App del turista</text><text x="85" y="'+(cy-18)+'" text-anchor="middle" font-size="11" style="fill:var(--muted)">canal GraphQL y REST</text><text x="85" y="'+(cy+4)+'" text-anchor="middle" font-size="11" style="fill:var(--muted)">también sirve al panel</text><text x="85" y="'+(cy+19)+'" text-anchor="middle" font-size="11" style="fill:var(--muted)">y al tablero</text><text x="85" y="'+(cy+46)+'" text-anchor="middle" font-size="10.5" style="fill:var(--muted)">sin datos propios</text>';
+  s+='<text x="85" y="'+(cy+92)+'" text-anchor="middle" font-size="10.5" style="fill:var(--ok)">← 5 suscripciones WS</text><text x="85" y="'+(cy+106)+'" text-anchor="middle" font-size="9.5" class="mono" style="fill:var(--muted)">E-06 E-07 E-08 E-10</text><text x="85" y="'+(cy+119)+'" text-anchor="middle" font-size="9.5" class="mono" style="fill:var(--muted)">E-12 E-13 E-14</text>';
+  ['catalogo','directorio','visitantes','pasaporte','resenas','rutas','transporte','museos'].forEach(t=>{const ty=Y[t]+bh/2;s+='<path d="M160 '+cy+' C 225 '+cy+', 225 '+ty+', '+bx+' '+ty+'" style="'+blue+'" marker-end="url(#ab)"/>';});
+  M.forEach(m=>{const y=Y[m[0]];
+    s+='<rect x="'+bx+'" y="'+y+'" width="'+bw+'" height="'+bh+'" rx="10" style="fill:var(--surface-2);stroke:var(--line)"/><text x="'+(bx+10)+'" y="'+(y+21)+'" font-size="13" font-weight="700">'+m[1]+'</text><text x="'+(bx+10)+'" y="'+(y+37)+'" font-size="10.5" style="fill:var(--muted)">'+m[2]+'</text>';
+    if(PUB[m[0]])s+='<line x1="'+(bx+bw)+'" y1="'+(y+16)+'" x2="'+bar+'" y2="'+(y+16)+'" style="'+gold+'"/><circle cx="'+bar+'" cy="'+(y+16)+'" r="3.5" style="fill:var(--gold)"/><text x="'+(bx+bw+6)+'" y="'+(y+12)+'" font-size="10" class="mono" style="fill:var(--gold)">'+PUB[m[0]]+'</text>';
+    if(CON[m[0]])s+='<line x1="'+bar+'" y1="'+(y+bh-14)+'" x2="'+(bx+bw)+'" y2="'+(y+bh-14)+'" style="'+gold+'" marker-end="url(#ag)"/><text x="'+(bx+bw+14)+'" y="'+(y+bh-18)+'" font-size="10" class="mono" style="fill:var(--gold)">'+CON[m[0]]+'</text>';
+  });
+  const rx=790,rw=210;
+  const R=[['directorio','verticales','restaurantes · museos · misceláneos','C-01'],['pasaporte','ventas y caja','horizontales de Negocio 360','C-02 C-03'],['rutas','modelo de IA (externo)','Gemini o ChatGPT: por decidir','']];
+  R.forEach(r=>{const y=Y[r[0]];s+='<rect x="'+rx+'" y="'+y+'" width="'+rw+'" height="'+bh+'" rx="10" style="fill:var(--surface);stroke:var(--line);stroke-width:1.5"/><text x="'+(rx+10)+'" y="'+(y+21)+'" font-size="13" font-weight="700">'+r[1]+'</text><text x="'+(rx+10)+'" y="'+(y+37)+'" font-size="10.5" style="fill:var(--muted)">'+r[2]+'</text>';
+    if(r[3])s+='<line x1="'+rx+'" y1="'+(y+16)+'" x2="'+(bar+14)+'" y2="'+(y+16)+'" style="'+gold+'"/><circle cx="'+(bar+14)+'" cy="'+(y+16)+'" r="3.5" style="fill:var(--gold)"/><text x="'+(bar+22)+'" y="'+(y+12)+'" font-size="10" class="mono" style="fill:var(--gold)">'+r[3]+'</text>';});
+  const ry=Y.rutas;s+='<line x1="'+(bx+bw)+'" y1="'+(ry+25)+'" x2="'+rx+'" y2="'+(ry+25)+'" style="'+blue+'" marker-end="url(#ab)"/><text x="'+(bar+22)+'" y="'+(ry+23)+'" font-size="10" class="mono" style="fill:var(--accent)">L-11</text>';
+  const py=Y.pasaporte;s+='<path d="M'+rx+' '+(py+46)+' H '+(bar+30)+' V '+(py+bh+7)+' H '+(bx+110)+' V '+(py+bh+1)+'" style="'+blue+'" marker-end="url(#ab)"/><text x="'+(bar+40)+'" y="'+(py+42)+'" font-size="10" class="mono" style="fill:var(--accent)">L-13</text>';
+  s+='<line x1="10" y1="'+(H-14)+'" x2="50" y2="'+(H-14)+'" style="'+blue+'"/><text x="58" y="'+(H-10)+'" font-size="11" style="fill:var(--muted)">síncrono: llamada a la API pública (L-xx)</text><line x1="380" y1="'+(H-14)+'" x2="420" y2="'+(H-14)+'" style="'+gold+'"/><text x="428" y="'+(H-10)+'" font-size="11" style="fill:var(--muted)">asíncrono: evento por el bus (E-xx entregados, C-xx de otros)</text></svg>';
+  return s;
+}
+function comHTML(){
+  const LOC=[['Un turista sella su pasaporte','E-05 sello.otorgado','Ve «una visita con pasaporte» sin identificar a la persona.'],['Un turista publica una reseña','E-09 resena.publicada','Recibe el aviso y puede responder (E-10).'],['Una caja canjea un cupón','E-07 cupon.canjeado, más venta.registrada de Ventas','Ve el descuento en la cuenta: $230.00 − $23.00 = $207.00.'],['El negocio cambia sus mesas libres','C-01 → E-12','El turista ve el número nuevo en segundos.'],['El negocio muestra su QR de sello','Pantalla nueva del panel (D-36)','Pendiente de diseñar.'],['La persona que cobra escanea un cupón','Pantalla nueva en Caja o Ventas (L-13)','Pendiente con el dueño de Ventas.']];
+  return '<p class="intro">Línea punteada azul = una llamada síncrona a la API pública de otro módulo. Línea continua dorada = un evento por el bus. La app solo habla con módulos por el canal y recibe cuatro suscripciones.</p>'
+  +'<div class="svgwrap">'+commSvg()+'</div><div class="cap"><b>Qué mirar:</b> a la izquierda salen 8 llamadas síncronas; ningún trazo llega a la app desde el bus, solo las 5 suscripciones. Museos es un vertical y la app lo llama directo para su contenido propio (atracciones y recorridos); ningún módulo horizontal lo llama. A la derecha, los verticales no tocan a ningún módulo de plataforma: publican C-01 y Directorio lo consume (R4). Ventas llama a Pasaporte (L-13) y Pasaporte nunca consume eventos de Ventas, así no hay ciclo.</div>'
+  +'<div><h3 style="margin-bottom:8px">Llamadas síncronas entre módulos</h3><div class="tw"><table><thead><tr><th>ID</th><th>De</th><th>A</th><th>Operación</th><th>Acciones</th><th>Nota</th></tr></thead><tbody>'+SYNC.map(r=>'<tr><td><span class="k q">'+r[0]+'</span></td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td><td class="mono">'+esc(r[4])+'</td><td>'+esc(r[5])+'</td></tr>').join('')+'</tbody></table></div></div>'
+  +'<div><h3 style="margin-bottom:8px">Lo que ve el locatario cuando el turista actúa</h3><div class="tw"><table><thead><tr><th>Qué ocurre</th><th>Evento o pieza</th><th>Qué ve el locatario</th></tr></thead><tbody>'+LOC.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td></tr>').join('')+'</tbody></table></div></div>'
+  +'<div class="cap"><b>Fuera del dibujo:</b> Inventario no habla con la app del turista. Su conexión es indirecta: la venta con cupón dispara venta.registrada, Restaurantes descuenta los insumos por receta y Contabilidad recibe el costo. En una fase posterior (P3), un platillo agotado podría viajar de Inventario a Restaurantes y de ahí a C-01.</div>';
+}
+function hallHTML(){
+  return '<p class="intro">Lo que apareció al dibujar la app contra las reglas ya aceptadas. Ninguna de estas decisiones está aceptada: todas son propuestas para revisar con el equipo.</p>'
+  +'<div class="tw"><table><thead><tr><th>ID</th><th>Gravedad</th><th>Hallazgo</th><th>Propuesta</th></tr></thead><tbody>'+HALL.map(r=>'<tr><td><span class="k">'+r[0]+'</span></td><td><span class="k '+(r[1]==='Alta'?'e':r[1]==='Media'?'m':'')+'">'+r[1]+'</span></td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>').join('')+'</tbody></table></div>'
+  +'<div><h3 style="margin-bottom:8px">Decisiones propuestas</h3><div class="tw"><table><thead><tr><th>ID</th><th>Decisión</th><th>Estado</th></tr></thead><tbody>'+DECS.map(r=>'<tr><td><span class="k">'+r[0]+'</span></td><td>'+esc(r[1])+'</td><td><span class="k m">PROPUESTA</span></td></tr>').join('')+'</tbody></table></div></div>'
+  +'<div class="card"><h3>Lo que este mockup no resuelve</h3><ul style="margin:8px 0 0;padding-left:18px;display:grid;gap:5px"><li>No existe el esquema GraphQL: nombres de operaciones, campos y códigos de error son propuestas.</li><li>Los contratos con los dueños de Catálogo (catalogoPublico), Ventas y Caja (L-13, venta.registrada) siguen sin congelarse.</li><li>El modelo de IA (Gemini o ChatGPT), el canal de envío del código y el nombre real del servicio de transporte están por definir.</li><li>Las pantallas del panel del locatario (QR de sello, escanear cupón, responder reseñas) no están diseñadas.</li><li>Los cinco estados se muestran en el selector del teléfono, pero con textos genéricos en las pantallas que no tienen uno propio.</li></ul></div>';
+}
+/* ===== Arranque y eventos ===== */
+const TABS_UI=[['proto','Prototipo',protoHTML],['mapa','Mapa de la interfaz',mapaHTML],['acciones','Acciones',accionesHTML],['eventos','Eventos',eventosHTML],['com','Comunicación',comHTML],['hall','Hallazgos',hallHTML]];
+function showTab(id){
+  TABS_UI.forEach(t=>{$('#p-'+t[0]).hidden=t[0]!==id;});
+  document.querySelectorAll('#tabs .tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===id)));
+}
+function init(){
+  $('#tabs').innerHTML=TABS_UI.map(t=>'<button type="button" class="tab" role="tab" data-tab="'+t[0]+'">'+t[1]+'</button>').join('')+'<span class="sp"></span><button type="button" class="themebtn" id="theme">Cambiar tema</button>';
+  TABS_UI.forEach(t=>{$('#p-'+t[0]).innerHTML=t[2]();});
+  showTab('proto');renderAcc();render();
+  document.addEventListener('click',function(e){
+    const t=e.target;let el;
+    if((el=t.closest('[data-tab]'))){showTab(el.dataset.tab);return;}
+    if((el=t.closest('[data-goproto]'))){S.scr=el.dataset.goproto;S.ui='normal';S.hist=[];showTab('proto');render();window.scrollTo({top:0});return;}
+    if((el=t.closest('[data-act]'))){fire(el.dataset.act,el.dataset.arg);return;}
+    if((el=t.closest('[data-i]'))){S.sel={id:el.dataset.i};render();return;}
+    if((el=t.closest('[data-scr]'))){S.scr=el.dataset.scr;S.ui='normal';S.hist=[];addLog('','Saltaste a '+S.scr+' '+nameOf(S.scr)+' desde el selector');AUTOS(S.scr).forEach(a=>addLog('au','↻ al abrir '+S.scr+': '+a.id+' '+a.label));render();return;}
+    if((el=t.closest('[data-ui]'))){S.ui=el.dataset.ui;render();return;}
+    if((el=t.closest('[data-row]'))){const id=el.dataset.row;if(OPEN.has(id))OPEN.delete(id);else OPEN.add(id);renderAcc();return;}
+    if(t.id==='clr'){LOG=[];renderLog();return;}
+    if(t.id==='theme'){const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=dark?'light':'dark';return;}
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter'&&e.key!==' ')return;
+    const el=e.target.closest&&e.target.closest('[role="button"][data-act],tr[data-row]');
+    if(!el)return;e.preventDefault();
+    if(el.dataset.act)fire(el.dataset.act,el.dataset.arg);else{const id=el.dataset.row;if(OPEN.has(id))OPEN.delete(id);else OPEN.add(id);renderAcc();}
+  });
+  document.addEventListener('change',function(e){
+    const t=e.target;
+    if(t.id==='hot'){HOT=t.checked;renderPhone();}
+    if(t.id==='fScr'||t.id==='fKind'||t.id==='fEv')renderAcc();
+    if(t.id==='fMod'){document.querySelectorAll('#evList [data-evmod]').forEach(c=>{c.style.display=(t.value&&c.dataset.evmod!==t.value)?'none':'grid';});}
+  });
+  document.addEventListener('input',function(e){if(e.target.id==='fTxt')renderAcc();});
+}
+init();
+</script>
+</body>
+</html>
+
