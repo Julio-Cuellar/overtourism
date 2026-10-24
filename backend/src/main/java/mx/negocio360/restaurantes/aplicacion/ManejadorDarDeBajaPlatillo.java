@@ -1,6 +1,7 @@
 package mx.negocio360.restaurantes.aplicacion;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import mx.negocio360.compartido.comandos.ManejadorComando;
@@ -51,6 +52,16 @@ public final class ManejadorDarDeBajaPlatillo implements ManejadorComando<DarDeB
     @Override
     public String tipo() {
         return TIPO;
+    }
+
+    /**
+     * Dar de baja un platillo pide {@code restaurantes.menu.editar}. Se declara aqui para que la plataforma lo exija al
+     * preparar y otra vez al confirmar, <b>antes</b> de gastar el token (D-126); la revision de dentro queda como segunda
+     * defensa.
+     */
+    @Override
+    public List<String> permisos(DarDeBajaPlatilloComando comando) {
+        return List.of(PermisosDeRestaurantes.MENU_EDITAR);
     }
 
     @Override

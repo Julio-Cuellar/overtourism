@@ -1,7 +1,13 @@
 package mx.negocio360.restaurantes.infraestructura;
 
 import java.time.Clock;
+import java.util.List;
+import mx.negocio360.compartido.comandos.PreparacionesEnMemoria;
+import mx.negocio360.compartido.comandos.ServicioPreparacion;
 import mx.negocio360.compartido.eventos.PublicadorEnBus;
+import mx.negocio360.restaurantes.dominio.CodigoError;
+import mx.negocio360.restaurantes.dominio.RestaurantesException;
+import mx.negocio360.restaurantes.web.ComandosDeRestaurantes;
 import mx.negocio360.restaurantes.aplicacion.AutorizacionDeRestaurantes;
 import mx.negocio360.restaurantes.aplicacion.ConsumidorDeVentas;
 import mx.negocio360.inventario.InventarioApi;
@@ -79,6 +85,19 @@ public class RestaurantesConfiguracion {
                                                           ConsultaDeRecetas recetas, AutorizacionDeRestaurantes autorizacion,
                                                           Clock reloj) {
         return new ManejadorDarDeBajaPlatillo(menu, uso, recetas, autorizacion, reloj);
+    }
+
+    /**
+     * Las variantes de comando de Restaurantes para el despachador de la plataforma (D-125, D-209). El servicio de preparacion
+     * queda dentro y no se expone como bean (Clientes ya expone el suyo); las preparaciones viven en memoria mientras
+     * Restaurantes no tenga Postgres (R7).
+     */
+    @Bean
+    ComandosDeRestaurantes comandosDeRestaurantes(ManejadorGuardarReceta guardarReceta,
+                                                   ManejadorDarDeBajaPlatillo darDeBaja, Clock reloj) {
+        return new ComandosDeRestaurantes(new ServicioPreparacion(new PreparacionesEnMemoria(),
+                List.of(guardarReceta, darDeBaja), reloj,
+                fallo -> new RestaurantesException(CodigoError.valueOf(fallo.name()))));
     }
 
     @Bean

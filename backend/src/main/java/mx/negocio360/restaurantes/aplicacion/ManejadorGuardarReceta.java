@@ -69,6 +69,15 @@ public final class ManejadorGuardarReceta implements ManejadorComando<GuardarRec
     }
 
     /**
+     * Guardar una receta pide {@code restaurantes.receta.editar}. Se declara aqui para que la plataforma lo exija al preparar
+     * y otra vez al confirmar, <b>antes</b> de gastar el token (D-126); la revision de dentro queda como segunda defensa.
+     */
+    @Override
+    public List<String> permisos(GuardarRecetaComando comando) {
+        return List.of(PermisosDeRestaurantes.RECETA_EDITAR);
+    }
+
+    /**
      * Valida y muestra la receta con su costo, sin escribir.
      *
      * @throws RestaurantesException RECETA_INVALIDA, INSUMO_REPETIDO, PLATILLO_NO_ENCONTRADO, ARTICULO_NO_ENCONTRADO,

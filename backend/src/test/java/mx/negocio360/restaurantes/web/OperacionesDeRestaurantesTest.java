@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import mx.negocio360.compartido.graphql.Acceso;
+import mx.negocio360.compartido.graphql.ComandoDeclarado;
 import mx.negocio360.compartido.graphql.OperacionDeclarada;
 import mx.negocio360.compartido.seguridad.PermisoDeclarado;
 import mx.negocio360.restaurantes.seguridad.PermisosDeRestaurantes;
@@ -85,10 +86,23 @@ class OperacionesDeRestaurantesTest {
     }
 
     @Test
-    @DisplayName("solo hay consultas y mutaciones, y ninguna variante de comando todavia: llega con el despachador de la plataforma")
+    @DisplayName("solo hay consultas y mutaciones directas, mas las dos variantes de comando del despachador (D-209)")
     void tipos() {
         assertThat(porNombre().values().stream().map(OperacionDeclarada::tipo).distinct().toList())
                 .containsExactlyInAnyOrder(QUERY, MUTATION);
-        assertThat(declaraciones.comandos()).isEmpty();
+        assertThat(declaraciones.comandos()).extracting(ComandoDeclarado::variante)
+                .containsExactlyInAnyOrder("guardarReceta", "darDeBajaPlatillo");
+    }
+
+    @Test
+    @DisplayName("D-209: guardarReceta pide receta.editar y darDeBajaPlatillo pide menu.editar, y ambos estan en el catalogo")
+    void permisosDeLosComandos() {
+        var catalogo = new PermisosDeRestaurantes().permisos().stream().map(PermisoDeclarado::codigo).toList();
+
+        assertThat(declaraciones.comandos()).filteredOn(c -> c.variante().equals("guardarReceta"))
+                .extracting(ComandoDeclarado::permiso).containsExactly(PermisosDeRestaurantes.RECETA_EDITAR);
+        assertThat(declaraciones.comandos()).filteredOn(c -> c.variante().equals("darDeBajaPlatillo"))
+                .extracting(ComandoDeclarado::permiso).containsExactly(PermisosDeRestaurantes.MENU_EDITAR);
+        declaraciones.comandos().forEach(c -> assertThat(catalogo).contains(c.permiso()));
     }
 }

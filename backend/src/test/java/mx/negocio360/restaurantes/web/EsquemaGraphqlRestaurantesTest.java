@@ -130,6 +130,22 @@ class EsquemaGraphqlRestaurantesTest {
     }
 
     @Test
+    @DisplayName("D-209: ComandoInput gana guardarReceta y darDeBajaPlatillo, y sus entradas no llevan el negocio (SG-02)")
+    void variantesDeComando() {
+        var comando = (graphql.schema.GraphQLInputObjectType) esquema.getType("ComandoInput");
+        assertThat(comando.getFieldDefinitions()).extracting("name").contains("guardarReceta", "darDeBajaPlatillo");
+
+        var receta = (graphql.schema.GraphQLInputObjectType) esquema.getType("RestGuardarRecetaInput");
+        var insumo = (graphql.schema.GraphQLInputObjectType) esquema.getType("RestRecetaInsumoInput");
+        var baja = (graphql.schema.GraphQLInputObjectType) esquema.getType("RestBajaPlatilloInput");
+        assertThat(receta.getFieldDefinitions()).extracting("name").containsExactlyInAnyOrder("platilloId", "rendimiento",
+                "insumos");
+        assertThat(insumo.getFieldDefinitions()).extracting("name").containsExactlyInAnyOrder("articuloId", "cantidad",
+                "unidad", "mermaPct");
+        assertThat(baja.getFieldDefinitions()).extracting("name").containsExactly("platilloId");
+    }
+
+    @Test
     @DisplayName("SG-21: con las operaciones de la plataforma y las de Restaurantes, la tabla coincide con el esquema")
     void tablaDeOperaciones() {
         List<PermisoDeclarado> catalogo = new PermisosDeRestaurantes().permisos();

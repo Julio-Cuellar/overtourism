@@ -1,7 +1,8 @@
 # Esquema del modulo de Restaurantes (docs/diseno/restaurantes.md, R1: el menu). Sin negocioId en el panel: el negocio sale de la
 # sesion (SG-02). La unica excepcion es menuPublico, la superficie publica del turista (D-170), que no tiene sesion y entrega
 # solo los campos permitidos (PB-03). Los tipos llevan el prefijo Rest para no chocar con los de otros modulos (D-130).
-# Las variantes de comando (guardarReceta, darDeBajaPlatillo) llegan con el despachador de comandos de la plataforma (D-125).
+# Las variantes de comando (guardarReceta, darDeBajaPlatillo) viajan por prepararComando y confirmarComando, el despachador de
+# la plataforma (D-125, D-209); sus entradas estan al final de este archivo.
 
 extend type Query {
   "Categorias activas del menu, por orden. Requiere restaurantes.menu.ver."
@@ -208,4 +209,33 @@ type RestPlatilloPublico {
   agotado: Boolean!
   "Falso si el texto esta en español porque no hay traduccion al idioma pedido."
   traducido: Boolean!
+}
+
+# ---------- Comandos (D-125, D-209): preparar -> confirmar con el par de la plataforma ----------
+extend input ComandoInput {
+  "Guarda una version nueva de la receta de un platillo (RC-01, RC-08). Requiere restaurantes.receta.editar."
+  guardarReceta: RestGuardarRecetaInput
+  "Baja logica de un platillo (MN-10). Falla si esta en una cuenta abierta. Requiere restaurantes.menu.editar."
+  darDeBajaPlatillo: RestBajaPlatilloInput
+}
+
+input RestGuardarRecetaInput {
+  platilloId: ID!
+  "Porciones para las que estan escritas las cantidades, de 1 a 500 (RC-04)."
+  rendimiento: Int! = 1
+  "De 1 a 30 insumos, sin repetir articulo (RC-02)."
+  insumos: [RestRecetaInsumoInput!]!
+}
+
+input RestRecetaInsumoInput {
+  articuloId: ID!
+  cantidad: Decimal!
+  "Se convierte a la unidad base del articulo con Inventario (UNIDAD_NO_CONVERTIBLE si no se puede)."
+  unidad: String!
+  "Desperdicio sobre lo neto, de 0 a 100 (D-167). Siempre se manda; 0 si no hay."
+  mermaPct: Decimal!
+}
+
+input RestBajaPlatilloInput {
+  platilloId: ID!
 }
