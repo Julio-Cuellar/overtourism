@@ -2087,3 +2087,85 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 - **Ningún contexto completo de Spring arrancó** tras la fusión (sin Docker). Falta correr `mvn verify` con Docker y arrancar el perfil `desarrollo` para confirmar que `InventarioConfiguracion` y `RestaurantesConfiguracion` conviven con el canal GraphQL de Inventario.
 - `MESERO_CAJA` sigue con los permisos del mesero: los permisos de Ventas y Caja ya existen, pero concederlos al rol necesita una migración nueva que **no se hizo** (se anota en el javadoc de `RolesBase`).
 - Flyway no tiene `out-of-order`: una base de desarrollo que ya aplicó `V038` sin haber aplicado `V037` rechazará a `V037`. En una base nueva no pasa.
+
+
+### 2026-10-24 — Plan de los módulos horizontales para Restaurantes y guía de consultas del front (plan, sin autorización para programar)
+**Pedido del usuario (cita textual):** «/ecc:plan genera un plan para comenzar las implementaciones de los modulos horizontales, de igual manera quiero que generes como es que el front debe de hacer las consultas, para que en lo que tu trabajas en back yo trabaje con el front en flutter». **Es un plan: no hay autorización escrita para programar.** Cada fase se autoriza en esta Bitácora antes de empezar.
+
+**Qué se hizo (solo documentos, ningún código del producto):**
+- [`docs/planes/horizontales-para-restaurantes.md`](planes/horizontales-para-restaurantes.md): 5 fases (estabilizar lo local, contrato congelado, desbloqueos, cierre F7, verificación), 24 tareas `HZ-xx` con archivos, pruebas de aceptación y estimación (≈ 15 días-persona), orden y paralelismo, riesgos y 6 preguntas.
+- [`docs/api/guia-front-consultas.md`](api/guia-front-consultas.md): cómo consulta el Flutter (REST de Identidad, GraphQL, comandos en dos pasos, WebSocket `graphql-transport-ws`), qué está VIGENTE y qué es PROPUESTO, los cambios aditivos de contrato, la operación que usa cada pantalla de la maqueta, la arquitectura de capas (`api/`, `servicios/` con implementación `Demo` y `Remoto`, elegida por módulo con `--dart-define`) y los hitos H-0 a H-4.
+
+**Hallazgos (verificados en el código de `julio`):**
+1. **El árbol de pruebas no compila con el trabajo sin commitear:** `PreparacionesEnMemoriaTest` (commit `6b93fb6`) llama métodos que ahora reciben `negocioId`. Sin ese archivo: 2,591 pruebas, 0 fallas, 727 errores, todos por falta de Docker en el entorno donde se corrió.
+2. **Choque de numeración:** `D-190` a `D-192` existen dos veces (integración y diseño de Restaurantes v0.5). Se propone renumerar la integración (D-200).
+3. **No hay cabeceras CORS ni preflight**, aunque ya existe la lista `seguridad.http.origenes-permitidos`: Flutter web no puede llamar a `/graphql`.
+4. **`Idempotency-Key` no existe** y el diseño de Restaurantes la exige (CT-14, QR-15) sin listarla entre sus pedidos R-*.
+5. **Negocios emite `negocio.disponibilidad_actualizada` con solo un nivel;** el diseño espera `negocio.disponibilidad_cambiada` (C-01) con `libres/total/abierto`.
+6. **`Acceso.PUBLICA` está documentado como solo lectura;** `pedirPorQr` y `pedirCuentaPorQr` son escrituras anónimas.
+7. **El WebSocket exige token (SG-15):** no hay suscripciones públicas, por eso la ficha del turista y el comensal sondean en v1.
+
+**Decisiones (PROPUESTA, el equipo las confirma):** D-200 renumeración; D-208 `Idempotency-Key` como cabecera; D-209 `aBase` con `activo` y `rastreo = NINGUNO`; D-210 operaciones públicas con escritura declaradas y limitadas; D-211 CORS sobre la lista existente; D-212 disponibilidad con `tipo/libres/total/abierto/actualizadoEn` y sondeo en v1.
+
+**No hecho / no verificado:** no se corrió Postgres (no hay Docker en este entorno); los ejemplos en Dart no se probaron contra el servidor; el protocolo de WebSocket de un cliente Flutter está sin probar; el mapeo pantalla→operación se hizo por los nombres de archivo y la Bitácora de la maqueta; no se leyó el código de Restaurantes R0–R3 porque no está en el repositorio (pregunta 1 del plan). Sin commit ni push.
+
+
+### 2026-10-24 — Plan v2 y artefacto con el estado real de `origin/julio` (plan, sin autorización para programar)
+**Pedido del usuario (cita textual):** «vuelve a revisar la rama remota de julio, acabo de subir todo lo que ya tenia de restaurantes al igual que el plan que estaba siguiendo» y después «quiero que con lo que tengo actualmente vuelvas a generar el plan y el artefacto, esto con la finalidad de saber en realidad que tenemos actualment[e]». **Es un plan: no hay autorización escrita para programar.**
+
+**Qué se hizo (solo documentos):** [`docs/planes/horizontales-para-restaurantes.md`](planes/horizontales-para-restaurantes.md) pasa a la **v2** y reemplaza a la v1 de esta misma fecha; [`docs/api/guia-front-consultas.md`](api/guia-front-consultas.md) pasa a la v2 (el esquema de Restaurantes ya existe); el artefacto «Mapa de Restaurantes» se republicó (misma URL) con una sección «Lo que hay de verdad» y el estado de cada fase, operación, evento y dependencia.
+
+**Cómo se midió:** `origin/julio` en `f97c0ad` extraído a una copia limpia; `mvn -B test` con JDK 21 **sin Docker** (compila sin errores; **2,593 pruebas, 0 fallas, 568 errores**, la misma cifra que la Bitácora del 2026-10-23); conteo por módulo desde los reportes de Surefire; búsqueda de los identificadores de reglas del diseño en el código y las pruebas de Restaurantes.
+
+**Lo que hay (resumen):** Restaurantes R0 a R3 subidas y en memoria (85 archivos, 3,992 líneas, **193 pruebas que pasan sin Docker**, 8 consultas y 8 mutaciones GraphQL, 18 permisos, `V037`); el consumo por venta de Inventario en memoria (`articulosPorId`, `registrarConsumo`, `revertirConsumo`); la persistencia de Ventas, Caja e Inventario **solo en el disco local, sin commitear** (82 rutas); `julio` local 3 commits atrás de `origin/julio`. Reglas del diseño citadas en el código: 38 de 109 (MN 13/14, RC 10/10, CM 8/9, PB 6/6, DM 1/4; SR, salón, cuentas, cocina, QR e IA, ninguna).
+
+**Hallazgos nuevos (verificados):**
+1. `guardarReceta` y `darDeBajaPlatillo` no se pueden llamar: falta `ComandosDeRestaurantes` y las variantes en `ComandoInput`. El despachador ya existe.
+2. Ventas no puede vender platillos: Restaurantes usa una interfaz propia (`PlatillosParaVenta`) y no implementa `FuenteDeProductos`.
+3. `negocio.estado_cambiado` se consume pero nadie lo emite.
+4. La paginación de Restaurantes (`{ nodos, siguiente }`) difiere de la de la plataforma (`pageInfo`).
+5. Hay dos diseños con el mismo nombre de versión (`restaurantes.md` y `restaurantes-original.md`, 312 líneas de diferencia).
+6. Postman y `graphql-integracion-front.md` no cubren Restaurantes.
+7. Tu persistencia de Inventario no implementa el puerto `RepositorioConsumos` nuevo; hay que agregar la tabla `consumo` y la transacción de K-02 al unir.
+8. Nunca se ha arrancado la aplicación completa con Restaurantes, Inventario y Ventas juntos.
+
+**Decisiones (PROPUESTA):** D-208 `Idempotency-Key` como cabecera; D-209 `ComandosDeRestaurantes`; D-210 escrituras públicas declaradas y limitadas; D-211 CORS sobre la lista existente; D-212 disponibilidad con `libres/total`; D-213 armonizar la paginación de Restaurantes; D-214 Restaurantes implementa `FuenteDeProductos`. **Se retiran** la «D-200 renumerar» y la «D-209 aBase con rastreo» de la v1: la renumeración ya la hizo la Bitácora del 2026-10-23 y `aBase` no cambia (tu D-200 es `articulosPorId`).
+
+**No hecho / no verificado:** no se corrió Postgres (no hay Docker); los 568 errores no se revisaron uno por uno; «reglas citadas» es un indicador, no una prueba de cumplimiento; no se arrancó la aplicación; **el repositorio local no se actualizó** (sigue 3 commits atrás). Sin commit ni push.
+
+
+### 2026-10-24 — Autorización: Fase 0, Fase 1 y HZ-22, HZ-23 y HZ-28 del plan v2 de horizontales
+**Autorización escrita (cita textual del usuario; el mensaje llegó cortado en «Uso restaurantes-original.md como el»):** «Autorizo por escrito: Fase 0 (traer origin/julio a mi disco con respaldo, completar la persistencia de Inventario con el consumo, y el commit local de F5/F6 sin push), Fase 1, y de la Fase 2 solo HZ-22, HZ-23 y HZ-28. El orden de decisiones: acepto D-208 a D-214. Uso restaurantes-original.md como el»
+
+**Alcance autorizado ([plan v2](planes/horizontales-para-restaurantes.md)):**
+- **Fase 0:** HZ-00 traer `origin/julio`; HZ-01 completar la persistencia de Inventario con el consumo; HZ-03 commit local de F5/F6, **sin push**; HZ-04 un solo `restaurantes.md`; HZ-05 revisar el orden de Flyway. HZ-02 (`mvn -B verify` con Docker) la corre el usuario.
+- **Fase 1:** HZ-10 a HZ-12 (guía, aceptar D-208 a D-214, congelar el contrato).
+- **Fase 2, solo:** HZ-22 (`ComandosDeRestaurantes`), HZ-23 (Restaurantes implementa `FuenteDeProductos`) y HZ-28 (kit de contrato de `FuenteDeProductos`).
+
+**Interpretación mía (corrígela aquí si no es lo que quiso decir):** «restaurantes-original.md como el [diseño que manda]»: `restaurantes-original.md` pasa a ser `docs/diseno/restaurantes.md`; la copia del artefacto queda en el historial de Git (`cf2ac99`). El commit autorizado cubre **solo F5/F6**: lo de HZ-22, HZ-23 y HZ-28, los documentos de este plan y el cambio del diseño quedan **sin commitear**.
+
+**Sigue sin autorizar:** HZ-20, HZ-21, HZ-24 a HZ-27, HZ-29 y la Fase 3; P1b y la persistencia de Restaurantes (R7); cualquier push.
+
+**Decisiones ACEPTADAS por la cita (antes PROPUESTA):** D-208 (`Idempotency-Key` como cabecera HTTP), D-209 (`ComandosDeRestaurantes`), D-210 (escrituras públicas declaradas y limitadas), D-211 (CORS sobre la lista existente), D-212 (disponibilidad con `libres/total` y sondeo en v1), D-213 (armonizar la paginación de Restaurantes a `pageInfo`), D-214 (Restaurantes implementa `FuenteDeProductos`). Aceptarlas no autoriza programarlas: D-208, D-210, D-211, D-212 y D-213 esperan su tarea (HZ-25, HZ-27, HZ-21, HZ-26 y HZ-29).
+
+
+### 2026-10-24 — Fase 0, Fase 1 y HZ-22, HZ-23 y HZ-28 (hecho, sin push)
+**Autorización:** la de la entrada anterior. Evidencia y tablas de RED/GREEN en [`docs/pruebas/horizontales-fase0-y-hz-22-23-28.tdd.md`](pruebas/horizontales-fase0-y-hz-22-23-28.tdd.md); estado por tarea en el [plan v2](planes/horizontales-para-restaurantes.md), sección 0.
+
+**Qué se hizo:**
+- **HZ-00:** `julio` local avanzó a `origin/julio` (`f97c0ad`) con respaldo previo (parche y tar) y `stash`; chocaron `docs/BITACORA.md` y la Javadoc de `InventarioEnMemoriaConfiguracion` (renombre contra modificación), y el árbol quedó compilando.
+- **HZ-01:** Inventario en Postgres con consumo por venta: `V072__inventario_consumo_y_rastreo.sql` (columna `articulo.rastreo` y tabla `consumo`, con seguridad por fila forzada), `InventarioJdbc` implementa `RepositorioConsumos` con `ON CONFLICT DO NOTHING` (una llave repetida es `CONCURRENCIA` y revierte lo de la transacción), `InventarioPostgresConfiguracion` cablea `ConsumosServicio`. El contrato del almacén se amplió y corre en memoria y en Postgres.
+- **HZ-03:** cinco commits locales de F5/F6 (`9ecb7d6`, `f1eb898`, `649d2f2`, `7a16b06`, `a4d6f77`), **sin push**; la Bitácora se comiteó solo con las tres entradas de F5/F6.
+- **HZ-04:** `restaurantes-original.md` pasó a ser `docs/diseno/restaurantes.md`; la copia del artefacto sigue en el historial de Git (`cf2ac99`).
+- **Fase 1:** D-208 a D-214 aceptadas; guía del front v2 actualizada; contrato aditivo congelado en lo que toca.
+- **HZ-28:** kit `ContratoDeFuenteDeProductosTest`, enum `ModoInventario` de la plataforma y `FuenteDeProductos.modoInventario` por omisión (R-V2).
+- **HZ-23:** `PlatillosParaVenta` implementa `FuenteDeProductos` y declara el modo de inventario del platillo (D-214); `ProductoDePlatillo` se eliminó.
+- **HZ-22:** `ComandosDeRestaurantes` (`ModuloDeComandos`, prefijo `restaurantes.`) con `guardarReceta` y `darDeBajaPlatillo`; entradas `RestGuardarRecetaInput`, `RestRecetaInsumoInput` y `RestBajaPlatilloInput` en el esquema (con prefijo `Rest`, D-130; el diseño §8.3 las llama sin prefijo).
+
+**Verificación hecha:** `mvn -B test`: **2,881 pruebas, 0 fallas, 744 errores** que son los contextos de Spring y de Docker sin Docker (717 + 27); el tronco compila. Restaurantes: 212 pruebas, 0 errores. 4 de 4 mutaciones detectadas.
+
+**Hallazgo corregido:** los manejadores de Restaurantes no declaraban `permisos()`, así que la plataforma no exigía el permiso antes de gastar el token (D-126). Ahora lo declaran.
+
+**No verificado / pendiente tuyo:** (1) `V072`, `InventarioJdbc` y `ConsumoInventarioPostgresTest` **nunca corrieron contra Postgres** (no hay Docker): corre `mvn -B verify` (HZ-02). (2) **HZ-05:** no hay `spring.flyway.out-of-order` configurado; si tu base de desarrollo ya aplicó `V038` sin `V037`, Flyway rechazará `V037`; opciones: recrear la base (`docker compose down -v`) o `out-of-order` solo en `desarrollo`. No lo cambié ni toqué tu base. (3) La aplicación completa nunca se arrancó con Restaurantes, Inventario y Ventas juntos. (4) El `stash` de respaldo (`stash@{0}`) sigue en el repo y el respaldo fuera del repo está en la carpeta temporal: puedes borrar el stash con `git stash drop`.
+
+**Sin commitear (a propósito):** HZ-22, HZ-23 y HZ-28, el cambio del diseño de Restaurantes, la guía, el plan y estas entradas, porque la autorización de commit era solo para F5/F6. Sin push.
