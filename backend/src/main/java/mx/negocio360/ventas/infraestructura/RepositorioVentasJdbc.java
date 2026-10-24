@@ -42,7 +42,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 public final class RepositorioVentasJdbc implements RepositorioVentas {
 
     private static final String COLUMNAS = "id, negocio_id, serie, folio, estado, turno_id, cliente_id, cupon_id, subtotal, "
-            + "descuento, total, ocurrido_en, registrada_por, anulada_en, anulada_por, motivo_anulacion, version";
+            + "descuento, total, ocurrido_en, registrada_por, anulada_en, anulada_por, motivo_anulacion, version, referencia";
 
     private final JdbcClient jdbc;
     private final EjecutorEnNegocio negocio;
@@ -63,7 +63,7 @@ public final class RepositorioVentasJdbc implements RepositorioVentas {
         negocio.en(venta.negocioId(), () -> {
             jdbc.sql("INSERT INTO ventas.venta (" + COLUMNAS + ") VALUES (:id, :negocio, :serie, :folio, :estado, :turno, "
                             + ":cliente, :cupon, :subtotal, :descuento, :total, :ocurrido, :registradaPor, :anuladaEn, "
-                            + ":anuladaPor, :motivo, :version)")
+                            + ":anuladaPor, :motivo, :version, :referencia)")
                     .param("id", venta.id()).param("negocio", venta.negocioId()).param("serie", venta.serie())
                     .param("folio", venta.folio()).param("estado", venta.estado().name())
                     .param("turno", venta.turnoId()).param("cliente", venta.clienteId(), Types.OTHER)
@@ -73,6 +73,7 @@ public final class RepositorioVentasJdbc implements RepositorioVentas {
                     .param("anuladaEn", momento(venta.anuladaEn()), Types.TIMESTAMP_WITH_TIMEZONE)
                     .param("anuladaPor", venta.anuladaPor(), Types.VARCHAR)
                     .param("motivo", venta.motivoAnulacion(), Types.VARCHAR).param("version", venta.version())
+                    .param("referencia", venta.referencia(), Types.VARCHAR)
                     .update();
             for (var linea : venta.lineas()) {
                 jdbc.sql("INSERT INTO ventas.linea_venta (venta_id, negocio_id, linea, producto_id, descripcion, cantidad, "
@@ -157,11 +158,12 @@ public final class RepositorioVentasJdbc implements RepositorioVentas {
     private record Cabecera(UUID id, UUID negocioId, String serie, long folio, EstadoVenta estado, UUID turnoId,
                             UUID clienteId, UUID cuponId, java.math.BigDecimal subtotal, java.math.BigDecimal descuento,
                             java.math.BigDecimal total, java.time.Instant ocurridoEn, String registradaPor,
-                            java.time.Instant anuladaEn, String anuladaPor, String motivoAnulacion, int version) {
+                            java.time.Instant anuladaEn, String anuladaPor, String motivoAnulacion, int version,
+                            String referencia) {
 
         Venta conDetalle(List<LineaVenta> lineas, List<PagoVenta> pagos) {
             return new Venta(id, negocioId, serie, folio, estado, turnoId, clienteId, cuponId, subtotal, descuento,
-                    total, lineas, pagos, ocurridoEn, registradaPor, anuladaEn, anuladaPor, motivoAnulacion, version);
+                    total, lineas, pagos, ocurridoEn, registradaPor, anuladaEn, anuladaPor, motivoAnulacion, version, referencia);
         }
     }
 
@@ -172,7 +174,7 @@ public final class RepositorioVentasJdbc implements RepositorioVentas {
                 fila.getObject("cupon_id", UUID.class), fila.getBigDecimal("subtotal"), fila.getBigDecimal("descuento"),
                 fila.getBigDecimal("total"), instante(fila, "ocurrido_en"), fila.getString("registrada_por"),
                 instante(fila, "anulada_en"), fila.getString("anulada_por"), fila.getString("motivo_anulacion"),
-                fila.getInt("version"));
+                fila.getInt("version"), fila.getString("referencia"));
     }
 
     /** Agrega lineas y pagos a las cabeceras con dos consultas, sin importar cuantas ventas sean. */

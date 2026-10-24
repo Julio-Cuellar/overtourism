@@ -84,6 +84,7 @@ public final class PlantillasVentas {
             case PRODUCTO_INACTIVO -> "Ese producto ya no está a la venta.";
             case DEMASIADAS_LINEAS -> "Una venta admite hasta 100 productos distintos.";
             case TEXTO_DEMASIADO_LARGO -> "La serie o la referencia del pago es demasiado larga (hasta 60 caracteres).";
+            case REFERENCIA_INVALIDA -> "La referencia solo admite letras, números y . _ : - (hasta 80 caracteres).";
             case DEMASIADOS_PAGOS -> "Una venta admite hasta 10 formas de pago.";
             case PAGOS_NO_CUADRAN -> "Los pagos no suman el total de la venta.";
             case EFECTIVO_INSUFICIENTE -> "El efectivo recibido no alcanza para ese pago.";

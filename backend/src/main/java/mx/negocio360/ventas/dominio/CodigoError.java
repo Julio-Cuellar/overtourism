@@ -20,6 +20,8 @@ public enum CodigoError {
     DEMASIADAS_LINEAS("VF-10"),
     /** Una serie o una referencia de pago pasa de su largo maximo. */
     TEXTO_DEMASIADO_LARGO("VF-10"),
+    /** La referencia pasa de 80 caracteres o trae caracteres fuera de letras, digitos y . _ : - (R-V1). */
+    REFERENCIA_INVALIDA("VF-10"),
     // Pagos
     /** Mas formas de pago de las que admite una venta (limite de entrada). */
     DEMASIADOS_PAGOS("VF-10"),

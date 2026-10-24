@@ -31,11 +31,22 @@ import java.util.UUID;
  * @param anuladaPor      actor que anulo, o nulo
  * @param motivoAnulacion motivo, o nulo
  * @param version         bloqueo optimista, desde 1
+ * @param referencia      texto opaco de quien cobra para reconocer la venta (por ejemplo {@code restaurantes:cuenta:<id>}), o
+ *                        nulo; de 1 a 80 caracteres de {@code [A-Za-z0-9._:-]}
  */
 public record Venta(UUID id, UUID negocioId, String serie, long folio, EstadoVenta estado, UUID turnoId,
                     UUID clienteId, UUID cuponId, BigDecimal subtotal, BigDecimal descuento, BigDecimal total,
                     List<LineaVenta> lineas, List<PagoVenta> pagos, Instant ocurridoEn, String registradaPor,
-                    Instant anuladaEn, String anuladaPor, String motivoAnulacion, int version) {
+                    Instant anuladaEn, String anuladaPor, String motivoAnulacion, int version, String referencia) {
+
+    /** Una venta sin referencia: lo que existia antes de R-V1. */
+    public Venta(UUID id, UUID negocioId, String serie, long folio, EstadoVenta estado, UUID turnoId, UUID clienteId,
+                 UUID cuponId, BigDecimal subtotal, BigDecimal descuento, BigDecimal total, List<LineaVenta> lineas,
+                 List<PagoVenta> pagos, Instant ocurridoEn, String registradaPor, Instant anuladaEn, String anuladaPor,
+                 String motivoAnulacion, int version) {
+        this(id, negocioId, serie, folio, estado, turnoId, clienteId, cuponId, subtotal, descuento, total, lineas, pagos,
+                ocurridoEn, registradaPor, anuladaEn, anuladaPor, motivoAnulacion, version, null);
+    }
 
     /** Exige una venta completa y que {@code total = subtotal − descuento} (VT-08); copia lineas y pagos. */
     public Venta {
@@ -73,7 +84,7 @@ public record Venta(UUID id, UUID negocioId, String serie, long folio, EstadoVen
             throw new VentasException(CodigoError.VENTA_YA_ANULADA, id);
         }
         return new Venta(id, negocioId, serie, folio, EstadoVenta.ANULADA, turnoId, clienteId, cuponId, subtotal,
-                descuento, total, lineas, pagos, ocurridoEn, registradaPor, cuando, actor, motivo, version + 1);
+                descuento, total, lineas, pagos, ocurridoEn, registradaPor, cuando, actor, motivo, version + 1, referencia);
     }
 
     /** Sin cliente, actores ni motivo: son datos personales o texto libre y no deben llegar a los registros. */

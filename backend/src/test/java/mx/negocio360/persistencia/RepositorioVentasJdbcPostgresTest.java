@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import mx.negocio360.compartido.transaccion.EjecutorEnNegocio;
 import mx.negocio360.ventas.aplicacion.puertos.RepositorioVentas;
+import mx.negocio360.ventas.dominio.EstadoVenta;
 import mx.negocio360.ventas.dominio.Venta;
 import mx.negocio360.ventas.infraestructura.ContratoRepositorioVentasTest;
 import mx.negocio360.ventas.infraestructura.RepositorioVentasJdbc;
@@ -162,6 +163,30 @@ class RepositorioVentasJdbcPostgresTest extends ContratoRepositorioVentasTest {
             assertThat(sesion.intentar("delete from ventas.venta where id = ?", original.id())).isEqualTo("42501");
             assertThat(sesion.intentar("update ventas.linea_venta set cantidad = 9 where venta_id = ?", original.id()))
                     .isEqualTo("42501");
+        }
+    }
+
+    @Test
+    @DisplayName("R-V1: la base no deja editar la referencia de una venta cobrada ni guardar una que no sea segura")
+    void referenciaProtegida() throws Exception {
+        var negocio = UUID.randomUUID();
+        var base = venta(negocio, UUID.randomUUID(), "A", 1, AHORA);
+        var original = new Venta(base.id(), negocio, "A", 1, EstadoVenta.REGISTRADA, base.turnoId(), null, null,
+                base.subtotal(), base.descuento(), base.total(), base.lineas(), base.pagos(), AHORA, "cajero-a", null, null,
+                null, 1, "restaurantes:cuenta:abc");
+        almacen().guardar(original);
+
+        try (var sesion = SesionSql.comoDueno()) {
+            assertThat(sesion.intentar("update ventas.venta set referencia = 'otra' where id = ?", original.id()))
+                    .isEqualTo("23001");
+        }
+        try (var sesion = SesionSql.comoAplicacion().enNegocio(negocio)) {
+            assertThat(sesion.intentar("update ventas.venta set referencia = 'otra' where id = ?", original.id()))
+                    .isEqualTo("42501");
+            var mala = sesion.intentar("insert into ventas.venta (id, negocio_id, serie, folio, estado, turno_id, subtotal, "
+                    + "descuento, total, ocurrido_en, registrada_por, version, referencia) values (gen_random_uuid(), ?, 'A', 2, "
+                    + "'REGISTRADA', gen_random_uuid(), 100, 0, 100, now(), 'x', 1, 'con espacio')", negocio);
+            assertThat(mala).isEqualTo("23514");
         }
     }
 

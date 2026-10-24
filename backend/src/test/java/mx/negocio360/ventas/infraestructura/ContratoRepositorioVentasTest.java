@@ -57,6 +57,25 @@ public abstract class ContratoRepositorioVentasTest {
     }
 
     @Test
+    @DisplayName("R-V1: la referencia se guarda con la venta, se lee igual y sobrevive a la anulacion")
+    void guardarYLeerConReferencia() {
+        var negocio = UUID.randomUUID();
+        var base = venta(negocio, UUID.randomUUID(), "A", 1, AHORA);
+        var original = new Venta(base.id(), negocio, "A", 1, EstadoVenta.REGISTRADA, base.turnoId(), null, null,
+                base.subtotal(), base.descuento(), base.total(), base.lineas(), base.pagos(), AHORA, "cajero-a", null, null,
+                null, 1, "restaurantes:cuenta:0192c1aa-1111-7000-8000-00000000c001");
+
+        almacen().guardar(original);
+
+        assertThat(almacen().porId(negocio, original.id())).contains(original);
+        assertThat(almacen().porId(negocio, original.id()).orElseThrow().referencia())
+                .isEqualTo("restaurantes:cuenta:0192c1aa-1111-7000-8000-00000000c001");
+        assertThat(almacen().actualizar(original.anulada(AHORA, "gerente-a", "Prueba"), 1)).isTrue();
+        assertThat(almacen().porId(negocio, original.id()).orElseThrow().referencia())
+                .isEqualTo("restaurantes:cuenta:0192c1aa-1111-7000-8000-00000000c001");
+    }
+
+    @Test
     @DisplayName("la venta con cliente, cupon y descuento se lee igual")
     void guardarYLeerConClienteYCupon() {
         var negocio = UUID.randomUUID();

@@ -362,6 +362,29 @@ public abstract class GraphQlVentasCajaContratoTest {
     }
 
     @Test
+    @DisplayName("R-V1: la referencia entra por registrarVenta, queda en la venta y una insegura se rechaza con REFERENCIA_INVALIDA")
+    void referenciaDeLaVenta() throws Exception {
+        var dueno = sesion(UUID.randomUUID(), "DUENO");
+        var turno = turnoAbierto(dueno);
+        var con = new java.util.HashMap<String, Object>(Map.of("turnoId", turno,
+                "lineas", List.of(Map.of("productoId", TAMAL.toString(), "cantidad", "1")),
+                "pagos", List.of(Map.of("metodo", "EFECTIVO", "monto", "30.00"))));
+        con.put("referencia", "restaurantes:cuenta:0192c1aa-1111-7000-8000-00000000c001");
+
+        var cobro = comando(dueno, Map.of("registrarVenta", con));
+
+        var ventas = graphql(dueno, "query($f: FiltroVentas) { ventas(filtro: $f, primeros: 5) { ventas { id referencia } } }",
+                Map.of("f", Map.of("turnoId", turno)));
+        assertThat(ventas.at("/data/ventas/ventas/0/id").asText()).isEqualTo(cobro.get("recursoId").asText());
+        assertThat(ventas.at("/data/ventas/ventas/0/referencia").asText())
+                .isEqualTo("restaurantes:cuenta:0192c1aa-1111-7000-8000-00000000c001");
+        con.put("referencia", "con espacios y <html>");
+        var mala = graphql(dueno, PREPARAR, Map.of("i", Map.of("registrarVenta", con)));
+        assertThat(codigo(mala)).isEqualTo("REFERENCIA_INVALIDA");
+        assertThat(mala.toString()).doesNotContain("<html>");
+    }
+
+    @Test
     @DisplayName("un comando con campos que no existen, o con dos variantes, se rechaza")
     void comandoInvalido() throws Exception {
         var dueno = sesion(UUID.randomUUID(), "DUENO");

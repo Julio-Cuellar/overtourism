@@ -18,10 +18,18 @@ import org.springframework.modulith.NamedInterface;
  * @param pagos       formas de pago; deben sumar el total (VT-04)
  * @param codigoCupon codigo del cupon del Pasaporte, opcional (VT-07)
  * @param clienteId   cliente elegido con {@code sugerirClientes}, opcional (VT-13)
+ * @param referencia  texto opaco con el que quien cobra reconoce la venta despues (por ejemplo la cuenta de un restaurante),
+ *                    opcional; hasta 80 caracteres de {@code [A-Za-z0-9._:-]}
  */
 @NamedInterface("comandos")
 public record RegistrarVentaComando(UUID turnoId, List<LineaSolicitada> lineas, List<PagoSolicitado> pagos,
-                                    String codigoCupon, UUID clienteId) implements Comando {
+                                    String codigoCupon, UUID clienteId, String referencia) implements Comando {
+
+    /** El comando de siempre, sin referencia. */
+    public RegistrarVentaComando(UUID turnoId, List<LineaSolicitada> lineas, List<PagoSolicitado> pagos, String codigoCupon,
+                                 UUID clienteId) {
+        this(turnoId, lineas, pagos, codigoCupon, clienteId, null);
+    }
 
     /** Copia defensiva e inmutable de lineas y pagos. */
     public RegistrarVentaComando {
@@ -38,6 +46,6 @@ public record RegistrarVentaComando(UUID turnoId, List<LineaSolicitada> lineas, 
     public String toString() {
         return "RegistrarVentaComando[turnoId=" + turnoId + ", lineas=" + (lineas == null ? 0 : lineas.size())
                 + ", pagos=" + (pagos == null ? 0 : pagos.size()) + ", conCupon=" + (codigoCupon != null)
-                + ", conCliente=" + (clienteId != null) + "]";
+                + ", conCliente=" + (clienteId != null) + ", conReferencia=" + (referencia != null) + "]";
     }
 }

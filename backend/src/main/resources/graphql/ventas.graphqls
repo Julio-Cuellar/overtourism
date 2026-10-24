@@ -33,6 +33,8 @@ type Venta {
   clienteId: ID
   "Opcional y opaco: el cupón del Pasaporte que se canjeó."
   cuponId: ID
+  "Opcional y opaco (R-V1): lo que mandó quien cobró para reconocer la venta."
+  referencia: String
   ocurridoEn: DateTime!
   anuladaEn: DateTime
   motivoAnulacion: String
@@ -109,6 +111,8 @@ input RegistrarVentaInput {
   "Máximo 40 caracteres. Sin Pasaporte, cualquier código es CUPON_INVALIDO (D-134)."
   codigoCupon: String
   clienteId: ID
+  "Opcional y opaco (R-V1): con qué reconoce la venta quien cobra, por ejemplo la cuenta de un restaurante. Hasta 80 caracteres de A-Z, a-z, 0-9 y . _ : -."
+  referencia: String
 }
 
 input LineaVentaInput {

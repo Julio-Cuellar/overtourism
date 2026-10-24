@@ -46,6 +46,9 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
     public static final String SERIE = "A";
     /** Largo maximo del codigo de cupon; uno mas largo no se manda a Pasaporte. */
     public static final int MAX_CARACTERES_CUPON = 40;
+    /** Largo maximo de la referencia opaca de quien cobra (R-V1). */
+    public static final int MAX_CARACTERES_REFERENCIA = 80;
+    private static final java.util.regex.Pattern REFERENCIA = java.util.regex.Pattern.compile("[A-Za-z0-9._:-]+");
 
     private final CatalogoDeVentas catalogo;
     private final CuponesDePasaporte cupones;
@@ -137,7 +140,7 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
         var folio = ventas.siguienteFolio(contexto.negocioId(), SERIE);
         var venta = new Venta(ventaId, contexto.negocioId(), SERIE, folio, EstadoVenta.REGISTRADA, comando.turnoId(),
                 comando.clienteId(), calculo.cuponId(), calculo.subtotal(), calculo.descuento(), calculo.total(),
-                calculo.lineas(), calculo.pagos(), ahora, contexto.actor(), null, null, null, 1);
+                calculo.lineas(), calculo.pagos(), ahora, contexto.actor(), null, null, null, 1, referencia(comando));
         ventas.guardar(venta);
         eventos.publicar(FabricaSobres.de(contexto.negocioId(), ahora, ventaId, VentaRegistrada.TIPO,
                 VentaRegistrada.VERSION, new VentaRegistrada(venta).datos()));
@@ -158,6 +161,7 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
     private Calculo calcular(ContextoNegocio contexto, RegistrarVentaComando comando, boolean alConfirmar) {
         CalculadoraVenta.validarTamano(comando.lineas(), comando.pagos());
         var codigoCupon = codigoCupon(comando);
+        referencia(comando);
         if (comando.turnoId() == null || !turnos.abierto(contexto, comando.turnoId())) {
             throw new VentasException(CodigoError.TURNO_NO_ABIERTO);
         }
@@ -194,6 +198,21 @@ public final class ManejadorRegistrarVenta implements ManejadorComando<Registrar
             throw new VentasException(CodigoError.CUPON_INVALIDO);
         }
         return codigo;
+    }
+
+    /**
+     * La referencia recortada, o nula si no hay. Es texto que viaja a otros modulos y a los registros, asi que solo admite
+     * letras, digitos y {@code . _ : -}, hasta 80 (R-V1).
+     */
+    private static String referencia(RegistrarVentaComando comando) {
+        if (comando.referencia() == null || comando.referencia().isBlank()) {
+            return null;
+        }
+        var referencia = comando.referencia().strip();
+        if (referencia.length() > MAX_CARACTERES_REFERENCIA || !REFERENCIA.matcher(referencia).matches()) {
+            throw new VentasException(CodigoError.REFERENCIA_INVALIDA);
+        }
+        return referencia;
     }
 
     private static List<PagoVenta> pagosDe(BigDecimal total, RegistrarVentaComando comando, boolean alConfirmar) {

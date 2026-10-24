@@ -11,7 +11,8 @@ import mx.negocio360.ventas.dominio.Venta;
  * {@code venta.registrada} v1 (D-136). Se publica al confirmar RegistrarVenta, en la misma transaccion (outbox).
  *
  * <p>Campos de {@code datos}: {@code venta_id}, {@code folio} (entero), {@code serie}, {@code turno_id},
- * {@code cliente_id} (opcional, D-48), {@code cupon_id} (opcional), {@code subtotal}, {@code descuento},
+ * {@code cliente_id} (opcional, D-48), {@code cupon_id} (opcional), {@code referencia} (opcional, R-V1: texto opaco con
+ * el que quien cobra reconoce la venta), {@code subtotal}, {@code descuento},
  * {@code total} (neto de cupon, D-65), {@code lineas[]} con {@code linea}, {@code producto_id}, {@code cantidad},
  * {@code unidad}, {@code precio_unitario}, {@code importe} y {@code serie} opcional, y {@code pagos[]} con
  * {@code metodo} y {@code monto}. Dinero y cantidades como cadena decimal. Sin datos personales: no lleva quien cobro
@@ -47,6 +48,9 @@ public record VentaRegistrada(Venta venta) {
         }
         if (venta.cuponId() != null) {
             datos.put("cupon_id", venta.cuponId().toString());
+        }
+        if (venta.referencia() != null) {
+            datos.put("referencia", venta.referencia());
         }
         datos.put("subtotal", DecimalPlano.escribir(venta.subtotal()));
         datos.put("descuento", DecimalPlano.escribir(venta.descuento()));

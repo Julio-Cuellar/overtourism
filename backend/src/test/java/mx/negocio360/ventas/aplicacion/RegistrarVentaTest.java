@@ -217,4 +217,50 @@ class RegistrarVentaTest {
 
         fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), comando), CodigoError.PRODUCTO_NO_ENCONTRADO);
     }
+
+    // ---- referencia (R-V1, CT-07 a CT-10 de Restaurantes) ----
+
+    private static RegistrarVentaComando conReferencia(String referencia) {
+        return new RegistrarVentaComando(Fixtures.TURNO, Fixtures.dosBoletosYMedioKilo(),
+                List.of(Fixtures.efectivo("150.00", "200.00")), null, null, referencia);
+    }
+
+    @Test
+    @DisplayName("R-V1: la referencia opaca se guarda con la venta y viaja en venta.registrada para que el modulo que cobra la reconozca")
+    void referencia_seGuardaYViaja() {
+        var ventaId = e.vender(e.ctxA, conReferencia("restaurantes:cuenta:0192c1aa-1111-7000-8000-00000000c001"));
+
+        var venta = e.api.venta(e.ctxA, Permisos.de(e.ctxA), ventaId).orElseThrow();
+        assertThat(venta.referencia()).isEqualTo("restaurantes:cuenta:0192c1aa-1111-7000-8000-00000000c001");
+        assertThat(e.eventos.unicoDeTipo(VentaRegistrada.TIPO).datos())
+                .containsEntry("referencia", "restaurantes:cuenta:0192c1aa-1111-7000-8000-00000000c001");
+    }
+
+    @Test
+    @DisplayName("R-V1: sin referencia, o en blanco, la venta no la guarda ni el evento la trae (campo opcional, R5)")
+    void referencia_esOpcional() {
+        var sin = e.vender(e.ctxA, Fixtures.ventaSinCupon());
+        var enBlanco = e.vender(e.ctxA, conReferencia("   "));
+
+        assertThat(e.api.venta(e.ctxA, Permisos.de(e.ctxA), sin).orElseThrow().referencia()).isNull();
+        assertThat(e.api.venta(e.ctxA, Permisos.de(e.ctxA), enBlanco).orElseThrow().referencia()).isNull();
+        e.eventos.deTipo(VentaRegistrada.TIPO).forEach(ev -> assertThat(ev.datos()).doesNotContainKey("referencia"));
+    }
+
+    @Test
+    @DisplayName("R-V1: una referencia de mas de 80 caracteres falla al preparar con REFERENCIA_INVALIDA y no vende")
+    void referencia_demasiadoLarga() {
+        fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), conReferencia("r".repeat(81))),
+                CodigoError.REFERENCIA_INVALIDA);
+        assertThat(e.api.preparar(e.ctxA, Permisos.de(e.ctxA), conReferencia("r".repeat(80))).token()).isNotBlank();
+        assertThat(e.ventas.todas()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("R-V1: una referencia con saltos de linea, espacios u otros caracteres fuera de [A-Za-z0-9._:-] se rechaza")
+    void referencia_conControl() {
+        for (var mala : List.of("restaurantes:cuenta:1\nventa.registrada", "con espacio", "<script>", "cuenta/1")) {
+            fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), conReferencia(mala)), CodigoError.REFERENCIA_INVALIDA);
+        }
+    }
 }
