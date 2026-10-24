@@ -930,6 +930,8 @@ Cada fase: pruebas primero (RED con motivo correcto), código mínimo (GREEN), `
 
 ### F5 · Eventos por outbox y consumidores (≈ 3 h)
 
+> **Estado (2026-10-16): hecho.** Ver la entrada de la Bitácora «Persistencia en PostgreSQL y outbox de Ventas, Caja e Inventario (F5 y F6, hecho)».
+
 | Paso | Detalle |
 |---|---|
 | RED | Con Postgres real: confirmar una venta deja una fila en `event_publication` y Caja la completa; el mismo evento tres veces deja un efecto; `anulada` antes de `registrada`; si la transacción falla, no sale evento |
@@ -937,6 +939,8 @@ Cada fase: pruebas primero (RED con motivo correcto), código mínimo (GREEN), `
 | Salida | Prueba de contrato con el lector real de Clientes en verde |
 
 ### F6 · Persistencia (≈ 7 h) — decisión P-5 en la sección 18
+
+> **Estado (2026-10-16): hecho**, con dos diferencias respecto a lo escrito abajo: el almacén no es `postgres` por omisión sino explícito (D-194), y no se creó `conteo_denominacion` (el dominio no la usa). Inventario quedó en `V070` y `V071`.
 
 | Paso | Detalle |
 |---|---|

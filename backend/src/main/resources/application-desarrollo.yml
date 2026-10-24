@@ -23,8 +23,10 @@ spring:
     placeholders:
       app_user: negocio360_app
 
-# Ventas, Caja e Inventario con almacenes en memoria (F2 a F4 de docs/planes/integracion-ventas-caja.md): los datos se
-# pierden al reiniciar. La version con PostgreSQL llega en F6; con el perfil de produccion estos modulos no se encienden.
+# Ventas, Caja e Inventario con almacenes en memoria: los datos se pierden al reiniciar y los eventos van por el bus en
+# proceso, sin outbox. Para probar contra PostgreSQL (repositorios JDBC, seguridad por fila y outbox, F5 y F6 de
+# docs/planes/integracion-ventas-caja.md) basta poner `postgres` en vez de `memoria`. Con el perfil produccion los tres
+# DEBEN valer `postgres`: si falta alguno la aplicacion no arranca (AlmacenesObligatoriosEnProduccion).
 ventas:
   almacen: memoria
   productos-simulados: true
