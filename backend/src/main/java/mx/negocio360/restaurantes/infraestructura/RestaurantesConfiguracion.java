@@ -149,7 +149,7 @@ public class RestaurantesConfiguracion {
     }
 
     @Bean
-    EscuchaDeVentas escuchaDeVentas(ConsumidorDeVentas consumidor) {
+    EscuchaDeVentas escuchaDeVentasRestaurantes(ConsumidorDeVentas consumidor) {
         return new EscuchaDeVentas(consumidor);
     }
 
