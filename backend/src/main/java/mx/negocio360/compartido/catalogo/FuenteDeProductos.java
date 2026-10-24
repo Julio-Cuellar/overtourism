@@ -32,4 +32,17 @@ public interface FuenteDeProductos {
      * @return productos activos que coinciden, con el orden que decida la fuente
      */
     List<ProductoParaVenta> buscar(UUID negocioId, String texto, int limite);
+
+    /**
+     * Como descuenta inventario un producto de esta fuente (R-V2, K-05). Opcional: por omision es {@link
+     * ModoInventario#NINGUNO}, que es lo correcto para una fuente sin control de existencias. Un vertical con recetas o
+     * con vinculo a articulos lo sobreescribe; un producto que la fuente no conoce en ese negocio es {@code NINGUNO}.
+     *
+     * @param negocioId  negocio del contexto
+     * @param productoId producto a consultar
+     * @return el modo de inventario del producto
+     */
+    default ModoInventario modoInventario(UUID negocioId, UUID productoId) {
+        return ModoInventario.NINGUNO;
+    }
 }
