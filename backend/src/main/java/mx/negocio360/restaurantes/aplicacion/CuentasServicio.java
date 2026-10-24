@@ -50,6 +50,7 @@ public final class CuentasServicio {
     private final RepositorioSalon salon;
     private final SalonServicio disponibilidad;
     private final PublicadorEventos eventos;
+    private final LimitesDeQr limites;
     private final Clock reloj;
     private final Object cerrojo = new Object();
 
@@ -65,6 +66,13 @@ public final class CuentasServicio {
      */
     public CuentasServicio(RepositorioCuentas cuentas, RepositorioMenu menu, RepositorioSalon salon,
                            SalonServicio disponibilidad, PublicadorEventos eventos, Clock reloj) {
+        this(cuentas, menu, salon, disponibilidad, eventos, LimitesDeQr.PREDETERMINADOS, reloj);
+    }
+
+    /** Igual, con los limites del QR que gobiernan la defensa contra bromas (QR-17). */
+    public CuentasServicio(RepositorioCuentas cuentas, RepositorioMenu menu, RepositorioSalon salon,
+                           SalonServicio disponibilidad, PublicadorEventos eventos, LimitesDeQr limites, Clock reloj) {
+        this.limites = Objects.requireNonNull(limites, "limites");
         this.cuentas = Objects.requireNonNull(cuentas, "cuentas");
         this.menu = Objects.requireNonNull(menu, "menu");
         this.salon = Objects.requireNonNull(salon, "salon");
@@ -390,10 +398,41 @@ public final class CuentasServicio {
                 c.motivoDeCierre = motivo;
             });
             cerrarComandasVacias(cancelada, anuladas, contexto.actor(), ahora);
+            pausarSiHayBromas(cancelada, ahora);
             vista = vista(cancelada);
         }
         disponibilidad.recalcularDisponibilidad(contexto.negocioId());
         return vista;
+    }
+
+    /**
+     * QR-17: tres cuentas abiertas por QR y canceladas por {@code SIN_COMENSALES} en la misma mesa dentro de una hora
+     * pausan el QR de esa mesa una hora y lo avisan. Una cuenta del personal no cuenta.
+     */
+    private void pausarSiHayBromas(Cuenta cancelada, Instant ahora) {
+        if (cancelada.origen() != OrigenDeCuenta.QR || cancelada.motivoDeCierre() != MotivoDeAnulacion.SIN_COMENSALES
+                || cancelada.mesaId() == null) {
+            return;
+        }
+        var desde = ahora.minus(limites.ventanaDeBromas());
+        var bromas = cuentas.cuentas(cancelada.negocioId()).stream()
+                .filter(c -> c.origen() == OrigenDeCuenta.QR && cancelada.mesaId().equals(c.mesaId())
+                        && c.estado() == EstadoDeCuenta.CANCELADA && c.motivoDeCierre() == MotivoDeAnulacion.SIN_COMENSALES
+                        && c.cerradaEn() != null && !c.cerradaEn().isBefore(desde)).count();
+        if (bromas < limites.cancelacionesParaPausar()) {
+            return;
+        }
+        for (var intento = 0; intento < 3; intento++) {
+            var mesa = salon.mesa(cancelada.negocioId(), cancelada.mesaId()).filter(Mesa::activa).orElse(null);
+            if (mesa == null || mesa.qrPausado(ahora)) {
+                return;
+            }
+            var hasta = ahora.plus(SalonServicio.PAUSA_DEL_QR);
+            if (salon.reemplazar(mesa.conQrPausadoHasta(hasta, ahora), mesa.version())) {
+                eventos.publicar(EventosDeRestaurantes.qrPausado(cancelada.negocioId(), mesa.etiqueta(), hasta, ahora));
+                return;
+            }
+        }
     }
 
     /**

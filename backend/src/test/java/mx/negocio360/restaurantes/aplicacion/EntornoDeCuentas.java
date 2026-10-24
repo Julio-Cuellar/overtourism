@@ -17,6 +17,7 @@ import mx.negocio360.compartido.seguridad.Autorizacion;
 import mx.negocio360.restaurantes.dominio.Estacion;
 import mx.negocio360.restaurantes.infraestructura.CuentasEnMemoria;
 import mx.negocio360.restaurantes.infraestructura.MenuEnMemoria;
+import mx.negocio360.restaurantes.infraestructura.RestaurantesEnMemoria;
 import mx.negocio360.restaurantes.infraestructura.SalonEnMemoria;
 import mx.negocio360.restaurantes.seguridad.PermisosDeRestaurantes;
 
@@ -75,6 +76,10 @@ final class EntornoDeCuentas {
         }
     }, reloj);
     final CuentasServicio servicio = new CuentasServicio(almacen, menu, almacenSalon, salon, eventos::add, reloj);
+    final RestaurantesEnMemoria restaurantes = new RestaurantesEnMemoria();
+    final HashDeDispositivo hash = HashDeDispositivo.conClave("clave de prueba".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    final PedidosQrServicio qr = new PedidosQrServicio(almacenSalon, almacen, menu, restaurantes, servicio, salon, eventos::add,
+            hash, LimitesDeQr.PREDETERMINADOS, reloj);
     final CocinaServicio cocina = new CocinaServicio(almacen, almacenSalon, eventos::add, reloj);
 
     final ContextoNegocio ctxA = new ContextoNegocio(NEGOCIO_A, "ana");
@@ -124,8 +129,14 @@ final class EntornoDeCuentas {
         horchata = menuServicio.crearPlatillo(ctxA, dueno,
                 new DatosPlatillo("Agua de horchata", null, new BigDecimal("35.00"), categoriaBebidas, Set.of(), null)).id();
         salon.abrirServicio(ctxA, dueno);
+        restaurantes.guardar(mx.negocio360.restaurantes.dominio.Restaurante.nuevo(NEGOCIO_A, AHORA).conPublicado(true, AHORA));
         eventos.clear();
         return this;
+    }
+
+    /** El token del QR de una mesa del negocio A. */
+    String token(UUID mesaId) {
+        return almacenSalon.mesa(NEGOCIO_A, mesaId).orElseThrow().qrToken();
     }
 
     List<SobreEvento> eventosDe(String tipo) {

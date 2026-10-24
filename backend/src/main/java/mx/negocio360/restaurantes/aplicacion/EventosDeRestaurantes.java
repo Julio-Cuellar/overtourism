@@ -13,7 +13,7 @@ import mx.negocio360.restaurantes.dominio.LineaDeCuenta;
 
 /**
  * Los eventos de uso propio de Restaurantes (seccion 9.1 del diseno): {@code comanda_enviada}, {@code comanda_actualizada},
- * {@code pedido_qr_recibido} y {@code cuenta_solicitada}. Llevan solo ids, la mesa, el numero de cuenta y las lineas, sin
+ * {@code pedido_qr_recibido}, {@code cuenta_solicitada} y {@code qr_pausado}. Llevan solo ids, la mesa, el numero de cuenta y las lineas, sin
  * datos personales. Alimentan las suscripciones del tablero y del salon con aislamiento por negocio.
  */
 public final class EventosDeRestaurantes {
@@ -26,6 +26,9 @@ public final class EventosDeRestaurantes {
     public static final String PEDIDO_QR_RECIBIDO = "restaurantes.pedido_qr_recibido";
     /** Una cuenta que paso a por cobrar. */
     public static final String CUENTA_SOLICITADA = "restaurantes.cuenta_solicitada";
+
+    /** El QR de una mesa se pauso solo por cuentas canceladas sin comensales (QR-17). */
+    public static final String QR_PAUSADO = "restaurantes.qr_pausado";
 
     private EventosDeRestaurantes() {
     }
@@ -83,6 +86,14 @@ public final class EventosDeRestaurantes {
         datos.put("lineas", lineas);
         datos.put("abrio_la_cuenta", abrioLaCuenta);
         return evento(PEDIDO_QR_RECIBIDO, cuenta.negocioId(), ahora, datos);
+    }
+
+    /** {@code restaurantes.qr_pausado}: el QR de esa mesa no acepta pedidos hasta {@code hasta} (QR-17). */
+    public static SobreEvento qrPausado(UUID negocioId, String mesa, Instant hasta, Instant ahora) {
+        var datos = new LinkedHashMap<String, Object>();
+        datos.put("mesa", mesa);
+        datos.put("hasta", hasta.toString());
+        return evento(QR_PAUSADO, negocioId, ahora, datos);
     }
 
     private static SobreEvento evento(String tipo, UUID negocioId, Instant ahora, LinkedHashMap<String, Object> datos) {

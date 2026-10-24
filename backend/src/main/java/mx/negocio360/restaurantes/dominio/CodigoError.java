@@ -59,6 +59,15 @@ public enum CodigoError {
     TOKEN_INVALIDO("La confirmación no es válida."),
     TOKEN_EXPIRADO("La confirmación venció. Vuelve a prepararlo."),
     TOKEN_USADO("Esa confirmación ya se usó."),
+    QR_INVALIDO("El código QR no es válido."),
+    QR_PAUSADO("Esta mesa no recibe pedidos por ahora; pide al mesero."),
+    QR_DESHABILITADO("El restaurante no recibe pedidos por QR; pide al mesero."),
+    LIMITE_QR_EXCEDIDO("El pedido es demasiado grande para hacerlo desde el QR; pide al mesero."),
+    TASA_EXCEDIDA("Demasiados pedidos seguidos. Espera un momento e inténtalo de nuevo."),
+    CUENTA_SOLICITADA("La cuenta ya se pidió; pide al mesero."),
+    LLAVE_REQUERIDA("Falta la llave de idempotencia del pedido."),
+    LLAVE_REUTILIZADA("Esa llave de idempotencia ya se usó con un pedido distinto."),
+    DISPOSITIVO_INVALIDO("Falta el identificador del dispositivo."),
     CONSULTA_INVALIDA("La consulta no es válida.");
 
     private final String mensaje;
