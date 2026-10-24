@@ -1832,3 +1832,10 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 - Se agregó en la maqueta una regla que el diseño no lista: el nombre de un platillo de 2 a 80 caracteres falla con `NOMBRE_INVALIDO`.
 
 **Pendiente:** confirmar la paleta y las formas como estándar de toda la app (la maqueta de Ventas y Caja ya las usa por el tema común); decidir si la web pública es esta misma app en Flutter web; conectar con el servidor cuando Restaurantes esté autorizado e integrado con Ventas e Inventario.
+
+### 2026-10-24 — Se sube a `julio` el diseño del módulo Restaurantes (`docs/diseno/restaurantes.md`)
+**Pedido del usuario (cita textual):** «sube el documento al repo remoto». Preguntado antes si el `.md` del plan de Restaurantes estaba en el commit de la maqueta, la respuesta fue que no: el archivo no existía en ninguna rama del repositorio.
+
+**Qué se hizo:** se convirtió a Markdown el artefacto «Módulo Restaurantes» (v0.5, 16 de octubre de 2026) y se guardó como [`docs/diseno/restaurantes.md`](diseno/restaurantes.md) (13 diagramas Mermaid, tablas de reglas, datos, GraphQL, eventos, permisos, fases, decisiones D-160 a D-199 y el anexo de siembra). El contenido es el del artefacto, sin cambios; solo se arregló la separación de unas cifras de la portada.
+
+**Límites:** es una copia hecha desde el HTML, **no el archivo original** de quien diseñó el módulo. Si ese archivo existe en otra rama, hay que cotejarlo antes de mezclar para no pisar su versión. Las decisiones D-160 a D-199 siguen como las marca el documento (aceptadas o propuestas) y **no se incorporaron a la tabla de decisiones de esta Bitácora**. El documento dice que P1a ya está programada en el servidor; esta rama no trae ese código.
