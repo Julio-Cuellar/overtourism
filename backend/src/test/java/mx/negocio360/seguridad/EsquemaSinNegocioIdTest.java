@@ -60,6 +60,9 @@ class EsquemaSinNegocioIdTest {
                 "Query.resenasDeNegocio(negocioId)", "PublicarResenaInput.negocioId",
                 // Menu publico del turista (D-170): el negocio es el objeto consultado y el tipo de salida devuelve su id
                 "Query.menuPublico(negocioId)", "RestMenuPublico.negocioId",
+                // Mesa por QR (R6): el negocio sale de la mesa que resuelve el token; el tipo de salida devuelve su id para que la
+                // pagina pida el nombre y las resenas a Negocios. Ninguna entrada lo recibe.
+                "RestMesaPublica.negocioId",
                 // Salidas del alta de negocio de la propia cuenta: devuelven el id del negocio creado, no lo reciben
                 "AltaDeNegocio.negocioId", "AvisoDeAlta.negocioId");
     }

@@ -20,6 +20,10 @@ extend type Query {
   consumosFallidos(primeros: Int! = 20, despues: String): RestConsumoFallidoConexion!
   "Sin sesion. Nulo si el negocio no es un restaurante visible (publicado y activo)."
   menuPublico(negocioId: ID!, idioma: String = "es-MX"): RestMenuPublico
+  "Sin sesion (QR-03). La mesa de un QR y si acepta pedidos; nulo si el token no sirve (inexistente, rotado, mesa dada de baja o negocio no visible). Nunca trae datos de la cuenta."
+  mesaPorQr(token: String!): RestMesaPublica
+  "Sin sesion (QR-11), para sondear cada ~10 s. Solo las lineas pedidas desde ese dispositivo y el estado de la cuenta; nulo si el token no sirve."
+  estadoDePedidoQr(token: String!, dispositivoId: String!): RestEstadoPedidoQr
   "Todo el salon: servicio, disponibilidad, zonas y mesas con su estado derivado (MS-02). Requiere restaurantes.salon.ver."
   salon: RestSalon!
   "El enlace del QR de una mesa; el cliente dibuja el codigo (QR-21). Requiere restaurantes.salon.configurar."
@@ -36,6 +40,10 @@ extend type Query {
 }
 
 extend type Mutation {
+  "Sin sesion y con la cabecera Idempotency-Key obligatoria (QR-15, CT-14). Abre la cuenta si la mesa no tenia (QR-05) y va directo a cocina (QR-06). Limitada por token y por dispositivo (QR-16)."
+  pedirPorQr(input: RestPedirPorQrInput!): RestResultadoPedidoQr!
+  "Sin sesion (QR-13). La cuenta pasa a por cobrar y avisa a meseros y caja; despues el QR ya no acepta pedidos."
+  pedirCuentaPorQr(token: String!, dispositivoId: String!): RestEstadoPedidoQr!
   crearCategoria(input: RestCategoriaInput!): RestCategoria!
   editarCategoria(id: ID!, version: Int!, input: RestCategoriaInput!): RestCategoria!
   crearPlatillo(input: RestPlatilloInput!): RestPlatillo!
@@ -489,4 +497,52 @@ input RestCancelarCuentaPreparadaInput {
   cuentaId: ID!
   motivo: RestMotivoDeAnulacion!
   texto: String
+}
+
+# ---- Pedido del comensal por QR (R6, QR-03 a QR-20). Sin sesion: el negocio sale de la mesa del token. ----
+
+enum RestEstadoPublicoDeCuenta { SIN_CUENTA ABIERTA SOLICITADA }
+enum RestEstadoDeLineaQr { EN_COCINA PREPARANDO LISTO ENTREGADO CANCELADO }
+
+"Lo unico que el comensal sabe de la mesa (QR-03). El nombre del negocio lo da negocioPublico con negocioId."
+type RestMesaPublica {
+  negocioId: ID!
+  mesa: String!
+  servicioAbierto: Boolean!
+  aceptaPedidos: Boolean!
+  estadoCuenta: RestEstadoPublicoDeCuenta!
+}
+
+"Una linea que pidio este dispositivo. mensaje es el texto fijo del motivo si se cancelo (QR-10)."
+type RestLineaDePedidoQr {
+  id: ID!
+  platillo: String!
+  cantidad: Int!
+  estado: RestEstadoDeLineaQr!
+  mensaje: String
+}
+
+type RestEstadoPedidoQr {
+  cuenta: RestEstadoPublicoDeCuenta!
+  lineas: [RestLineaDePedidoQr!]!
+}
+
+type RestResultadoPedidoQr {
+  abrioLaCuenta: Boolean!
+  estado: RestEstadoPedidoQr!
+}
+
+"dispositivoId: un identificador al azar que guarda el navegador; el servidor guarda solo su hash (QR-12). Hasta 20 lineas."
+input RestPedirPorQrInput {
+  token: String!
+  dispositivoId: String!
+  lineas: [RestPedidoPorQrLineaInput!]!
+}
+
+"cantidad de 1 a 10; nota de hasta 80 caracteres."
+input RestPedidoPorQrLineaInput {
+  platilloId: ID!
+  cantidad: Int!
+  nota: String
+  marcaAlergia: Boolean! = false
 }

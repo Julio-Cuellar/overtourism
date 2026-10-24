@@ -28,6 +28,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *       consulta, asi que no hay consultas por enlace.</li>
  *   <li>Un tope de peticiones por minuto por IP, la de la conexion: no se confia en encabezados reenviados (429).</li>
  *   <li>El encabezado {@code X-Dispositivo-Id}, si viene, debe ser un UUID y tiene su propio tope por minuto (400, 429).</li>
+ *   <li>El encabezado {@code Idempotency-Key}, si viene, debe ser uno solo de 8 a 128 caracteres seguros (400); viaja a los
+ *       resolvedores en {@link EntradaGraphQl#llave()} y lo usan las operaciones que repiten sin duplicar (CT-14).</li>
  *   <li>Si viene {@code Authorization: Bearer}, la sesion se autentica con Identidad; un token que no sirve es 401 y NUNCA
  *       se degrada a anonimo. Sin token la peticion sigue como anonima: la superficie publica no pide sesion y los
  *       resolvedores del panel exigen la suya.</li>
@@ -58,6 +60,8 @@ public final class FiltroDeEntrada extends OncePerRequestFilter {
 
     private static final Pattern BEARER = Pattern.compile("(?i)^Bearer\\s+(\\S+)$");
     private static final Pattern TIPO_JSON = Pattern.compile("(?i)^application/(json|graphql-response\\+json)\\s*(;.*)?$");
+    /** La llave de idempotencia: de 8 a 128 caracteres seguros para guardar y comparar (CT-14). */
+    private static final Pattern LLAVE = Pattern.compile("^[A-Za-z0-9._:-]{8,128}$");
     private static final Duration VENTANA = Duration.ofMinutes(1);
     private static final int LARGO_DE_UUID = 36;
     /** Un token valido mide 43 caracteres; uno mas largo ni se consulta (el WebSocket y el filtro de Bearer usan el mismo tope). */
@@ -139,9 +143,15 @@ public final class FiltroDeEntrada extends OncePerRequestFilter {
             return;
         }
 
+        var llave = llaveDeIdempotencia(peticion);
+        if (!llave.valida()) {
+            rechazar(respuesta, 400, "LLAVE_INVALIDA", "La llave de idempotencia no es válida.");
+            return;
+        }
+
         var encabezados = Collections.list(peticion.getHeaders("Authorization"));
         if (encabezados.isEmpty()) {
-            peticion.setAttribute(EntradaGraphQl.ATRIBUTO, EntradaGraphQl.anonima(id));
+            peticion.setAttribute(EntradaGraphQl.ATRIBUTO, EntradaGraphQl.anonima(id).conLlave(llave.valor()));
             cadena.doFilter(peticion, respuesta);
             return;
         }
@@ -169,7 +179,7 @@ public final class FiltroDeEntrada extends OncePerRequestFilter {
             return;
         }
         peticion.setAttribute(EntradaGraphQl.ATRIBUTO, EntradaGraphQl.de(s.cuentaId(), s.contextoNegocio().orElse(null),
-                s.autorizacion(), id));
+                s.autorizacion(), id).conLlave(llave.valor()));
         cadena.doFilter(peticion, respuesta);
     }
 
@@ -191,6 +201,22 @@ public final class FiltroDeEntrada extends OncePerRequestFilter {
         } catch (IllegalArgumentException e) {
             return new Dispositivo(false, null);
         }
+    }
+
+    /** El encabezado de idempotencia ya leido: {@code valida} es falso si vino mal; {@code valor} es nulo si no vino. */
+    private record Llave(boolean valida, String valor) {
+    }
+
+    /** Lee {@code Idempotency-Key}: ausente es valida y sin valor; una sola, de 8 a 128 caracteres de {@code [A-Za-z0-9._:-]}. */
+    private static Llave llaveDeIdempotencia(HttpServletRequest peticion) {
+        var valores = Collections.list(peticion.getHeaders("Idempotency-Key"));
+        if (valores.isEmpty()) {
+            return new Llave(true, null);
+        }
+        if (valores.size() > 1 || !LLAVE.matcher(valores.get(0)).matches()) {
+            return new Llave(false, null);
+        }
+        return new Llave(true, valores.get(0));
     }
 
     private static void rechazar(HttpServletResponse respuesta, int estado, String codigo, String mensaje)

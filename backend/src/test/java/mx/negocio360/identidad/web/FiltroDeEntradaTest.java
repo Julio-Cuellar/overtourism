@@ -206,6 +206,71 @@ class FiltroDeEntradaTest {
         assertThat(ejecutar(otro).getStatus()).isEqualTo(200);
     }
 
+    // ---- llave de idempotencia (CT-14, QR-15, D-208) ----
+
+    @Test
+    @DisplayName("CT-14: la cabecera Idempotency-Key valida viaja a los resolvedores, con o sin sesion")
+    void llaveValida() throws Exception {
+        var anonima = peticion("{}");
+        anonima.addHeader("Idempotency-Key", "pedido-0192f39f:mesa_5.a");
+        var conSesion = peticion("{}");
+        conSesion.addHeader("Authorization", "Bearer " + TOKEN);
+        conSesion.addHeader("Idempotency-Key", "pedido-0192f39f");
+
+        ejecutar(anonima);
+        ejecutar(conSesion);
+
+        assertThat(entradaDe(anonima).llave()).isEqualTo("pedido-0192f39f:mesa_5.a");
+        assertThat(entradaDe(anonima).autenticada()).isFalse();
+        assertThat(entradaDe(conSesion).llave()).isEqualTo("pedido-0192f39f");
+        assertThat(entradaDe(conSesion).exigirCuenta()).isEqualTo(CUENTA);
+    }
+
+    @Test
+    @DisplayName("sin Idempotency-Key la llave es nula; la operacion que la exige responde LLAVE_REQUERIDA")
+    void sinLlave() throws Exception {
+        var p = peticion("{}");
+
+        ejecutar(p);
+
+        assertThat(entradaDe(p).llave()).isNull();
+    }
+
+    @Test
+    @DisplayName("CT-14: una Idempotency-Key corta, larga, con caracteres raros o repetida es 400 LLAVE_INVALIDA y no se repite")
+    void llaveInvalida_es400() throws Exception {
+        var corta = peticion("{}");
+        corta.addHeader("Idempotency-Key", "abc");
+        var larga = peticion("{}");
+        larga.addHeader("Idempotency-Key", "a".repeat(129));
+        var rara = peticion("{}");
+        rara.addHeader("Idempotency-Key", "llave con espacios <script>");
+        var repetida = peticion("{}");
+        repetida.addHeader("Idempotency-Key", "llave-numero-uno");
+        repetida.addHeader("Idempotency-Key", "llave-numero-dos");
+
+        var direccion = 20;
+        for (var p : new MockHttpServletRequest[] {corta, larga, rara, repetida}) {
+            p.setRemoteAddr("10.0.0." + direccion++);
+            var r = ejecutar(p);
+            assertThat(r.getStatus()).isEqualTo(400);
+            assertThat(r.getContentAsString()).contains("LLAVE_INVALIDA").doesNotContain("script").doesNotContain("abc");
+        }
+        verify(cadena, never()).doFilter(any(), any());
+    }
+
+    @Test
+    @DisplayName("el limite superior de la llave es de 128 caracteres y el inferior de 8")
+    void llave_limites() throws Exception {
+        var minima = peticion("{}");
+        minima.addHeader("Idempotency-Key", "a".repeat(8));
+        var maxima = peticion("{}");
+        maxima.addHeader("Idempotency-Key", "b".repeat(128));
+
+        assertThat(ejecutar(minima).getStatus()).isEqualTo(200);
+        assertThat(ejecutar(maxima).getStatus()).isEqualTo(200);
+    }
+
     // ---- tasa por IP ----
 
     @Test

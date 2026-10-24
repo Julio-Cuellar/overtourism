@@ -80,12 +80,13 @@ class OperacionesDeRestaurantesTest {
     }
 
     @Test
-    @DisplayName("SG-01: la unica operacion publica de Restaurantes en esta fase es el menu publico")
+    @DisplayName("SG-01: Restaurantes publica el menu del turista y las cuatro operaciones del comensal por QR, y nada mas")
     void publicas() {
         var publicas = porNombre().values().stream().filter(o -> o.acceso() == Acceso.PUBLICA)
                 .map(OperacionDeclarada::nombre).sorted().toList();
 
-        assertThat(publicas).containsExactly("Query.menuPublico");
+        assertThat(publicas).containsExactly("Mutation.pedirCuentaPorQr", "Mutation.pedirPorQr", "Query.estadoDePedidoQr",
+                "Query.menuPublico", "Query.mesaPorQr");
     }
 
     @Test
@@ -102,7 +103,8 @@ class OperacionesDeRestaurantesTest {
                 "Mutation.habilitarQr", "Query.cuenta", "Query.cuentasAbiertas", "Query.cuentaParaCobro", "Query.comandas",
                 "Mutation.abrirCuenta", "Mutation.agregarLinea", "Mutation.quitarLineaPendiente", "Mutation.enviarACocina",
                 "Mutation.pedirCuenta", "Mutation.reabrirCuenta", "Mutation.confirmarPresencia", "Mutation.anularLinea",
-                "Mutation.cancelarCuenta", "Mutation.liberarMesa", "Mutation.avanzarComanda", "Mutation.devolverComanda");
+                "Mutation.cancelarCuenta", "Mutation.liberarMesa", "Mutation.avanzarComanda", "Mutation.devolverComanda",
+                "Query.mesaPorQr", "Query.estadoDePedidoQr", "Mutation.pedirPorQr", "Mutation.pedirCuentaPorQr");
     }
 
     @Test

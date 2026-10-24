@@ -53,6 +53,9 @@ class RestaurantesConfiguracionTest {
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.SalonServicio.class)
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.CuentasServicio.class)
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.CocinaServicio.class)
+                    .hasSingleBean(mx.negocio360.restaurantes.aplicacion.PedidosQrServicio.class)
+                    .hasSingleBean(mx.negocio360.restaurantes.aplicacion.HashDeDispositivo.class)
+                    .hasSingleBean(mx.negocio360.restaurantes.aplicacion.LimitesDeQr.class)
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.OcupacionDeMesas.class)
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.ManejadorAnularLineaPreparada.class)
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.ManejadorCancelarCuentaPreparada.class);

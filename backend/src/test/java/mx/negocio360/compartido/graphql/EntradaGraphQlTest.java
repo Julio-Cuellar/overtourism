@@ -60,6 +60,22 @@ class EntradaGraphQlTest {
     }
 
     @Test
+    @DisplayName("la llave de idempotencia viaja aparte y se agrega sin cambiar la sesion")
+    void llave() {
+        var base = EntradaGraphQl.de(CUENTA, null, Autorizacion.de(Set.of("a.b")), "disp");
+
+        var con = base.conLlave("llave-de-prueba");
+
+        assertThat(base.llave()).isNull();
+        assertThat(con.llave()).isEqualTo("llave-de-prueba");
+        assertThat(con.exigirCuenta()).isEqualTo(CUENTA);
+        assertThat(con.dispositivo()).isEqualTo("disp");
+        assertThat(con.autorizacion().puede("a.b")).isTrue();
+        assertThat(EntradaGraphQl.anonima(null).conLlave("llave-de-prueba").autenticada()).isFalse();
+        assertThat(con.toString()).doesNotContain("llave-de-prueba");
+    }
+
+    @Test
     @DisplayName("toString no imprime el dispositivo ni la cuenta")
     void toString_sinDatos() {
         var entrada = EntradaGraphQl.de(CUENTA, null, Autorizacion.de(Set.of()), "dispositivo-secreto");

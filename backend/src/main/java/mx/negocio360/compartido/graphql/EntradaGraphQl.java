@@ -28,18 +28,21 @@ public final class EntradaGraphQl {
     private final ContextoNegocio contexto;
     private final Autorizacion autorizacion;
     private final String dispositivo;
+    private final String llave;
 
-    private EntradaGraphQl(UUID cuentaId, ContextoNegocio contexto, Autorizacion autorizacion, String dispositivo) {
+    private EntradaGraphQl(UUID cuentaId, ContextoNegocio contexto, Autorizacion autorizacion, String dispositivo,
+                           String llave) {
         this.cuentaId = cuentaId;
         this.contexto = contexto;
         this.autorizacion = Objects.requireNonNull(autorizacion, "autorizacion");
         this.dispositivo = dispositivo;
+        this.llave = llave;
     }
 
     /** Una sesion autenticada; {@code contexto} es nulo si todavia no eligio negocio. */
     public static EntradaGraphQl de(UUID cuentaId, ContextoNegocio contexto, Autorizacion autorizacion,
                                     String dispositivo) {
-        return new EntradaGraphQl(Objects.requireNonNull(cuentaId, "cuentaId"), contexto, autorizacion, dispositivo);
+        return new EntradaGraphQl(Objects.requireNonNull(cuentaId, "cuentaId"), contexto, autorizacion, dispositivo, null);
     }
 
     /**
@@ -53,12 +56,17 @@ public final class EntradaGraphQl {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("El actor de la sesion no es el id de una cuenta");
         }
-        return new EntradaGraphQl(cuenta, sesion.contexto().orElse(null), sesion.autorizacion(), dispositivo);
+        return new EntradaGraphQl(cuenta, sesion.contexto().orElse(null), sesion.autorizacion(), dispositivo, null);
     }
 
     /** Sin sesion: sin cuenta, sin contexto y sin ningun permiso. El dispositivo, si vino, se conserva. */
     public static EntradaGraphQl anonima(String dispositivo) {
-        return new EntradaGraphQl(null, null, NADA, dispositivo);
+        return new EntradaGraphQl(null, null, NADA, dispositivo, null);
+    }
+
+    /** La misma entrada con la llave de idempotencia que mando la peticion (el filtro ya comprobo su forma). */
+    public EntradaGraphQl conLlave(String llave) {
+        return new EntradaGraphQl(cuentaId, contexto, autorizacion, dispositivo, llave);
     }
 
     public boolean autenticada() {
@@ -100,6 +108,14 @@ public final class EntradaGraphQl {
     /** El id de dispositivo que mando la app del turista (el filtro de entrada ya comprobo que es un UUID), o nulo. */
     public String dispositivo() {
         return dispositivo;
+    }
+
+    /**
+     * La llave del encabezado {@code Idempotency-Key} (CT-14, D-208), o nula si no vino. Con la misma llave una operacion que
+     * la exige no se repite; el servicio que la usa decide cuanto la recuerda.
+     */
+    public String llave() {
+        return llave;
     }
 
     /** Sin la cuenta ni el dispositivo en el texto: no deben acabar en un registro. */

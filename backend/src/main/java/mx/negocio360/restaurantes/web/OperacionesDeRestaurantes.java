@@ -12,8 +12,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * El inventario de operaciones de GraphQL de Restaurantes (SG-21) y lo que exige cada una (SG-03 y SG-04). El panel pide el
- * mismo permiso que ya exige su servicio: la puerta de la plataforma lo comprueba antes y el servicio vuelve a hacerlo. La
- * unica operacion sin sesion es el menu publico del turista (D-170), que sale de una vista de solo lectura. Las variantes
+ * mismo permiso que ya exige su servicio: la puerta de la plataforma lo comprueba antes y el servicio vuelve a hacerlo. Las
+ * operaciones sin sesion son el menu publico del turista (D-170), de solo lectura, y las cuatro del comensal por QR (R6), que
+ * resuelven el negocio por el token de la mesa. Las variantes
  * de comando ({@code guardarReceta}, {@code darDeBajaPlatillo}) viajan por el despachador de comandos de la plataforma
  * (D-125, D-209) y se declaran en {@link #comandos()}.
  */
@@ -40,6 +41,11 @@ public final class OperacionesDeRestaurantes implements OperacionesGraphql {
                 OperacionDeclarada.de(QUERY, "comandas", PermisosDeRestaurantes.COMANDA_VER),
                 // Superficie publica del turista: sin sesion, sobre lo publicado
                 OperacionDeclarada.publica(QUERY, "menuPublico"),
+                // El comensal por QR (R6): sin sesion; las unicas de Restaurantes que escriben sin ella (D-210), limitadas por token y dispositivo
+                OperacionDeclarada.publica(QUERY, "mesaPorQr"),
+                OperacionDeclarada.publica(QUERY, "estadoDePedidoQr"),
+                OperacionDeclarada.publica(MUTATION, "pedirPorQr"),
+                OperacionDeclarada.publica(MUTATION, "pedirCuentaPorQr"),
                 OperacionDeclarada.de(MUTATION, "crearCategoria", PermisosDeRestaurantes.MENU_EDITAR),
                 OperacionDeclarada.de(MUTATION, "editarCategoria", PermisosDeRestaurantes.MENU_EDITAR),
                 OperacionDeclarada.de(MUTATION, "crearPlatillo", PermisosDeRestaurantes.MENU_EDITAR),

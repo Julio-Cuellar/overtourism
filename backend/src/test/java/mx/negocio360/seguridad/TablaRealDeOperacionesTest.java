@@ -130,7 +130,10 @@ class TablaRealDeOperacionesTest {
                 .map(Map.Entry::getKey).sorted().toList();
 
         // Query.menuPublico es el menu del turista de Restaurantes (D-170): sin sesion, sobre una vista de solo lectura.
-        assertThat(publicas).containsExactly("Mutation.confirmarComando", "Query.menuPublico", "Query.negocioPublico",
+        // Las otras cuatro de Restaurantes son las del comensal por QR (R6): el negocio sale de la mesa que resuelve el token y
+        // las dos mutaciones llevan limite por token y por dispositivo (D-210, QR-16).
+        assertThat(publicas).containsExactly("Mutation.confirmarComando", "Mutation.pedirCuentaPorQr", "Mutation.pedirPorQr",
+                "Query.estadoDePedidoQr", "Query.menuPublico", "Query.mesaPorQr", "Query.negocioPublico",
                 "Query.negociosPublicos", "Query.resenasDeNegocio");
         assertThat(tabla.variantesPublicas()).containsExactly("publicarResena");
     }

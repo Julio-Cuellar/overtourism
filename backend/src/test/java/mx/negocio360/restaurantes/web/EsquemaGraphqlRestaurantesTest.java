@@ -61,17 +61,18 @@ class EsquemaGraphqlRestaurantesTest {
     }
 
     @Test
-    @DisplayName("las consultas y mutaciones del esquema son exactamente las que Restaurantes declara hasta R5")
+    @DisplayName("las consultas y mutaciones del esquema son exactamente las que Restaurantes declara hasta R6 (sin las suscripciones)")
     void operaciones() {
         assertThat(campos(esquema.getQueryType())).containsExactlyInAnyOrder("categoriasDeMenu", "platillos", "platillo",
                 "resumenDeMenu", "menuPublico", "receta", "costoDeReceta", "consumosFallidos", "salon", "qrDeMesa", "cuenta",
-                "cuentasAbiertas", "cuentaParaCobro", "comandas");
+                "cuentasAbiertas", "cuentaParaCobro", "comandas", "mesaPorQr", "estadoDePedidoQr");
         assertThat(campos(esquema.getMutationType())).contains("crearCategoria", "editarCategoria", "crearPlatillo",
                 "editarPlatillo", "marcarAgotado", "publicarPlatillo", "cambiarModoDeInventario", "desactivarReceta",
                 "crearZona", "darDeBajaZona", "crearMesa", "editarMesa", "darDeBajaMesa", "bloquearMesa", "abrirServicio",
                 "cerrarServicio", "configurarModoDeServicio", "regenerarQrDeMesa", "pausarQrDeMesa", "habilitarQr",
                 "abrirCuenta", "agregarLinea", "quitarLineaPendiente", "enviarACocina", "pedirCuenta", "reabrirCuenta",
-                "confirmarPresencia", "anularLinea", "cancelarCuenta", "liberarMesa", "avanzarComanda", "devolverComanda");
+                "confirmarPresencia", "anularLinea", "cancelarCuenta", "liberarMesa", "avanzarComanda", "devolverComanda",
+                "pedirPorQr", "pedirCuentaPorQr");
     }
 
     @Test
@@ -97,6 +98,23 @@ class EsquemaGraphqlRestaurantesTest {
         assertThat(campos(objeto("RestCategoriaPublica"))).containsExactlyInAnyOrder("id", "nombre", "platillos");
         assertThat(campos(objeto("RestPlatilloPublico"))).containsExactlyInAnyOrder("id", "nombre", "descripcion", "precio",
                 "etiquetas", "agotado", "traducido");
+    }
+
+    @Test
+    @DisplayName("QR-03, QR-11, QR-18: lo publico del comensal por QR no tiene ids de cuenta, comensales ni totales")
+    void camposDelQr() {
+        assertThat(campos(objeto("RestMesaPublica"))).containsExactlyInAnyOrder("negocioId", "mesa", "servicioAbierto",
+                "aceptaPedidos", "estadoCuenta");
+        assertThat(campos(objeto("RestEstadoPedidoQr"))).containsExactlyInAnyOrder("cuenta", "lineas");
+        assertThat(campos(objeto("RestLineaDePedidoQr"))).containsExactlyInAnyOrder("id", "platillo", "cantidad", "estado",
+                "mensaje");
+        assertThat(campos(objeto("RestResultadoPedidoQr"))).containsExactlyInAnyOrder("abrioLaCuenta", "estado");
+        assertThat(esquema.getQueryType().getFieldDefinition("mesaPorQr").getArguments()).extracting("name")
+                .containsExactly("token");
+        assertThat(esquema.getQueryType().getFieldDefinition("estadoDePedidoQr").getArguments()).extracting("name")
+                .containsExactly("token", "dispositivoId");
+        assertThat(esquema.getMutationType().getFieldDefinition("pedirCuentaPorQr").getArguments()).extracting("name")
+                .containsExactly("token", "dispositivoId");
     }
 
     @Test

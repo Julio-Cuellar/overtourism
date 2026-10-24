@@ -15,6 +15,9 @@ import mx.negocio360.inventario.InventarioApi;
 import mx.negocio360.restaurantes.aplicacion.ConsumosServicio;
 import mx.negocio360.restaurantes.aplicacion.CocinaServicio;
 import mx.negocio360.restaurantes.aplicacion.CuentasServicio;
+import mx.negocio360.restaurantes.aplicacion.HashDeDispositivo;
+import mx.negocio360.restaurantes.aplicacion.LimitesDeQr;
+import mx.negocio360.restaurantes.aplicacion.PedidosQrServicio;
 import mx.negocio360.restaurantes.aplicacion.ManejadorAnularLineaPreparada;
 import mx.negocio360.restaurantes.aplicacion.ManejadorCancelarCuentaPreparada;
 import mx.negocio360.restaurantes.aplicacion.RepositorioCuentas;
@@ -173,10 +176,35 @@ public class RestaurantesConfiguracion {
         return new SalonServicio(salon, ocupacion, eventos, GeneradorDeTokens.ALEATORIO, baseDelQr, reloj);
     }
 
+    /** Los limites del pedido por QR: los del diseno (QR-15 a QR-17) hasta que haya un motor de reglas. */
+    @Bean
+    LimitesDeQr limitesDeQr() {
+        return LimitesDeQr.PREDETERMINADOS;
+    }
+
     @Bean
     CuentasServicio cuentasServicio(RepositorioCuentas cuentas, RepositorioMenu menu, RepositorioSalon salon,
-                                    SalonServicio disponibilidad, PublicadorEventos eventos, Clock reloj) {
-        return new CuentasServicio(cuentas, menu, salon, disponibilidad, eventos, reloj);
+                                    SalonServicio disponibilidad, PublicadorEventos eventos, LimitesDeQr limites, Clock reloj) {
+        return new CuentasServicio(cuentas, menu, salon, disponibilidad, eventos, limites, reloj);
+    }
+
+    /**
+     * El hash con clave del dispositivo (QR-12). Con {@code restaurantes.qr.clave-hash} (base64) los hashes sobreviven a un
+     * reinicio y el comensal sigue viendo sus lineas; sin ella se usa una clave al azar de este arranque.
+     */
+    @Bean
+    HashDeDispositivo hashDeDispositivo(@Value("${restaurantes.qr.clave-hash:}") String clave) {
+        return clave.isBlank() ? HashDeDispositivo.alAzar()
+                : HashDeDispositivo.conClave(java.util.Base64.getDecoder().decode(clave.strip()));
+    }
+
+    @Bean
+    PedidosQrServicio pedidosQrServicio(RepositorioSalon salon, RepositorioCuentas cuentas, RepositorioMenu menu,
+                                        RepositorioRestaurantes restaurantes, CuentasServicio cuentasServicio,
+                                        SalonServicio disponibilidad, PublicadorEventos eventos, HashDeDispositivo hash,
+                                        LimitesDeQr limites, Clock reloj) {
+        return new PedidosQrServicio(salon, cuentas, menu, restaurantes, cuentasServicio, disponibilidad, eventos, hash,
+                limites, reloj);
     }
 
     @Bean
