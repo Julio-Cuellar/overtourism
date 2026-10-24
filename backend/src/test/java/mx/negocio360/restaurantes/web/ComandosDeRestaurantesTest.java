@@ -30,11 +30,13 @@ import mx.negocio360.restaurantes.aplicacion.ManejadorDarDeBajaPlatillo;
 import mx.negocio360.restaurantes.aplicacion.ManejadorGuardarReceta;
 import mx.negocio360.restaurantes.aplicacion.MenuServicio;
 import mx.negocio360.restaurantes.aplicacion.RecetasServicio;
+import mx.negocio360.restaurantes.aplicacion.VinculoDeSesion;
 import mx.negocio360.restaurantes.dominio.CodigoError;
 import mx.negocio360.restaurantes.dominio.RestaurantesException;
 import mx.negocio360.restaurantes.infraestructura.InventarioApiComoPuerto;
 import mx.negocio360.restaurantes.infraestructura.MenuEnMemoria;
 import mx.negocio360.restaurantes.infraestructura.RecetasEnMemoria;
+import mx.negocio360.restaurantes.infraestructura.SesionDeRestaurantes;
 import mx.negocio360.restaurantes.infraestructura.SinCuentas;
 import mx.negocio360.restaurantes.seguridad.PermisosDeRestaurantes;
 import org.junit.jupiter.api.DisplayName;
@@ -72,7 +74,8 @@ class ComandosDeRestaurantesTest {
                             (contexto, permiso) -> true, RELOJ),
                     new ManejadorDarDeBajaPlatillo(menuAlmacen, new SinCuentas(), recetasAlmacen,
                             (contexto, permiso) -> true, RELOJ)),
-            RELOJ, fallo -> new RestaurantesException(CodigoError.valueOf(fallo.name()))));
+            RELOJ, fallo -> new RestaurantesException(CodigoError.valueOf(fallo.name()))),
+            new SesionDeRestaurantes());
 
     private EntradaGraphQl entrada(Autorizacion permisos) {
         return EntradaGraphQl.de(CUENTA, ctx, permisos, "dispositivo-1");
@@ -180,5 +183,36 @@ class ComandosDeRestaurantesTest {
         assertThatThrownBy(() -> modulo.preparar(entrada(TODO), "registrarVenta", Map.of()))
                 .isInstanceOfSatisfying(ComandoGraphQlException.class,
                         e -> assertThat(e.codigo()).isEqualTo(ComandoGraphQlException.Codigo.COMANDO_NO_DISPONIBLE));
+    }
+
+    @Test
+    @DisplayName("preparar y confirmar corren con la sesion de la peticion vinculada, y el vinculo se libera despues")
+    void correnConLaSesionVinculada() {
+        var vinculados = new java.util.ArrayList<String>();
+        var enCurso = new boolean[1];
+        var modulo = new ComandosDeRestaurantes(new ServicioPreparacion(new PreparacionesEnMemoria(),
+                List.of(new ManejadorDarDeBajaPlatillo(menuAlmacen, new SinCuentas(), recetasAlmacen,
+                        (contexto, permiso) -> enCurso[0], RELOJ)),
+                RELOJ, fallo -> new RestaurantesException(CodigoError.valueOf(fallo.name()))),
+                new VinculoDeSesion() {
+                    @Override
+                    public <T> T vincular(ContextoNegocio contexto, Autorizacion autorizacion,
+                                          java.util.function.Supplier<T> accion) {
+                        vinculados.add(contexto.negocioId() + "/" + autorizacion.puede(PermisosDeRestaurantes.MENU_EDITAR));
+                        enCurso[0] = true;
+                        try {
+                            return accion.get();
+                        } finally {
+                            enCurso[0] = false;
+                        }
+                    }
+                });
+        var cemita = platillo("Cemita poblana");
+
+        var preparada = modulo.preparar(entrada(TODO), "darDeBajaPlatillo", Map.of("platilloId", cemita.toString()));
+        var resultado = modulo.confirmar(entrada(TODO), preparada.token());
+
+        assertThat(resultado.ok()).isTrue();
+        assertThat(vinculados).containsExactly(NEGOCIO + "/true", NEGOCIO + "/true");
     }
 }

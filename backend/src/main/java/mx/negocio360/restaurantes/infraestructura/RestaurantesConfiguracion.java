@@ -26,6 +26,7 @@ import mx.negocio360.restaurantes.aplicacion.RepositorioMenu;
 import mx.negocio360.restaurantes.aplicacion.RepositorioRestaurantes;
 import mx.negocio360.restaurantes.aplicacion.SeguimientoDeNegocios;
 import mx.negocio360.restaurantes.aplicacion.UsoDeLosPlatillos;
+import mx.negocio360.restaurantes.aplicacion.VinculoDeSesion;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -94,10 +95,11 @@ public class RestaurantesConfiguracion {
      */
     @Bean
     ComandosDeRestaurantes comandosDeRestaurantes(ManejadorGuardarReceta guardarReceta,
-                                                   ManejadorDarDeBajaPlatillo darDeBaja, Clock reloj) {
+                                                   ManejadorDarDeBajaPlatillo darDeBaja, VinculoDeSesion sesion,
+                                                   Clock reloj) {
         return new ComandosDeRestaurantes(new ServicioPreparacion(new PreparacionesEnMemoria(),
                 List.of(guardarReceta, darDeBaja), reloj,
-                fallo -> new RestaurantesException(CodigoError.valueOf(fallo.name()))));
+                fallo -> new RestaurantesException(CodigoError.valueOf(fallo.name()))), sesion);
     }
 
     @Bean
@@ -106,7 +108,7 @@ public class RestaurantesConfiguracion {
     }
 
     @Bean
-    AutorizacionDeRestaurantes autorizacionDeRestaurantes() {
+    SesionDeRestaurantes autorizacionDeRestaurantes() {
         return new SesionDeRestaurantes();
     }
 

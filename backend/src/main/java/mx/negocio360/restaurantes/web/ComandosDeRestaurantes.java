@@ -14,6 +14,7 @@ import mx.negocio360.compartido.graphql.comandos.PreparacionVista;
 import mx.negocio360.compartido.graphql.comandos.ResultadoVista;
 import mx.negocio360.restaurantes.aplicacion.DarDeBajaPlatilloComando;
 import mx.negocio360.restaurantes.aplicacion.GuardarRecetaComando;
+import mx.negocio360.restaurantes.aplicacion.VinculoDeSesion;
 
 /**
  * Las variantes de {@code ComandoInput} de Restaurantes para el despachador de la plataforma (D-125, D-209):
@@ -35,15 +36,18 @@ public final class ComandosDeRestaurantes implements ModuloDeComandos {
             "darDeBajaPlatillo", DarDeBajaPlatilloComando.class);
 
     private final ServicioPreparacion preparacion;
+    private final VinculoDeSesion sesion;
     private final JsonMapper json = JsonMapper.builder().build();
 
     /**
      * Arma el modulo de comandos.
      *
      * @param preparacion servicio de preparar y confirmar con los manejadores de Restaurantes
+     * @param sesion      donde se vincula la sesion de la peticion para la revision de permisos de los manejadores
      */
-    public ComandosDeRestaurantes(ServicioPreparacion preparacion) {
+    public ComandosDeRestaurantes(ServicioPreparacion preparacion, VinculoDeSesion sesion) {
         this.preparacion = Objects.requireNonNull(preparacion, "preparacion");
+        this.sesion = Objects.requireNonNull(sesion, "sesion");
     }
 
     @Override
@@ -68,13 +72,17 @@ public final class ComandosDeRestaurantes implements ModuloDeComandos {
             throw new ComandoGraphQlException(ComandoGraphQlException.Codigo.COMANDO_NO_DISPONIBLE);
         }
         var comando = convertir(campos, clase);
-        var creada = preparacion.preparar(entrada.exigirContexto(), entrada.autorizacion(), comando);
+        var contexto = entrada.exigirContexto();
+        var creada = sesion.vincular(contexto, entrada.autorizacion(),
+                () -> preparacion.preparar(contexto, entrada.autorizacion(), comando));
         return new PreparacionVista(creada.token(), creada.resumen(), creada.expiraEn(), List.of());
     }
 
     @Override
     public ResultadoVista confirmar(EntradaGraphQl entrada, String tokenSinPrefijo) {
-        return ResultadoVista.de(preparacion.confirmar(entrada.exigirContexto(), entrada.autorizacion(), tokenSinPrefijo));
+        var contexto = entrada.exigirContexto();
+        return ResultadoVista.de(sesion.vincular(contexto, entrada.autorizacion(),
+                () -> preparacion.confirmar(contexto, entrada.autorizacion(), tokenSinPrefijo)));
     }
 
     /** Un campo que el comando no conoce o un valor que no se puede leer lo invalida. */
