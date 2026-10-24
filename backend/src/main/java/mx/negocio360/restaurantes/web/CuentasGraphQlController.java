@@ -75,13 +75,13 @@ public class CuentasGraphQlController {
     @MutationMapping
     public CuentaVista abrirCuenta(@Argument AbrirCuentaInput input, @ContextValue(EntradaGraphQl.CLAVE) EntradaGraphQl entrada) {
         return tx.ejecutar(() -> cuentas.abrirCuenta(entrada.exigirContexto(), entrada.autorizacion(), input.mesaId(),
-                input.comensales()));
+                input.comensales(), entrada.llave()));
     }
 
     @MutationMapping
     public CuentaVista agregarLinea(@Argument AgregarLineaInput input, @ContextValue(EntradaGraphQl.CLAVE) EntradaGraphQl entrada) {
         return tx.ejecutar(() -> cuentas.agregarLinea(entrada.exigirContexto(), entrada.autorizacion(), input.cuentaId(),
-                input.platilloId(), input.cantidad(), input.nota(), input.marcaAlergia()));
+                input.platilloId(), input.cantidad(), input.nota(), input.marcaAlergia(), entrada.llave()));
     }
 
     @MutationMapping

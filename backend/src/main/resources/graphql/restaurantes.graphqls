@@ -79,9 +79,9 @@ extend type Mutation {
   "Enciende o apaga los pedidos por QR de todo el local (QR-17). Requiere restaurantes.servicio.operar."
   habilitarQr(habilitado: Boolean!): Boolean!
 
-  "Abre una cuenta de mesa o, en mostrador, sin mesa (CT-01). Requiere restaurantes.cuenta.abrir."
+  "Abre una cuenta de mesa o, en mostrador, sin mesa (CT-01). Con la cabecera Idempotency-Key, repetir la peticion no abre otra (CT-14). Requiere restaurantes.cuenta.abrir."
   abrirCuenta(input: RestAbrirCuentaInput!): RestCuenta!
-  "Agrega una linea pendiente (CT-02). Requiere restaurantes.cuenta.abrir."
+  "Agrega una linea pendiente (CT-02). Con la cabecera Idempotency-Key, repetir la peticion no agrega otra linea (CT-14). Requiere restaurantes.cuenta.abrir."
   agregarLinea(input: RestAgregarLineaInput!): RestCuenta!
   "Solo una linea que todavia no se envia (CT-03). Requiere restaurantes.cuenta.abrir."
   quitarLineaPendiente(cuentaId: ID!, lineaId: ID!): RestCuenta!

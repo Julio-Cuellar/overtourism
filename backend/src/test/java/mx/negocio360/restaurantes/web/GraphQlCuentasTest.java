@@ -49,12 +49,19 @@ class GraphQlCuentasTest {
     }
 
     private JsonNode graphql(String token, String consulta, Map<String, Object> variables) throws Exception {
+        return graphql(token, consulta, variables, null);
+    }
+
+    private JsonNode graphql(String token, String consulta, Map<String, Object> variables, String llave) throws Exception {
         var cuerpo = JSON.writeValueAsString(Map.of("query", consulta, "variables", variables));
         var peticion = post("/graphql").contentType(MediaType.APPLICATION_JSON).content(cuerpo)
                 .header("Authorization", "Bearer " + token).with(r -> {
                     r.setRemoteAddr("10.9." + (int) (Math.random() * 250 + 1) + "." + (int) (Math.random() * 250 + 1));
                     return r;
                 });
+        if (llave != null) {
+            peticion.header("Idempotency-Key", llave);
+        }
         return JSON.readTree(mvc.perform(peticion).andExpect(status().isOk()).andReturn().getResponse()
                 .getContentAsString());
     }
@@ -101,6 +108,29 @@ class GraphQlCuentasTest {
         sinErrores(graphql(token, "mutation($i: RestAgregarLineaInput!) { agregarLinea(input: $i) { total } }",
                 Map.of("i", Map.of("cuentaId", cuenta, "platilloId", a.horchata(), "cantidad", 1))));
         return cuenta;
+    }
+
+    @Test
+    @DisplayName("CT-14: con Idempotency-Key, repetir abrirCuenta o agregarLinea no duplica; sin ella, el reintento se rechaza")
+    void idempotenciaDelPersonal() throws Exception {
+        var a = armar();
+        var mesero = token(a.negocio(), "MESERO");
+        var abrir = "mutation($i: RestAbrirCuentaInput!) { abrirCuenta(input: $i) { id numero } }";
+        var variables = Map.<String, Object>of("i", Map.of("mesaId", a.mesaId(), "comensales", 2));
+
+        var primera = sinErrores(graphql(mesero, abrir, variables, "abrir-http-0001"));
+        var repetida = sinErrores(graphql(mesero, abrir, variables, "abrir-http-0001"));
+
+        assertThat(repetida.at("/data/abrirCuenta/id").asText()).isEqualTo(primera.at("/data/abrirCuenta/id").asText());
+        assertThat(codigo(graphql(mesero, abrir, variables))).isEqualTo("MESA_OCUPADA");
+        var cuenta = primera.at("/data/abrirCuenta/id").asText();
+        var agregar = "mutation($i: RestAgregarLineaInput!) { agregarLinea(input: $i) { lineas { id } } }";
+        var linea = Map.<String, Object>of("i", Map.of("cuentaId", cuenta, "platilloId", a.cemita(), "cantidad", 2));
+        sinErrores(graphql(mesero, agregar, linea, "linea-http-0001"));
+        var otraVez = sinErrores(graphql(mesero, agregar, linea, "linea-http-0001"));
+        assertThat(otraVez.at("/data/agregarLinea/lineas")).hasSize(1);
+        assertThat(codigo(graphql(mesero, agregar, Map.of("i", Map.of("cuentaId", cuenta, "platilloId", a.horchata(),
+                "cantidad", 1)), "linea-http-0001"))).isEqualTo("LLAVE_REUTILIZADA");
     }
 
     @Test

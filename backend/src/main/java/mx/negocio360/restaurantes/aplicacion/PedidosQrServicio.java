@@ -5,7 +5,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,11 +55,7 @@ public final class PedidosQrServicio {
     private final Clock reloj;
     private final LimiteDeTasa tasa;
     private final Object cerrojo = new Object();
-    private final Map<String, Recordado> recordados = new HashMap<>();
-
-    /** Un pedido ya hecho: lo que se pidio (huella) y lo que se respondio, hasta {@code expira}. */
-    private record Recordado(String huella, ResultadoPedidoQrVista resultado, Instant expira) {
-    }
+    private final LlavesRecordadas<ResultadoPedidoQrVista> llaves;
 
     /**
      * Arma el servicio.
@@ -91,6 +86,7 @@ public final class PedidosQrServicio {
         this.limites = Objects.requireNonNull(limites, "limites");
         this.reloj = Objects.requireNonNull(reloj, "reloj");
         this.tasa = new LimiteDeTasa(limites.pedidosPorVentana(), limites.ventanaDeTasa());
+        this.llaves = new LlavesRecordadas<>(reloj, limites.retencionDeLlaves());
     }
 
     // ---- escanear (QR-03) ----
@@ -149,15 +145,12 @@ public final class PedidosQrServicio {
             var ahora = reloj.instant();
             var huella = mesa.id() + "|" + lineas;
             var clave = dispositivo + "|" + llave.strip();
-            var anterior = recordado(clave, ahora);
-            if (anterior != null) {
-                if (!anterior.huella().equals(huella)) {
-                    throw new RestaurantesException(CodigoError.LLAVE_REUTILIZADA);
-                }
-                return anterior.resultado();
+            var anterior = llaves.buscar(clave, huella);
+            if (anterior.isPresent()) {
+                return anterior.get();
             }
             var resultado = pedir(mesa, dispositivo, lineas, ahora);
-            recordados.put(clave, new Recordado(huella, resultado, ahora.plus(limites.retencionDeLlaves())));
+            llaves.guardar(clave, huella, resultado);
             return resultado;
         }
     }
@@ -397,11 +390,6 @@ public final class PedidosQrServicio {
     private void registrarTasa(Mesa mesa, String dispositivo, String clase, Instant ahora) {
         tasa.registrar(clase + ":t:" + mesa.qrToken(), ahora);
         tasa.registrar(clase + ":d:" + dispositivo, ahora);
-    }
-
-    private Recordado recordado(String clave, Instant ahora) {
-        recordados.values().removeIf(r -> !r.expira().isAfter(ahora));
-        return recordados.get(clave);
     }
 
     /** Nunca muestra tokens ni dispositivos. */

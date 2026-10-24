@@ -53,6 +53,7 @@ public final class CuentasServicio {
     private final LimitesDeQr limites;
     private final Clock reloj;
     private final Object cerrojo = new Object();
+    private final LlavesRecordadas<CuentaVista> llaves;
 
     /**
      * Arma el servicio.
@@ -79,6 +80,7 @@ public final class CuentasServicio {
         this.disponibilidad = Objects.requireNonNull(disponibilidad, "disponibilidad");
         this.eventos = Objects.requireNonNull(eventos, "eventos");
         this.reloj = Objects.requireNonNull(reloj, "reloj");
+        this.llaves = new LlavesRecordadas<>(reloj, limites.retencionDeLlaves());
     }
 
     // ---- abrir (CT-01) ----
@@ -92,9 +94,28 @@ public final class CuentasServicio {
      *                               MESA_OCUPADA o COMENSALES_INVALIDOS
      */
     public CuentaVista abrirCuenta(ContextoNegocio contexto, Autorizacion autorizacion, UUID mesaId, int comensales) {
+        return abrirCuenta(contexto, autorizacion, mesaId, comensales, null);
+    }
+
+    /**
+     * Abre una cuenta con {@code Idempotency-Key} opcional (CT-14): repetir la misma llave con la misma peticion devuelve la
+     * cuenta ya abierta sin abrir otra; con otra peticion es LLAVE_REUTILIZADA. Sin llave, igual que antes.
+     *
+     * @param llave la llave, o nula
+     */
+    public CuentaVista abrirCuenta(ContextoNegocio contexto, Autorizacion autorizacion, UUID mesaId, int comensales,
+                                   String llave) {
         autorizacion.exigir(PermisosDeRestaurantes.CUENTA_ABRIR);
+        var clave = claveDe(contexto, "abrirCuenta", llave);
+        var huella = mesaId + "|" + comensales;
         CuentaVista vista;
         synchronized (cerrojo) {
+            if (clave != null) {
+                var anterior = llaves.buscar(clave, huella);
+                if (anterior.isPresent()) {
+                    return anterior.get();
+                }
+            }
             var negocio = contexto.negocioId();
             var servicio = salon.servicio(negocio);
             if (!servicio.abierto()) {
@@ -104,6 +125,9 @@ public final class CuentasServicio {
             var ahora = reloj.instant();
             var cuenta = abrirInterna(negocio, mesaId, OrigenDeCuenta.PERSONAL, comensales, contexto.actor(), ahora);
             vista = vista(cuenta);
+            if (clave != null) {
+                llaves.guardar(clave, huella, vista);
+            }
         }
         disponibilidad.recalcularDisponibilidad(contexto.negocioId());
         return vista;
@@ -150,16 +174,45 @@ public final class CuentasServicio {
      */
     public CuentaVista agregarLinea(ContextoNegocio contexto, Autorizacion autorizacion, UUID cuentaId, UUID platilloId,
                                     int cantidad, String nota, boolean marcaAlergia) {
+        return agregarLinea(contexto, autorizacion, cuentaId, platilloId, cantidad, nota, marcaAlergia, null);
+    }
+
+    /**
+     * Agrega una linea con {@code Idempotency-Key} opcional (CT-14): repetir la misma llave con la misma peticion devuelve la
+     * cuenta como quedo la primera vez, sin otra linea; con otra peticion es LLAVE_REUTILIZADA.
+     *
+     * @param llave la llave, o nula
+     */
+    public CuentaVista agregarLinea(ContextoNegocio contexto, Autorizacion autorizacion, UUID cuentaId, UUID platilloId,
+                                    int cantidad, String nota, boolean marcaAlergia, String llave) {
         autorizacion.exigir(PermisosDeRestaurantes.CUENTA_ABRIR);
+        var clave = claveDe(contexto, "agregarLinea", llave);
+        var huella = cuentaId + "|" + platilloId + "|" + cantidad + "|" + nota + "|" + marcaAlergia;
         synchronized (cerrojo) {
+            if (clave != null) {
+                var anterior = llaves.buscar(clave, huella);
+                if (anterior.isPresent()) {
+                    return anterior.get();
+                }
+            }
             var cuenta = cuentaDe(contexto.negocioId(), cuentaId);
             exigirAbierta(cuenta);
             var platillo = platilloOrdenable(contexto.negocioId(), platilloId);
             var ahora = reloj.instant();
             var linea = LineaDeCuenta.pendiente(UuidV7.generar(ahora), platillo.id(), platillo.nombre(), platillo.precio(),
                     cantidad, nota, marcaAlergia, estacionDe(platillo), ahora);
-            return vista(guardar(cuenta, c -> c.lineas = concat(c.lineas, linea)));
+            var vista = vista(guardar(cuenta, c -> c.lineas = concat(c.lineas, linea)));
+            if (clave != null) {
+                llaves.guardar(clave, huella, vista);
+            }
+            return vista;
         }
+    }
+
+    /** La llave junto con el negocio, la persona y la operacion que la acotan, o nula si no hay llave (CT-14). */
+    private static String claveDe(ContextoNegocio contexto, String operacion, String llave) {
+        var limpia = LlavesRecordadas.limpia(llave);
+        return limpia == null ? null : contexto.negocioId() + "|" + contexto.actor() + "|" + operacion + "|" + limpia;
     }
 
     /**

@@ -573,4 +573,75 @@ class CuentasServicioTest {
         assertThat(linea.nombre()).isEqualTo("Cemita poblana");
         assertThat(e.servicio.purgarDatosViejos(e.reloj.instant())).isZero();
     }
+
+    // ---- CT-14: Idempotency-Key ----
+
+    @Test
+    @DisplayName("CT-14: abrirCuenta con la misma llave dos veces abre una sola cuenta y devuelve la misma")
+    void abrir_conLlave() {
+        var primera = e.servicio.abrirCuenta(e.ctxA, e.mesero, e.mesa1, 2, "abrir-0001");
+        var repetida = e.servicio.abrirCuenta(e.ctxA, e.mesero, e.mesa1, 2, "abrir-0001");
+
+        assertThat(repetida).isEqualTo(primera);
+        assertThat(e.servicio.cuentasAbiertas(e.ctxA, e.mesero, null)).hasSize(1);
+        assertThat(e.eventosDe("negocio.disponibilidad_cambiada")).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("CT-14: sin llave se comporta como siempre: el segundo intento es MESA_OCUPADA")
+    void abrir_sinLlave() {
+        e.servicio.abrirCuenta(e.ctxA, e.mesero, e.mesa1, 2, null);
+
+        falla(() -> e.servicio.abrirCuenta(e.ctxA, e.mesero, e.mesa1, 2, null), CodigoError.MESA_OCUPADA);
+        falla(() -> e.servicio.abrirCuenta(e.ctxA, e.mesero, e.mesa1, 2, "  "), CodigoError.MESA_OCUPADA);
+    }
+
+    @Test
+    @DisplayName("CT-14: la misma llave con otra mesa es LLAVE_REUTILIZADA; la llave es de cada persona y de cada negocio")
+    void abrir_llaveReutilizadaYAislada() {
+        e.servicio.abrirCuenta(e.ctxA, e.mesero, e.mesa1, 2, "abrir-0002");
+
+        falla(() -> e.servicio.abrirCuenta(e.ctxA, e.mesero, e.mesa2, 2, "abrir-0002"), CodigoError.LLAVE_REUTILIZADA);
+        var deOtraPersona = e.servicio.abrirCuenta(new mx.negocio360.compartido.contexto.ContextoNegocio(
+                EntornoDeCuentas.NEGOCIO_A, "luis"), e.mesero, e.mesa2, 2, "abrir-0002");
+        assertThat(deOtraPersona.mesa()).isEqualTo("Mesa 2");
+        assertThat(e.servicio.cuentasAbiertas(e.ctxA, e.mesero, null)).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("CT-14: la llave no salta el permiso: sin cuenta.abrir ni se repite lo guardado")
+    void abrir_llaveNoSaltaElPermiso() {
+        e.servicio.abrirCuenta(e.ctxA, e.mesero, e.mesa1, 2, "abrir-0003");
+
+        assertThatThrownBy(() -> e.servicio.abrirCuenta(e.ctxA, e.cocinero, e.mesa1, 2, "abrir-0003"))
+                .isInstanceOf(mx.negocio360.compartido.seguridad.PermisoDenegadoException.class);
+    }
+
+    @Test
+    @DisplayName("CT-14: agregarLinea con la misma llave dos veces deja una sola linea")
+    void agregarLinea_conLlave() {
+        var cuenta = abrir();
+
+        var primera = e.servicio.agregarLinea(e.ctxA, e.mesero, cuenta.id(), e.cemita, 2, null, false, "linea-0001");
+        var repetida = e.servicio.agregarLinea(e.ctxA, e.mesero, cuenta.id(), e.cemita, 2, null, false, "linea-0001");
+        var distinta = e.servicio.agregarLinea(e.ctxA, e.mesero, cuenta.id(), e.cemita, 2, null, false, "linea-0002");
+
+        assertThat(repetida).isEqualTo(primera);
+        assertThat(primera.lineas()).hasSize(1);
+        assertThat(distinta.lineas()).hasSize(2);
+        falla(() -> e.servicio.agregarLinea(e.ctxA, e.mesero, cuenta.id(), e.horchata, 1, null, false, "linea-0001"),
+                CodigoError.LLAVE_REUTILIZADA);
+    }
+
+    @Test
+    @DisplayName("CT-14: una llave vence a las 24 horas")
+    void llave_vence() {
+        var cuenta = abrir();
+        e.servicio.agregarLinea(e.ctxA, e.mesero, cuenta.id(), e.cemita, 1, null, false, "linea-0003");
+
+        e.reloj.avanzar(Duration.ofHours(25));
+        var otraVez = e.servicio.agregarLinea(e.ctxA, e.mesero, cuenta.id(), e.cemita, 1, null, false, "linea-0003");
+
+        assertThat(otraVez.lineas()).hasSize(2);
+    }
 }
