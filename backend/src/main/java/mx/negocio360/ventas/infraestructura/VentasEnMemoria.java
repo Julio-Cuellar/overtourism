@@ -16,7 +16,7 @@ import mx.negocio360.ventas.dominio.Venta;
 /**
  * Tablas {@code venta}, {@code linea_venta}, {@code pago_venta} y {@code serie_folio} en memoria, para desarrollo y
  * demo (F4). Cada operacion esta sincronizada: el folio no se repite (VT-06) y la actualizacion respeta la version
- * (VT-11). Los datos se pierden al reiniciar; la version con PostgreSQL es F5.
+ * (VT-11). Los datos se pierden al reiniciar; la version con PostgreSQL es {@code RepositorioVentasJdbc}.
  */
 public final class VentasEnMemoria implements RepositorioVentas {
 
@@ -37,6 +37,7 @@ public final class VentasEnMemoria implements RepositorioVentas {
     public synchronized List<Venta> porTurno(UUID negocioId, UUID turnoId) {
         return ventas.values().stream()
                 .filter(v -> v.negocioId().equals(negocioId) && v.turnoId().equals(turnoId))
+                .sorted(Comparator.comparingLong(Venta::folio).thenComparing(Venta::serie))
                 .toList();
     }
 
@@ -64,7 +65,7 @@ public final class VentasEnMemoria implements RepositorioVentas {
     @Override
     public synchronized boolean actualizar(Venta venta, int versionEsperada) {
         var actual = ventas.get(venta.id());
-        if (actual == null || actual.version() != versionEsperada) {
+        if (actual == null || !actual.negocioId().equals(venta.negocioId()) || actual.version() != versionEsperada) {
             return false;
         }
         ventas.put(venta.id(), venta);

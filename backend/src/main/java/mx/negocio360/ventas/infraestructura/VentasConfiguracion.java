@@ -1,28 +1,23 @@
 package mx.negocio360.ventas.infraestructura;
 
-import java.time.Clock;
 import mx.negocio360.compartido.catalogo.FuenteDeProductos;
-import mx.negocio360.compartido.comandos.PreparacionesEnMemoria;
-import mx.negocio360.ventas.VentasApi;
-import mx.negocio360.ventas.VerificadorDeTurno;
-import mx.negocio360.ventas.aplicacion.VentasServicio;
 import mx.negocio360.ventas.aplicacion.puertos.CatalogoDeVentas;
 import mx.negocio360.ventas.aplicacion.puertos.CuponesDePasaporte;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Enciende Ventas al arrancar con repositorios en memoria, solo con {@code ventas.almacen=memoria} (el perfil
- * {@code desarrollo} lo fija). Los productos salen de las {@link FuenteDeProductos} que ofrezcan otros modulos
- * (D-128); los cupones, de Pasaporte cuando exista y, mientras no, ninguno es valido (D-134). El verificador de turno
- * lo da Caja (D-145). Sin base de datos, una venta se pierde al reiniciar: la version persistente es F6.
+ * Lo que Ventas necesita sin importar donde guarde sus datos: se enciende con {@code ventas.almacen} (memoria o
+ * postgres) y la API la arma {@link VentasEnMemoriaConfiguracion} o {@link VentasPostgresConfiguracion}. Los productos
+ * salen de las {@link FuenteDeProductos} que ofrezcan otros modulos (D-128); los cupones, de Pasaporte cuando exista y,
+ * mientras no, ninguno es valido (D-134). Con el perfil {@code produccion} el almacen debe ser {@code postgres}
+ * ({@code AlmacenesObligatoriosEnProduccion}).
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "ventas.almacen", havingValue = "memoria")
+@ConditionalOnProperty(name = "ventas.almacen")
 public class VentasConfiguracion {
 
     /**
@@ -45,22 +40,5 @@ public class VentasConfiguracion {
     @ConditionalOnMissingBean(CuponesDePasaporte.class)
     public CuponesDePasaporte cuponesDePasaporte() {
         return new CuponesNoDisponibles();
-    }
-
-    /**
-     * API publica de Ventas.
-     *
-     * @param catalogo productos y precios (VT-02)
-     * @param cupones  cupones de Pasaporte (VT-07)
-     * @param turnos   Caja dice si el turno esta abierto (VT-01)
-     * @param bus      bus de eventos de Spring
-     * @param reloj    reloj de la plataforma
-     * @return Ventas listo para usarse
-     */
-    @Bean
-    public VentasApi ventasApi(CatalogoDeVentas catalogo, CuponesDePasaporte cupones, VerificadorDeTurno turnos,
-                               ApplicationEventPublisher bus, Clock reloj) {
-        return VentasServicio.armar(catalogo, cupones, turnos, new VentasEnMemoria(), new PreparacionesEnMemoria(),
-                new PublicadorEventosSpring(bus), reloj);
     }
 }

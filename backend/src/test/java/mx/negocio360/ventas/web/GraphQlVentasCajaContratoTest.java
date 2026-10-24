@@ -24,11 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -38,11 +35,13 @@ import org.springframework.test.web.servlet.MockMvc;
  * la puerta de {@code /graphql}, el despachador de comandos, los permisos por variante y por servicio, el aislamiento por
  * negocio y los eventos de Ventas hacia Caja. Los productos salen de una fuente de prueba, como saldran de Misceláneos o
  * Restaurantes (D-128). Todo dato es de ejemplo.
+ *
+ * <p>Es la misma bateria para los dos almacenes (F6): {@code GraphQlVentasCajaMemoriaTest} y
+ * {@code GraphQlVentasCajaPostgresTest} solo cambian la propiedad {@code ventas.almacen} y {@code caja.almacen}. Con
+ * PostgreSQL los eventos de Ventas llegan a Caja por el outbox, despues de confirmar y en otro hilo; por eso las pruebas
+ * esperan ({@link #esperar}) a que Caja los aplique en lugar de suponer que ya paso.
  */
-@SpringBootTest(properties = {"ventas.almacen=memoria", "caja.almacen=memoria"})
-@AutoConfigureMockMvc
-@Import(GraphQlVentasCajaTest.ProductosDePrueba.class)
-class GraphQlVentasCajaTest {
+public abstract class GraphQlVentasCajaContratoTest {
 
     private static final UUID TAMAL = UUID.fromString("0192f000-0000-7000-8000-0000000000a1");
     private static final UUID AMARANTO = UUID.fromString("0192f000-0000-7000-8000-0000000000a2");
@@ -50,7 +49,7 @@ class GraphQlVentasCajaTest {
 
     /** Una fuente de productos como la de un vertical: los mismos dos productos para cualquier negocio. */
     @TestConfiguration
-    static class ProductosDePrueba {
+    public static class ProductosDePrueba {
         @Bean
         FuenteDeProductos fuenteDePrueba() {
             var productos = Map.of(
@@ -129,6 +128,12 @@ class GraphQlVentasCajaTest {
     private static final String CONFIRMAR = "mutation($t: String!) { confirmarComando(token: $t) "
             + "{ ok codigo mensajePlantilla recursoId datos { clave valor } } }";
 
+    /** Espera hasta 10 s a que la condicion se cumpla: con PostgreSQL Caja aplica los eventos de Ventas despues de confirmar. */
+    protected static void esperar(String que, java.util.concurrent.Callable<Boolean> condicion) {
+        org.awaitility.Awaitility.await(que).atMost(java.time.Duration.ofSeconds(10))
+                .pollInterval(java.time.Duration.ofMillis(50)).until(condicion);
+    }
+
     private static String codigo(JsonNode r) {
         return r.at("/errors/0/extensions/codigo").asText();
     }
@@ -165,6 +170,12 @@ class GraphQlVentasCajaTest {
                 "pagos", List.of(Map.of("metodo", "EFECTIVO", "monto", "100.00", "recibido", "200.00"))));
     }
 
+    /** Cuantas ventas de ese turno ya aplico Caja. */
+    private int ventasAplicadas(Sesion s, String turno) throws Exception {
+        var saldo = graphql(s, "query($t: ID!) { saldoTurno(turnoId: $t) { ventasAplicadas } }", Map.of("t", turno));
+        return saldo.at("/data/saldoTurno/ventasAplicadas").asInt(-1);
+    }
+
     // ---- el camino completo del dueño ----
 
     @Test
@@ -183,6 +194,7 @@ class GraphQlVentasCajaTest {
         assertThat(dato(cobro, "cambio")).isEqualTo("100.00");
         assertThat(dato(cobro, "folio")).isEqualTo("1");
         var ventaId = cobro.get("recursoId").asText();
+        esperar("Caja aplica la venta", () -> ventasAplicadas(dueno, turno) == 1);
 
         var saldo = graphql(dueno, "query($t: ID!) { saldoTurno(turnoId: $t) { estado ventasAplicadas esperadoPorMetodo "
                 + "{ metodo monto } movimientos(primeros: 10) { movimientos { tipo metodo monto } pageInfo { hayMas } } } }",
@@ -202,6 +214,7 @@ class GraphQlVentasCajaTest {
 
         var anulada = comando(dueno, Map.of("anularVenta", Map.of("ventaId", ventaId, "motivo", "Cobro duplicado")));
         assertThat(dato(anulada, "estado")).isEqualTo("ANULADA");
+        esperar("Caja revierte la venta anulada", () -> ventasAplicadas(dueno, turno) == 0);
 
         var corte = comando(dueno, Map.of("cerrarTurno", Map.of("turnoId", turno, "contado",
                 List.of(Map.of("metodo", "EFECTIVO", "monto", "500.00")))));
