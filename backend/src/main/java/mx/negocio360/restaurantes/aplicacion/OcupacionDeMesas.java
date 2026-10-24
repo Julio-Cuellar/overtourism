@@ -11,4 +11,9 @@ public interface OcupacionDeMesas {
 
     /** La cuenta abierta o por cobrar de cada mesa del negocio que la tiene. Una mesa a lo mas tiene una (MS-03). */
     Map<UUID, ResumenDeCuenta> cuentasNoPagadas(UUID negocioId);
+
+    /** Verdadero si hay alguna cuenta sin pagar, tambien de mostrador (sin mesa). Cerrar el servicio lo pregunta (MS-05). */
+    default boolean hayCuentasSinPagar(UUID negocioId) {
+        return !cuentasNoPagadas(negocioId).isEmpty();
+    }
 }

@@ -100,10 +100,11 @@ class ComandosDeRestaurantesTest {
     }
 
     @Test
-    @DisplayName("el modulo atiende guardarReceta y darDeBajaPlatillo con el prefijo restaurantes. y exige sesion")
+    @DisplayName("el modulo atiende guardarReceta, darDeBajaPlatillo, anularLineaPreparada y cancelarCuentaPreparada con el prefijo restaurantes. y exige sesion")
     void identidadDelModulo() {
         assertThat(modulo.prefijo()).isEqualTo("restaurantes.");
-        assertThat(modulo.variantes()).containsExactlyInAnyOrder("guardarReceta", "darDeBajaPlatillo");
+        assertThat(modulo.variantes()).containsExactlyInAnyOrder("guardarReceta", "darDeBajaPlatillo",
+                "anularLineaPreparada", "cancelarCuentaPreparada");
         assertThat(modulo.confirmaSinSesion()).isFalse();
     }
 

@@ -13,6 +13,12 @@ import mx.negocio360.restaurantes.aplicacion.AutorizacionDeRestaurantes;
 import mx.negocio360.restaurantes.aplicacion.ConsumidorDeVentas;
 import mx.negocio360.inventario.InventarioApi;
 import mx.negocio360.restaurantes.aplicacion.ConsumosServicio;
+import mx.negocio360.restaurantes.aplicacion.CocinaServicio;
+import mx.negocio360.restaurantes.aplicacion.CuentasServicio;
+import mx.negocio360.restaurantes.aplicacion.ManejadorAnularLineaPreparada;
+import mx.negocio360.restaurantes.aplicacion.ManejadorCancelarCuentaPreparada;
+import mx.negocio360.restaurantes.aplicacion.RepositorioCuentas;
+import mx.negocio360.restaurantes.aplicacion.UsoPorCuentas;
 import mx.negocio360.restaurantes.aplicacion.GeneradorDeTokens;
 import mx.negocio360.restaurantes.aplicacion.OcupacionDeMesas;
 import mx.negocio360.restaurantes.aplicacion.PublicadorEventos;
@@ -38,6 +44,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -101,16 +108,18 @@ public class RestaurantesConfiguracion {
      */
     @Bean
     ComandosDeRestaurantes comandosDeRestaurantes(ManejadorGuardarReceta guardarReceta,
-                                                   ManejadorDarDeBajaPlatillo darDeBaja, VinculoDeSesion sesion,
-                                                   Clock reloj) {
+                                                   ManejadorDarDeBajaPlatillo darDeBaja,
+                                                   ManejadorAnularLineaPreparada anularLinea,
+                                                   ManejadorCancelarCuentaPreparada cancelarCuenta, VinculoDeSesion sesion,
+                                                   TransactionOperations transacciones, Clock reloj) {
         return new ComandosDeRestaurantes(new ServicioPreparacion(new PreparacionesEnMemoria(),
-                List.of(guardarReceta, darDeBaja), reloj,
-                fallo -> new RestaurantesException(CodigoError.valueOf(fallo.name()))), sesion);
+                List.of(guardarReceta, darDeBaja, anularLinea, cancelarCuenta), reloj,
+                fallo -> new RestaurantesException(CodigoError.valueOf(fallo.name()))), sesion, transacciones);
     }
 
     @Bean
-    UsoDeLosPlatillos usoDeLosPlatillos() {
-        return new SinCuentas();
+    UsoDeLosPlatillos usoDeLosPlatillos(RepositorioCuentas cuentas) {
+        return new UsoPorCuentas(cuentas);
     }
 
     @Bean
@@ -151,11 +160,10 @@ public class RestaurantesConfiguracion {
         return new SalonEnMemoria();
     }
 
-    /** Hasta que existan las cuentas, ninguna mesa tiene una sin pagar. */
+    /** Cuentas y comandas en memoria hasta que llegue la persistencia (R7); tambien dice que mesas estan ocupadas. */
     @Bean
-    @ConditionalOnMissingBean(OcupacionDeMesas.class)
-    OcupacionDeMesas ocupacionDeMesas() {
-        return negocioId -> Map.of();
+    CuentasEnMemoria cuentasEnMemoria() {
+        return new CuentasEnMemoria();
     }
 
     @Bean
@@ -163,6 +171,28 @@ public class RestaurantesConfiguracion {
                                 @Value("${restaurantes.qr.base-url:https://servicial.example/m/}") String baseDelQr,
                                 Clock reloj) {
         return new SalonServicio(salon, ocupacion, eventos, GeneradorDeTokens.ALEATORIO, baseDelQr, reloj);
+    }
+
+    @Bean
+    CuentasServicio cuentasServicio(RepositorioCuentas cuentas, RepositorioMenu menu, RepositorioSalon salon,
+                                    SalonServicio disponibilidad, PublicadorEventos eventos, Clock reloj) {
+        return new CuentasServicio(cuentas, menu, salon, disponibilidad, eventos, reloj);
+    }
+
+    @Bean
+    CocinaServicio cocinaServicio(RepositorioCuentas cuentas, RepositorioSalon salon, PublicadorEventos eventos, Clock reloj) {
+        return new CocinaServicio(cuentas, salon, eventos, reloj);
+    }
+
+    @Bean
+    ManejadorAnularLineaPreparada manejadorAnularLineaPreparada(CuentasServicio cuentas, AutorizacionDeRestaurantes autorizacion) {
+        return new ManejadorAnularLineaPreparada(cuentas, autorizacion);
+    }
+
+    @Bean
+    ManejadorCancelarCuentaPreparada manejadorCancelarCuentaPreparada(CuentasServicio cuentas,
+                                                                      AutorizacionDeRestaurantes autorizacion) {
+        return new ManejadorCancelarCuentaPreparada(cuentas, autorizacion);
     }
 
     @Bean

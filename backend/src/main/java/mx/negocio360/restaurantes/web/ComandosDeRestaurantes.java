@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.springframework.transaction.support.TransactionOperations;
 import mx.negocio360.compartido.comandos.Comando;
 import mx.negocio360.compartido.comandos.ServicioPreparacion;
 import mx.negocio360.compartido.graphql.EntradaGraphQl;
@@ -12,6 +13,8 @@ import mx.negocio360.compartido.graphql.comandos.ComandoGraphQlException;
 import mx.negocio360.compartido.graphql.comandos.ModuloDeComandos;
 import mx.negocio360.compartido.graphql.comandos.PreparacionVista;
 import mx.negocio360.compartido.graphql.comandos.ResultadoVista;
+import mx.negocio360.restaurantes.aplicacion.AnularLineaPreparadaComando;
+import mx.negocio360.restaurantes.aplicacion.CancelarCuentaPreparadaComando;
 import mx.negocio360.restaurantes.aplicacion.DarDeBajaPlatilloComando;
 import mx.negocio360.restaurantes.aplicacion.GuardarRecetaComando;
 import mx.negocio360.restaurantes.aplicacion.VinculoDeSesion;
@@ -33,10 +36,13 @@ public final class ComandosDeRestaurantes implements ModuloDeComandos {
 
     private static final Map<String, Class<? extends Comando>> VARIANTES = Map.of(
             "guardarReceta", GuardarRecetaComando.class,
-            "darDeBajaPlatillo", DarDeBajaPlatilloComando.class);
+            "darDeBajaPlatillo", DarDeBajaPlatilloComando.class,
+            "anularLineaPreparada", AnularLineaPreparadaComando.class,
+            "cancelarCuentaPreparada", CancelarCuentaPreparadaComando.class);
 
     private final ServicioPreparacion preparacion;
     private final VinculoDeSesion sesion;
+    private final TransactionOperations transacciones;
     private final JsonMapper json = JsonMapper.builder().build();
 
     /**
@@ -46,8 +52,22 @@ public final class ComandosDeRestaurantes implements ModuloDeComandos {
      * @param sesion      donde se vincula la sesion de la peticion para la revision de permisos de los manejadores
      */
     public ComandosDeRestaurantes(ServicioPreparacion preparacion, VinculoDeSesion sesion) {
+        this(preparacion, sesion, TransactionOperations.withoutTransaction());
+    }
+
+    /**
+     * Arma el modulo con la transaccion en la que se confirma cada comando: sus eventos (por ejemplo
+     * {@code comanda_actualizada}) salen por el outbox junto con el cambio (SR-04).
+     *
+     * @param preparacion   servicio de preparar y confirmar con los manejadores de Restaurantes
+     * @param sesion        donde se vincula la sesion de la peticion para la revision de permisos de los manejadores
+     * @param transacciones donde corre cada confirmacion
+     */
+    public ComandosDeRestaurantes(ServicioPreparacion preparacion, VinculoDeSesion sesion,
+                                  TransactionOperations transacciones) {
         this.preparacion = Objects.requireNonNull(preparacion, "preparacion");
         this.sesion = Objects.requireNonNull(sesion, "sesion");
+        this.transacciones = Objects.requireNonNull(transacciones, "transacciones");
     }
 
     @Override
@@ -82,7 +102,8 @@ public final class ComandosDeRestaurantes implements ModuloDeComandos {
     public ResultadoVista confirmar(EntradaGraphQl entrada, String tokenSinPrefijo) {
         var contexto = entrada.exigirContexto();
         return ResultadoVista.de(sesion.vincular(contexto, entrada.autorizacion(),
-                () -> preparacion.confirmar(contexto, entrada.autorizacion(), tokenSinPrefijo)));
+                () -> transacciones.execute(estado -> preparacion.confirmar(contexto, entrada.autorizacion(),
+                        tokenSinPrefijo))));
     }
 
     /** Un campo que el comando no conoce o un valor que no se puede leer lo invalida. */

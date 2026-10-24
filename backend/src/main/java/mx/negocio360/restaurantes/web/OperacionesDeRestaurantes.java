@@ -33,6 +33,11 @@ public final class OperacionesDeRestaurantes implements OperacionesGraphql {
                 // Salon (R4)
                 OperacionDeclarada.de(QUERY, "salon", PermisosDeRestaurantes.SALON_VER),
                 OperacionDeclarada.de(QUERY, "qrDeMesa", PermisosDeRestaurantes.SALON_CONFIGURAR),
+                // Cuentas y tablero de cocina (R5)
+                OperacionDeclarada.de(QUERY, "cuenta", PermisosDeRestaurantes.CUENTA_VER),
+                OperacionDeclarada.de(QUERY, "cuentasAbiertas", PermisosDeRestaurantes.CUENTA_VER),
+                OperacionDeclarada.de(QUERY, "cuentaParaCobro", PermisosDeRestaurantes.CUENTA_VER),
+                OperacionDeclarada.de(QUERY, "comandas", PermisosDeRestaurantes.COMANDA_VER),
                 // Superficie publica del turista: sin sesion, sobre lo publicado
                 OperacionDeclarada.publica(QUERY, "menuPublico"),
                 OperacionDeclarada.de(MUTATION, "crearCategoria", PermisosDeRestaurantes.MENU_EDITAR),
@@ -54,7 +59,21 @@ public final class OperacionesDeRestaurantes implements OperacionesGraphql {
                 OperacionDeclarada.de(MUTATION, "abrirServicio", PermisosDeRestaurantes.SERVICIO_OPERAR),
                 OperacionDeclarada.de(MUTATION, "cerrarServicio", PermisosDeRestaurantes.SERVICIO_OPERAR),
                 OperacionDeclarada.de(MUTATION, "pausarQrDeMesa", PermisosDeRestaurantes.SERVICIO_OPERAR),
-                OperacionDeclarada.de(MUTATION, "habilitarQr", PermisosDeRestaurantes.SERVICIO_OPERAR));
+                OperacionDeclarada.de(MUTATION, "habilitarQr", PermisosDeRestaurantes.SERVICIO_OPERAR),
+                OperacionDeclarada.de(MUTATION, "abrirCuenta", PermisosDeRestaurantes.CUENTA_ABRIR),
+                OperacionDeclarada.de(MUTATION, "agregarLinea", PermisosDeRestaurantes.CUENTA_ABRIR),
+                OperacionDeclarada.de(MUTATION, "quitarLineaPendiente", PermisosDeRestaurantes.CUENTA_ABRIR),
+                OperacionDeclarada.de(MUTATION, "enviarACocina", PermisosDeRestaurantes.CUENTA_ABRIR),
+                OperacionDeclarada.de(MUTATION, "pedirCuenta", PermisosDeRestaurantes.CUENTA_ABRIR),
+                OperacionDeclarada.de(MUTATION, "reabrirCuenta", PermisosDeRestaurantes.CUENTA_ABRIR),
+                OperacionDeclarada.de(MUTATION, "confirmarPresencia", PermisosDeRestaurantes.CUENTA_ABRIR),
+                OperacionDeclarada.de(MUTATION, "anularLinea", PermisosDeRestaurantes.LINEA_ANULAR),
+                OperacionDeclarada.de(MUTATION, "cancelarCuenta", PermisosDeRestaurantes.CUENTA_CANCELAR),
+                // El servicio exige ademas restaurantes.linea.anular_preparada (CT-15)
+                OperacionDeclarada.de(MUTATION, "liberarMesa", PermisosDeRestaurantes.SERVICIO_OPERAR),
+                // Hasta lista pide preparar y a entregada, entregar (CD-02): la puerta pide ver y el servicio decide el paso
+                OperacionDeclarada.de(MUTATION, "avanzarComanda", PermisosDeRestaurantes.COMANDA_VER),
+                OperacionDeclarada.de(MUTATION, "devolverComanda", PermisosDeRestaurantes.COMANDA_PREPARAR));
     }
 
     /** Las variantes de {@code ComandoInput} de Restaurantes y el permiso que pide la puerta de la plataforma (SG-04). */
@@ -62,6 +81,8 @@ public final class OperacionesDeRestaurantes implements OperacionesGraphql {
     public List<ComandoDeclarado> comandos() {
         return List.of(
                 new ComandoDeclarado("guardarReceta", PermisosDeRestaurantes.RECETA_EDITAR),
-                new ComandoDeclarado("darDeBajaPlatillo", PermisosDeRestaurantes.MENU_EDITAR));
+                new ComandoDeclarado("darDeBajaPlatillo", PermisosDeRestaurantes.MENU_EDITAR),
+                new ComandoDeclarado("anularLineaPreparada", PermisosDeRestaurantes.LINEA_ANULAR_PREPARADA),
+                new ComandoDeclarado("cancelarCuentaPreparada", PermisosDeRestaurantes.LINEA_ANULAR_PREPARADA));
     }
 }

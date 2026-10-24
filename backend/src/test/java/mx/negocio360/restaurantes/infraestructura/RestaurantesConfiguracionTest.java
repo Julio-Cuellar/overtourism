@@ -32,7 +32,9 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 class RestaurantesConfiguracionTest {
 
     private final ApplicationContextRunner contexto = new ApplicationContextRunner()
-            .withUserConfiguration(RestaurantesConfiguracion.class).withBean(Clock.class, Clock::systemUTC);
+            .withUserConfiguration(RestaurantesConfiguracion.class).withBean(Clock.class, Clock::systemUTC)
+            .withBean(org.springframework.transaction.support.TransactionOperations.class,
+                    org.springframework.transaction.support.TransactionOperations::withoutTransaction);
 
     @Test
     @DisplayName("con restaurantes.almacen=memoria se arman los servicios del menu con sus repositorios en memoria")
@@ -47,7 +49,13 @@ class RestaurantesConfiguracionTest {
                     .hasSingleBean(ManejadorGuardarReceta.class).hasSingleBean(ManejadorDarDeBajaPlatillo.class)
                     .hasSingleBean(InventarioPuerto.class).hasSingleBean(RepositorioConsumos.class)
                     .hasSingleBean(ConsumosServicio.class).hasSingleBean(ConsumidorDeVentas.class)
-                    .hasSingleBean(EscuchaDeVentas.class).hasSingleBean(PublicadorEventos.class);
+                    .hasSingleBean(EscuchaDeVentas.class).hasSingleBean(PublicadorEventos.class)
+                    .hasSingleBean(mx.negocio360.restaurantes.aplicacion.SalonServicio.class)
+                    .hasSingleBean(mx.negocio360.restaurantes.aplicacion.CuentasServicio.class)
+                    .hasSingleBean(mx.negocio360.restaurantes.aplicacion.CocinaServicio.class)
+                    .hasSingleBean(mx.negocio360.restaurantes.aplicacion.OcupacionDeMesas.class)
+                    .hasSingleBean(mx.negocio360.restaurantes.aplicacion.ManejadorAnularLineaPreparada.class)
+                    .hasSingleBean(mx.negocio360.restaurantes.aplicacion.ManejadorCancelarCuentaPreparada.class);
             assertThat(c.getBean(InventarioPuerto.class)).as("Inventario aun no esta conectado").isInstanceOf(InventarioNoDisponible.class);
             assertThat(c.getBean(ConsultaDeRecetas.class)).isSameAs(c.getBean(RecetasEnMemoria.class));
             assertThat(c.getBean(RepositorioMenu.class)).isInstanceOf(MenuEnMemoria.class);

@@ -24,6 +24,15 @@ extend type Query {
   salon: RestSalon!
   "El enlace del QR de una mesa; el cliente dibuja el codigo (QR-21). Requiere restaurantes.salon.configurar."
   qrDeMesa(mesaId: ID!): String!
+
+  "Una cuenta con sus lineas. Requiere restaurantes.cuenta.ver."
+  cuenta(id: ID!): RestCuenta
+  "Las cuentas abiertas o por cobrar de una mesa, o de todo el negocio si no se da mesa. Requiere restaurantes.cuenta.ver."
+  cuentasAbiertas(mesaId: ID): [RestCuenta!]!
+  "Lineas agregadas por platillo, total y referencia para cobrar con Ventas (CT-07). Solo una cuenta por cobrar. Requiere restaurantes.cuenta.ver."
+  cuentaParaCobro(cuentaId: ID!): RestCuentaParaCobro!
+  "El tablero, de la mas antigua a la mas nueva. Sin estados, las no entregadas. primeros de 1 a 100. Requiere restaurantes.comanda.ver."
+  comandas(estacion: RestEstacion, estados: [RestEstadoDeComanda!], primeros: Int! = 50): [RestComanda!]!
 }
 
 extend type Mutation {
@@ -61,6 +70,30 @@ extend type Mutation {
   pausarQrDeMesa(mesaId: ID!, pausar: Boolean! = true): RestMesa!
   "Enciende o apaga los pedidos por QR de todo el local (QR-17). Requiere restaurantes.servicio.operar."
   habilitarQr(habilitado: Boolean!): Boolean!
+
+  "Abre una cuenta de mesa o, en mostrador, sin mesa (CT-01). Requiere restaurantes.cuenta.abrir."
+  abrirCuenta(input: RestAbrirCuentaInput!): RestCuenta!
+  "Agrega una linea pendiente (CT-02). Requiere restaurantes.cuenta.abrir."
+  agregarLinea(input: RestAgregarLineaInput!): RestCuenta!
+  "Solo una linea que todavia no se envia (CT-03). Requiere restaurantes.cuenta.abrir."
+  quitarLineaPendiente(cuentaId: ID!, lineaId: ID!): RestCuenta!
+  "Una comanda por estacion con las lineas pendientes (CT-04). Requiere restaurantes.cuenta.abrir."
+  enviarACocina(cuentaId: ID!): [RestComanda!]!
+  "La cuenta pasa a por cobrar con los precios vigentes (CT-05). Requiere restaurantes.cuenta.abrir."
+  pedirCuenta(cuentaId: ID!): RestCuenta!
+  reabrirCuenta(cuentaId: ID!): RestCuenta!
+  "Informativo: un mesero ya esta con la mesa (QR-08). Requiere restaurantes.cuenta.abrir."
+  confirmarPresencia(cuentaId: ID!): RestCuenta!
+  "Mientras su comanda no este lista (CT-03). Una ya lista va por prepararComando (anularLineaPreparada). Requiere restaurantes.linea.anular."
+  anularLinea(input: RestAnularLineaInput!): RestCuenta!
+  "Directa si ninguna linea llego a lista; si no, por prepararComando (cancelarCuentaPreparada) (CT-11). Requiere restaurantes.cuenta.cancelar."
+  cancelarCuenta(cuentaId: ID!, motivo: RestMotivoDeAnulacion!, texto: String): RestCuenta!
+  "Cierra una cuenta cobrada fuera del flujo, sin venta (CT-15). Requiere restaurantes.servicio.operar y restaurantes.linea.anular_preparada."
+  liberarMesa(cuentaId: ID!, motivo: String!): RestCuenta!
+  "Un paso a la vez; hasta lista pide restaurantes.comanda.preparar y a entregada, restaurantes.comanda.entregar (CD-02)."
+  avanzarComanda(id: ID!): RestComanda!
+  "De lista a en preparacion (CD-01). Requiere restaurantes.comanda.preparar."
+  devolverComanda(id: ID!): RestComanda!
 }
 
 enum RestModoInventario { NINGUNO RECETA VINCULO_DIRECTO }
@@ -240,6 +273,10 @@ type RestPlatilloPublico {
 
 # ---------- Comandos (D-125, D-209): preparar -> confirmar con el par de la plataforma ----------
 extend input ComandoInput {
+  "Anula una linea ya lista o entregada, con merma (CT-03). Requiere restaurantes.linea.anular_preparada."
+  anularLineaPreparada: RestAnularLineaPreparadaInput
+  "Cancela una cuenta con platillos ya preparados (CT-11). Requiere restaurantes.linea.anular_preparada."
+  cancelarCuentaPreparada: RestCancelarCuentaPreparadaInput
   "Guarda una version nueva de la receta de un platillo (RC-01, RC-08). Requiere restaurantes.receta.editar."
   guardarReceta: RestGuardarRecetaInput
   "Baja logica de un platillo (MN-10). Falla si esta en una cuenta abierta. Requiere restaurantes.menu.editar."
@@ -271,7 +308,7 @@ input RestBajaPlatilloInput {
 enum RestModoServicio { MESAS MOSTRADOR AMBOS }
 "Derivado de la cuenta de la mesa; no se guarda (MS-02)."
 enum RestEstadoDeMesa { LIBRE OCUPADA BLOQUEADA }
-enum RestEstadoDeCuenta { ABIERTA POR_COBRAR }
+enum RestEstadoDeCuenta { ABIERTA POR_COBRAR PAGADA CANCELADA }
 
 type RestZona {
   id: ID!
@@ -327,4 +364,129 @@ input RestMesaInput {
   etiqueta: String!
   "De 1 a 20 personas."
   capacidad: Int!
+}
+
+# ---------- Cuentas, lineas y comandas (R5) ----------
+enum RestOrigenDeCuenta { PERSONAL QR }
+enum RestEstadoDeLinea { PENDIENTE ENVIADA ANULADA }
+enum RestEstadoDeComanda { NUEVA EN_PREPARACION LISTA ENTREGADA }
+"Por que se anula una linea o se cancela una cuenta (QR-10). OTRO pide texto de hasta 80 caracteres."
+enum RestMotivoDeAnulacion { AGOTADO ERROR_DEL_PEDIDO SIN_COMENSALES COCINA_NO_PUEDE OTRO }
+
+type RestLinea {
+  id: ID!
+  platilloId: ID!
+  nombre: String!
+  cantidad: Int!
+  precio: Decimal!
+  subtotal: Decimal!
+  nota: String
+  marcaAlergia: Boolean!
+  estado: RestEstadoDeLinea!
+  estacion: RestEstacion!
+  "Como va en su estacion, o nulo si todavia no se envia."
+  estadoDeComanda: RestEstadoDeComanda
+  motivo: RestMotivoDeAnulacion
+  "El texto fijo que ve el comensal, por ejemplo: Cancelado: agotado."
+  mensajeDelMotivo: String
+  anuladaEn: DateTime
+}
+
+type RestCuenta {
+  id: ID!
+  numero: Int!
+  mesaId: ID
+  "El nombre de la mesa, o Mostrador."
+  mesa: String!
+  estado: RestEstadoDeCuenta!
+  origen: RestOrigenDeCuenta!
+  comensales: Int
+  abiertaEn: DateTime!
+  solicitadaEn: DateTime
+  presenciaConfirmada: Boolean!
+  total: Decimal!
+  discrepancia: Boolean!
+  ventaAnulada: Boolean!
+  ventaId: ID
+  lineas: [RestLinea!]!
+  version: Int!
+}
+
+type RestLineaDeComanda {
+  lineaId: ID!
+  platillo: String!
+  cantidad: Int!
+  nota: String
+  "Se resalta en el tablero; no guarda detalle medico (CD-06)."
+  marcaAlergia: Boolean!
+  "Tachada en el tablero (CD-05)."
+  anulada: Boolean!
+}
+
+type RestComanda {
+  id: ID!
+  envioId: ID!
+  cuentaId: ID!
+  numeroDeCuenta: Int!
+  mesa: String!
+  estacion: RestEstacion!
+  estado: RestEstadoDeComanda!
+  enviadaEn: DateTime!
+  listaEn: DateTime
+  "Calculado por el servidor (CD-04); nulo si aun no esta lista."
+  segundosDePreparacion: Int
+  "Lleva mas de 15 minutos sin estar lista."
+  retrasada: Boolean!
+  lineas: [RestLineaDeComanda!]!
+  version: Int!
+}
+
+type RestCuentaParaCobro {
+  cuentaId: ID!
+  "Se manda a Ventas al cobrar: restaurantes:cuenta:<id>."
+  referencia: String!
+  total: Decimal!
+  lineas: [RestLineaDeCobro!]!
+}
+
+type RestLineaDeCobro {
+  productoId: ID!
+  descripcion: String!
+  cantidad: Int!
+}
+
+input RestAbrirCuentaInput {
+  "Nulo en mostrador."
+  mesaId: ID
+  "De 1 a 50."
+  comensales: Int!
+}
+
+input RestAgregarLineaInput {
+  cuentaId: ID!
+  platilloId: ID!
+  "Entero de 1 a 99."
+  cantidad: Int!
+  "Hasta 80 caracteres."
+  nota: String
+  marcaAlergia: Boolean! = false
+}
+
+input RestAnularLineaInput {
+  lineaId: ID!
+  motivo: RestMotivoDeAnulacion!
+  "Solo con OTRO, hasta 80 caracteres."
+  texto: String
+}
+
+input RestAnularLineaPreparadaInput {
+  lineaId: ID!
+  motivo: RestMotivoDeAnulacion!
+  texto: String
+}
+
+input RestCancelarCuentaPreparadaInput {
+  cuentaId: ID!
+  motivo: RestMotivoDeAnulacion!
+  texto: String
 }

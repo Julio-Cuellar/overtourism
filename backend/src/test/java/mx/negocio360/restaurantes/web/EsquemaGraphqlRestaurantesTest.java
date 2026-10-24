@@ -61,14 +61,17 @@ class EsquemaGraphqlRestaurantesTest {
     }
 
     @Test
-    @DisplayName("las consultas y mutaciones del esquema son exactamente las que Restaurantes declara hasta R4")
+    @DisplayName("las consultas y mutaciones del esquema son exactamente las que Restaurantes declara hasta R5")
     void operaciones() {
         assertThat(campos(esquema.getQueryType())).containsExactlyInAnyOrder("categoriasDeMenu", "platillos", "platillo",
-                "resumenDeMenu", "menuPublico", "receta", "costoDeReceta", "consumosFallidos", "salon", "qrDeMesa");
+                "resumenDeMenu", "menuPublico", "receta", "costoDeReceta", "consumosFallidos", "salon", "qrDeMesa", "cuenta",
+                "cuentasAbiertas", "cuentaParaCobro", "comandas");
         assertThat(campos(esquema.getMutationType())).contains("crearCategoria", "editarCategoria", "crearPlatillo",
                 "editarPlatillo", "marcarAgotado", "publicarPlatillo", "cambiarModoDeInventario", "desactivarReceta",
                 "crearZona", "darDeBajaZona", "crearMesa", "editarMesa", "darDeBajaMesa", "bloquearMesa", "abrirServicio",
-                "cerrarServicio", "configurarModoDeServicio", "regenerarQrDeMesa", "pausarQrDeMesa", "habilitarQr");
+                "cerrarServicio", "configurarModoDeServicio", "regenerarQrDeMesa", "pausarQrDeMesa", "habilitarQr",
+                "abrirCuenta", "agregarLinea", "quitarLineaPendiente", "enviarACocina", "pedirCuenta", "reabrirCuenta",
+                "confirmarPresencia", "anularLinea", "cancelarCuenta", "liberarMesa", "avanzarComanda", "devolverComanda");
     }
 
     @Test
@@ -135,7 +138,12 @@ class EsquemaGraphqlRestaurantesTest {
     @DisplayName("D-209: ComandoInput gana guardarReceta y darDeBajaPlatillo, y sus entradas no llevan el negocio (SG-02)")
     void variantesDeComando() {
         var comando = (graphql.schema.GraphQLInputObjectType) esquema.getType("ComandoInput");
-        assertThat(comando.getFieldDefinitions()).extracting("name").contains("guardarReceta", "darDeBajaPlatillo");
+        assertThat(comando.getFieldDefinitions()).extracting("name").contains("guardarReceta", "darDeBajaPlatillo",
+                "anularLineaPreparada", "cancelarCuentaPreparada");
+        var anular = (graphql.schema.GraphQLInputObjectType) esquema.getType("RestAnularLineaPreparadaInput");
+        var cancelar = (graphql.schema.GraphQLInputObjectType) esquema.getType("RestCancelarCuentaPreparadaInput");
+        assertThat(anular.getFieldDefinitions()).extracting("name").containsExactlyInAnyOrder("lineaId", "motivo", "texto");
+        assertThat(cancelar.getFieldDefinitions()).extracting("name").containsExactlyInAnyOrder("cuentaId", "motivo", "texto");
 
         var receta = (graphql.schema.GraphQLInputObjectType) esquema.getType("RestGuardarRecetaInput");
         var insumo = (graphql.schema.GraphQLInputObjectType) esquema.getType("RestRecetaInsumoInput");

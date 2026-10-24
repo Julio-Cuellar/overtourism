@@ -20,7 +20,8 @@ public final class TraductorDeErroresDeRestaurantes implements TraductorDeErrore
 
     private static final Set<CodigoError> NO_ENCONTRADOS = Set.of(CodigoError.PLATILLO_NO_ENCONTRADO,
             CodigoError.CATEGORIA_NO_ENCONTRADA, CodigoError.RECETA_NO_ENCONTRADA, CodigoError.ARTICULO_NO_ENCONTRADO, CodigoError.ZONA_NO_ENCONTRADA,
-            CodigoError.MESA_NO_ENCONTRADA);
+            CodigoError.MESA_NO_ENCONTRADA, CodigoError.CUENTA_NO_ENCONTRADA, CodigoError.LINEA_NO_ENCONTRADA,
+            CodigoError.COMANDA_NO_ENCONTRADA);
 
     @Override
     public Optional<ErrorTraducido> traducir(Throwable error) {

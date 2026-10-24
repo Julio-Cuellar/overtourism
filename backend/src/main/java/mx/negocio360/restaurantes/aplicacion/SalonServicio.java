@@ -228,7 +228,7 @@ public final class SalonServicio {
      */
     public DisponibilidadVista cerrarServicio(ContextoNegocio contexto, Autorizacion autorizacion, String motivo) {
         autorizacion.exigir(PermisosDeRestaurantes.SERVICIO_OPERAR);
-        if (!ocupacion.cuentasNoPagadas(contexto.negocioId()).isEmpty()) {
+        if (ocupacion.hayCuentasSinPagar(contexto.negocioId())) {
             autorizacion.exigir(PermisosDeRestaurantes.LINEA_ANULAR_PREPARADA);
             if (motivo == null || motivo.isBlank()) {
                 throw new RestaurantesException(CodigoError.MOTIVO_REQUERIDO);

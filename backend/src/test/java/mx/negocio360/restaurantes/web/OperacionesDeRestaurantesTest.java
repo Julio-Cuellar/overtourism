@@ -57,9 +57,22 @@ class OperacionesDeRestaurantesTest {
                 "configurarModoDeServicio", "regenerarQrDeMesa"}) {
             esperado.put("Mutation." + configurar, "NEGOCIO:" + PermisosDeRestaurantes.SALON_CONFIGURAR);
         }
-        for (var operar : new String[] {"bloquearMesa", "abrirServicio", "cerrarServicio", "pausarQrDeMesa", "habilitarQr"}) {
+        for (var operar : new String[] {"bloquearMesa", "abrirServicio", "cerrarServicio", "pausarQrDeMesa", "habilitarQr",
+                "liberarMesa"}) {
             esperado.put("Mutation." + operar, "NEGOCIO:" + PermisosDeRestaurantes.SERVICIO_OPERAR);
         }
+        for (var verCuentas : new String[] {"cuenta", "cuentasAbiertas", "cuentaParaCobro"}) {
+            esperado.put("Query." + verCuentas, "NEGOCIO:" + PermisosDeRestaurantes.CUENTA_VER);
+        }
+        esperado.put("Query.comandas", "NEGOCIO:" + PermisosDeRestaurantes.COMANDA_VER);
+        for (var abrir : new String[] {"abrirCuenta", "agregarLinea", "quitarLineaPendiente", "enviarACocina", "pedirCuenta",
+                "reabrirCuenta", "confirmarPresencia"}) {
+            esperado.put("Mutation." + abrir, "NEGOCIO:" + PermisosDeRestaurantes.CUENTA_ABRIR);
+        }
+        esperado.put("Mutation.anularLinea", "NEGOCIO:" + PermisosDeRestaurantes.LINEA_ANULAR);
+        esperado.put("Mutation.cancelarCuenta", "NEGOCIO:" + PermisosDeRestaurantes.CUENTA_CANCELAR);
+        esperado.put("Mutation.avanzarComanda", "NEGOCIO:" + PermisosDeRestaurantes.COMANDA_VER);
+        esperado.put("Mutation.devolverComanda", "NEGOCIO:" + PermisosDeRestaurantes.COMANDA_PREPARAR);
 
         var real = porNombre();
         esperado.forEach((nombre, regla) -> assertThat(real).as(nombre).containsKey(nombre));
@@ -86,7 +99,10 @@ class OperacionesDeRestaurantesTest {
                 "Mutation.crearZona", "Mutation.darDeBajaZona", "Mutation.crearMesa", "Mutation.editarMesa",
                 "Mutation.darDeBajaMesa", "Mutation.configurarModoDeServicio", "Mutation.regenerarQrDeMesa",
                 "Mutation.bloquearMesa", "Mutation.abrirServicio", "Mutation.cerrarServicio", "Mutation.pausarQrDeMesa",
-                "Mutation.habilitarQr");
+                "Mutation.habilitarQr", "Query.cuenta", "Query.cuentasAbiertas", "Query.cuentaParaCobro", "Query.comandas",
+                "Mutation.abrirCuenta", "Mutation.agregarLinea", "Mutation.quitarLineaPendiente", "Mutation.enviarACocina",
+                "Mutation.pedirCuenta", "Mutation.reabrirCuenta", "Mutation.confirmarPresencia", "Mutation.anularLinea",
+                "Mutation.cancelarCuenta", "Mutation.liberarMesa", "Mutation.avanzarComanda", "Mutation.devolverComanda");
     }
 
     @Test
@@ -99,12 +115,12 @@ class OperacionesDeRestaurantesTest {
     }
 
     @Test
-    @DisplayName("solo hay consultas y mutaciones directas, mas las dos variantes de comando del despachador (D-209)")
+    @DisplayName("solo hay consultas y mutaciones directas, mas las cuatro variantes de comando del despachador (D-209)")
     void tipos() {
         assertThat(porNombre().values().stream().map(OperacionDeclarada::tipo).distinct().toList())
                 .containsExactlyInAnyOrder(QUERY, MUTATION);
         assertThat(declaraciones.comandos()).extracting(ComandoDeclarado::variante)
-                .containsExactlyInAnyOrder("guardarReceta", "darDeBajaPlatillo");
+                .containsExactlyInAnyOrder("guardarReceta", "darDeBajaPlatillo", "anularLineaPreparada", "cancelarCuentaPreparada");
     }
 
     @Test
