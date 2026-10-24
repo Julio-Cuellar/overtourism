@@ -198,6 +198,12 @@ public class RestaurantesConfiguracion {
                 : HashDeDispositivo.conClave(java.util.Base64.getDecoder().decode(clave.strip()));
     }
 
+    /** El puente entre el bus de eventos y las suscripciones del personal (8.4). */
+    @Bean
+    AvisosEnVivo avisosEnVivo() {
+        return new AvisosEnVivo();
+    }
+
     @Bean
     PedidosQrServicio pedidosQrServicio(RepositorioSalon salon, RepositorioCuentas cuentas, RepositorioMenu menu,
                                         RepositorioRestaurantes restaurantes, CuentasServicio cuentasServicio,

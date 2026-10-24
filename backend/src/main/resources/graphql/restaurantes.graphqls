@@ -546,3 +546,49 @@ input RestPedidoPorQrLineaInput {
   nota: String
   marcaAlergia: Boolean! = false
 }
+
+# ---- Avisos en vivo del personal (8.4). Atajos: la pantalla se corrige con las consultas comandas y salon. ----
+
+extend type Subscription {
+  "Cada comanda enviada o actualizada del negocio, de las dos estaciones o de la que se pida. Requiere restaurantes.comanda.ver. Respaldo: comandas."
+  comandasDeCocina(estacion: RestEstacion): RestAvisoDeComanda!
+  "Pedidos por QR, cuentas pedidas, mesas libres y, para quien opera el servicio, la pausa de un QR. Requiere restaurantes.salon.ver. Respaldo: salon."
+  salonActualizado: RestAvisoDelSalon!
+}
+
+enum RestTipoDeAvisoDeComanda { ENVIADA ACTUALIZADA }
+enum RestTipoDeAvisoDelSalon { PEDIDO_QR CUENTA_SOLICITADA DISPONIBILIDAD QR_PAUSADO }
+
+"mesa, numeroDeCuenta y lineas solo vienen en ENVIADA; lineasAnuladas solo en ACTUALIZADA."
+type RestAvisoDeComanda {
+  tipo: RestTipoDeAvisoDeComanda!
+  comandaId: ID!
+  estacion: RestEstacion!
+  "NUEVA si es recien enviada; el estado nuevo si es una actualizacion."
+  estado: RestEstadoDeComanda!
+  numeroDeCuenta: Int
+  mesa: String
+  lineas: [RestLineaDeAviso!]!
+  lineasAnuladas: [ID!]!
+}
+
+type RestLineaDeAviso {
+  platillo: String!
+  cantidad: Int!
+  nota: String
+  marcaAlergia: Boolean!
+}
+
+"Cada tipo llena solo sus campos: PEDIDO_QR (mesa, cuentaId, lineas, abrioLaCuenta), CUENTA_SOLICITADA (mesa, cuentaId, solicitadaPor), DISPONIBILIDAD (libres, total, abierto), QR_PAUSADO (mesa, hasta)."
+type RestAvisoDelSalon {
+  tipo: RestTipoDeAvisoDelSalon!
+  mesa: String
+  cuentaId: ID
+  lineas: Int
+  abrioLaCuenta: Boolean
+  solicitadaPor: String
+  libres: Int
+  total: Int
+  abierto: Boolean
+  hasta: DateTime
+}

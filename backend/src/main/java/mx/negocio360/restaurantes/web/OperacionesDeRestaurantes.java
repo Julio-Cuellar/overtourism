@@ -2,6 +2,7 @@ package mx.negocio360.restaurantes.web;
 
 import static mx.negocio360.compartido.graphql.TipoDeOperacion.MUTATION;
 import static mx.negocio360.compartido.graphql.TipoDeOperacion.QUERY;
+import static mx.negocio360.compartido.graphql.TipoDeOperacion.SUBSCRIPTION;
 
 import java.util.List;
 import mx.negocio360.compartido.graphql.ComandoDeclarado;
@@ -46,6 +47,9 @@ public final class OperacionesDeRestaurantes implements OperacionesGraphql {
                 OperacionDeclarada.publica(QUERY, "estadoDePedidoQr"),
                 OperacionDeclarada.publica(MUTATION, "pedirPorQr"),
                 OperacionDeclarada.publica(MUTATION, "pedirCuentaPorQr"),
+                // Avisos en vivo del personal (8.4): el tablero pide ver comandas y el salon, ver el salon
+                OperacionDeclarada.de(SUBSCRIPTION, "comandasDeCocina", PermisosDeRestaurantes.COMANDA_VER),
+                OperacionDeclarada.de(SUBSCRIPTION, "salonActualizado", PermisosDeRestaurantes.SALON_VER),
                 OperacionDeclarada.de(MUTATION, "crearCategoria", PermisosDeRestaurantes.MENU_EDITAR),
                 OperacionDeclarada.de(MUTATION, "editarCategoria", PermisosDeRestaurantes.MENU_EDITAR),
                 OperacionDeclarada.de(MUTATION, "crearPlatillo", PermisosDeRestaurantes.MENU_EDITAR),

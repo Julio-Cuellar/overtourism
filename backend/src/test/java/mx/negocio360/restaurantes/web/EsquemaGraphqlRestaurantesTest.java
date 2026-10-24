@@ -49,6 +49,10 @@ class EsquemaGraphqlRestaurantesTest {
         }
         // ComandoInput lo define el despachador de comandos de la plataforma (D-125); aqui basta un tipo vacio para armar el esquema.
         registro.merge(parser.parse("input ComandoInput { _sinVariantes: String }"));
+        // El tipo raiz Subscription lo declara la plataforma (compartido.graphqls o negocios); aqui basta uno vacio para extenderlo.
+        if (registro.getType("Subscription").isEmpty()) {
+            registro.merge(parser.parse("type Subscription { _sinAvisos: String }"));
+        }
         esquema = new SchemaGenerator().makeExecutableSchema(registro, RuntimeWiring.MOCKED_WIRING);
     }
 
@@ -73,6 +77,19 @@ class EsquemaGraphqlRestaurantesTest {
                 "abrirCuenta", "agregarLinea", "quitarLineaPendiente", "enviarACocina", "pedirCuenta", "reabrirCuenta",
                 "confirmarPresencia", "anularLinea", "cancelarCuenta", "liberarMesa", "avanzarComanda", "devolverComanda",
                 "pedirPorQr", "pedirCuentaPorQr");
+    }
+
+    @Test
+    @DisplayName("8.4: Restaurantes declara exactamente sus dos suscripciones, sin argumento de negocio")
+    void suscripciones() {
+        assertThat(campos(esquema.getSubscriptionType())).contains("comandasDeCocina", "salonActualizado");
+        assertThat(esquema.getSubscriptionType().getFieldDefinition("comandasDeCocina").getArguments()).extracting("name")
+                .containsExactly("estacion");
+        assertThat(esquema.getSubscriptionType().getFieldDefinition("salonActualizado").getArguments()).isEmpty();
+        assertThat(campos(objeto("RestAvisoDeComanda"))).containsExactlyInAnyOrder("tipo", "comandaId", "estacion", "estado",
+                "numeroDeCuenta", "mesa", "lineas", "lineasAnuladas");
+        assertThat(campos(objeto("RestAvisoDelSalon"))).containsExactlyInAnyOrder("tipo", "mesa", "cuentaId", "lineas",
+                "abrioLaCuenta", "solicitadaPor", "libres", "total", "abierto", "hasta");
     }
 
     @Test
@@ -177,11 +194,12 @@ class EsquemaGraphqlRestaurantesTest {
     @DisplayName("SG-21: con las operaciones de la plataforma y las de Restaurantes, la tabla coincide con el esquema")
     void tablaDeOperaciones() {
         List<PermisoDeclarado> catalogo = new PermisosDeRestaurantes().permisos();
-        // La variante de relleno del tipo ComandoInput de esta prueba se declara como publica solo para que la tabla cuadre.
+        // La variante de relleno del tipo ComandoInput y el campo de relleno de Subscription se declaran como publicos solo para que la tabla cuadre.
         OperacionesGraphql relleno = new OperacionesGraphql() {
             @Override
             public List<OperacionDeclarada> operaciones() {
-                return List.of();
+                return List.of(OperacionDeclarada.publica(mx.negocio360.compartido.graphql.TipoDeOperacion.SUBSCRIPTION,
+                        "_sinAvisos"));
             }
 
             @Override

@@ -2,6 +2,7 @@ package mx.negocio360.restaurantes.web;
 
 import static mx.negocio360.compartido.graphql.TipoDeOperacion.MUTATION;
 import static mx.negocio360.compartido.graphql.TipoDeOperacion.QUERY;
+import static mx.negocio360.compartido.graphql.TipoDeOperacion.SUBSCRIPTION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.LinkedHashMap;
@@ -73,6 +74,8 @@ class OperacionesDeRestaurantesTest {
         esperado.put("Mutation.cancelarCuenta", "NEGOCIO:" + PermisosDeRestaurantes.CUENTA_CANCELAR);
         esperado.put("Mutation.avanzarComanda", "NEGOCIO:" + PermisosDeRestaurantes.COMANDA_VER);
         esperado.put("Mutation.devolverComanda", "NEGOCIO:" + PermisosDeRestaurantes.COMANDA_PREPARAR);
+        esperado.put("Subscription.comandasDeCocina", "NEGOCIO:" + PermisosDeRestaurantes.COMANDA_VER);
+        esperado.put("Subscription.salonActualizado", "NEGOCIO:" + PermisosDeRestaurantes.SALON_VER);
 
         var real = porNombre();
         esperado.forEach((nombre, regla) -> assertThat(real).as(nombre).containsKey(nombre));
@@ -104,7 +107,8 @@ class OperacionesDeRestaurantesTest {
                 "Mutation.abrirCuenta", "Mutation.agregarLinea", "Mutation.quitarLineaPendiente", "Mutation.enviarACocina",
                 "Mutation.pedirCuenta", "Mutation.reabrirCuenta", "Mutation.confirmarPresencia", "Mutation.anularLinea",
                 "Mutation.cancelarCuenta", "Mutation.liberarMesa", "Mutation.avanzarComanda", "Mutation.devolverComanda",
-                "Query.mesaPorQr", "Query.estadoDePedidoQr", "Mutation.pedirPorQr", "Mutation.pedirCuentaPorQr");
+                "Query.mesaPorQr", "Query.estadoDePedidoQr", "Mutation.pedirPorQr", "Mutation.pedirCuentaPorQr",
+                "Subscription.comandasDeCocina", "Subscription.salonActualizado");
     }
 
     @Test
@@ -117,10 +121,10 @@ class OperacionesDeRestaurantesTest {
     }
 
     @Test
-    @DisplayName("solo hay consultas y mutaciones directas, mas las cuatro variantes de comando del despachador (D-209)")
+    @DisplayName("solo hay consultas, mutaciones directas y las dos suscripciones del personal, mas las cuatro variantes de comando del despachador (D-209)")
     void tipos() {
         assertThat(porNombre().values().stream().map(OperacionDeclarada::tipo).distinct().toList())
-                .containsExactlyInAnyOrder(QUERY, MUTATION);
+                .containsExactlyInAnyOrder(QUERY, MUTATION, SUBSCRIPTION);
         assertThat(declaraciones.comandos()).extracting(ComandoDeclarado::variante)
                 .containsExactlyInAnyOrder("guardarReceta", "darDeBajaPlatillo", "anularLineaPreparada", "cancelarCuentaPreparada");
     }
