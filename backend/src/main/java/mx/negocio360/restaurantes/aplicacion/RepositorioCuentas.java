@@ -20,6 +20,9 @@ public interface RepositorioCuentas {
     /** La cuenta que tiene esa linea. */
     Optional<Cuenta> cuentaDeLinea(UUID negocioId, UUID lineaId);
 
+    /** La cuenta que quedo pagada con esa venta, si hay (CT-08, CT-10). */
+    Optional<Cuenta> cuentaDeVenta(UUID negocioId, UUID ventaId);
+
     /** Todas las cuentas del negocio. */
     List<Cuenta> cuentas(UUID negocioId);
 

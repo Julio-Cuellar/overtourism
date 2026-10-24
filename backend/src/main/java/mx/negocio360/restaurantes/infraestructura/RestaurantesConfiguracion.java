@@ -18,6 +18,7 @@ import mx.negocio360.restaurantes.aplicacion.CuentasServicio;
 import mx.negocio360.restaurantes.aplicacion.HashDeDispositivo;
 import mx.negocio360.restaurantes.aplicacion.LimitesDeQr;
 import mx.negocio360.restaurantes.aplicacion.PedidosQrServicio;
+import mx.negocio360.restaurantes.aplicacion.VinculoDeCuentasConVentas;
 import mx.negocio360.restaurantes.aplicacion.ManejadorAnularLineaPreparada;
 import mx.negocio360.restaurantes.aplicacion.ManejadorCancelarCuentaPreparada;
 import mx.negocio360.restaurantes.aplicacion.RepositorioCuentas;
@@ -211,6 +212,18 @@ public class RestaurantesConfiguracion {
                                         LimitesDeQr limites, Clock reloj) {
         return new PedidosQrServicio(salon, cuentas, menu, restaurantes, cuentasServicio, disponibilidad, eventos, hash,
                 limites, reloj);
+    }
+
+    /** CT-08 a CT-10: lo que Ventas registra o anula se refleja en las cuentas. */
+    @Bean
+    VinculoDeCuentasConVentas vinculoDeCuentasConVentas(RepositorioCuentas cuentas, CuentasServicio servicio,
+                                                        SalonServicio disponibilidad, PublicadorEventos eventos) {
+        return new VinculoDeCuentasConVentas(cuentas, servicio, disponibilidad, eventos);
+    }
+
+    @Bean
+    EscuchaDeVentasEnCuentas escuchaDeVentasEnCuentas(VinculoDeCuentasConVentas vinculo) {
+        return new EscuchaDeVentasEnCuentas(vinculo);
     }
 
     @Bean

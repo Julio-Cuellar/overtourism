@@ -63,6 +63,18 @@ public record Cuenta(UUID id, UUID negocioId, int numero, UUID mesaId, EstadoDeC
                 null, null, null, false, false, false, null, null, List.of(), 1);
     }
 
+    /** El id de la cuenta que nombra una referencia de Ventas, o vacio si no es una referencia de cuenta de Restaurantes (CT-08). */
+    public static java.util.Optional<UUID> idDeReferencia(String referencia) {
+        if (referencia == null || !referencia.startsWith(PREFIJO_DE_REFERENCIA)) {
+            return java.util.Optional.empty();
+        }
+        try {
+            return java.util.Optional.of(UUID.fromString(referencia.substring(PREFIJO_DE_REFERENCIA.length())));
+        } catch (IllegalArgumentException e) {
+            return java.util.Optional.empty();
+        }
+    }
+
     /** La referencia opaca con la que se cobra esta cuenta en Ventas (CT-07). */
     public String referencia() {
         return PREFIJO_DE_REFERENCIA + id;

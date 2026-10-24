@@ -69,6 +69,41 @@ class ContratoVentasConsumidoTest {
     }
 
     @Test
+    @DisplayName("R-V1: venta.registrada real con referencia y venta.anulada real: el vinculo de cuentas las entiende y paga la cuenta")
+    void vinculoConLosEventosReales() {
+        var ahora = T0;
+        var cuentas = new mx.negocio360.restaurantes.infraestructura.CuentasEnMemoria();
+        var salonAlmacen = new mx.negocio360.restaurantes.infraestructura.SalonEnMemoria();
+        var reloj = java.time.Clock.fixed(ahora, java.time.ZoneOffset.UTC);
+        var salon = new mx.negocio360.restaurantes.aplicacion.SalonServicio(salonAlmacen, cuentas, evento -> { },
+                mx.negocio360.restaurantes.aplicacion.GeneradorDeTokens.ALEATORIO, "https://x/", reloj);
+        var servicio = new mx.negocio360.restaurantes.aplicacion.CuentasServicio(cuentas, new MenuEnMemoria(), salonAlmacen,
+                salon, evento -> { }, reloj);
+        var vinculo = new mx.negocio360.restaurantes.aplicacion.VinculoDeCuentasConVentas(cuentas, servicio, salon,
+                evento -> { });
+        var cuenta = mx.negocio360.restaurantes.dominio.Cuenta.nueva(UuidV7.generar(ahora), NEGOCIO, 1, null,
+                mx.negocio360.restaurantes.dominio.OrigenDeCuenta.PERSONAL, 2, "ana", ahora);
+        cuentas.insertar(cuenta);
+        var producto = UUID.randomUUID();
+        var base = venta(EstadoVenta.REGISTRADA, producto);
+        var conReferencia = new Venta(base.id(), NEGOCIO, "A", 1042, EstadoVenta.REGISTRADA, base.turnoId(), null, null,
+                base.subtotal(), base.descuento(), base.total(), base.lineas(), base.pagos(), T0, "ana", null, null, null, 1,
+                cuenta.referencia());
+
+        var registrada = new SobreEvento(UuidV7.generar(T0), VentaRegistrada.TIPO, VentaRegistrada.VERSION, NEGOCIO, "ventas",
+                T0, base.id(), null, new VentaRegistrada(conReferencia).datos());
+        var anulada = new SobreEvento(UuidV7.generar(T0), VentaAnulada.TIPO, VentaAnulada.VERSION, NEGOCIO, "ventas", T0,
+                base.id(), null, new VentaAnulada(conReferencia.anulada(T0, "ana", "Error")).datos());
+
+        assertThat(vinculo.procesar(registrada))
+                .isEqualTo(mx.negocio360.restaurantes.aplicacion.VinculoDeCuentasConVentas.Resultado.VINCULADA);
+        assertThat(cuentas.cuenta(NEGOCIO, cuenta.id()).orElseThrow().ventaId()).isEqualTo(base.id());
+        assertThat(vinculo.procesar(anulada))
+                .isEqualTo(mx.negocio360.restaurantes.aplicacion.VinculoDeCuentasConVentas.Resultado.ANULACION_REGISTRADA);
+        assertThat(cuentas.cuenta(NEGOCIO, cuenta.id()).orElseThrow().ventaAnulada()).isTrue();
+    }
+
+    @Test
     @DisplayName("el contrato real trae los campos que Restaurantes lee: venta_id y lineas con producto_id y cantidad como cadena decimal")
     void camposQueSeLeen() {
         var datos = new VentaRegistrada(venta(EstadoVenta.REGISTRADA, UUID.randomUUID())).datos();

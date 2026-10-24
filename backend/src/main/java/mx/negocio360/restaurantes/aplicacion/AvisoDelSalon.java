@@ -8,12 +8,12 @@ import mx.negocio360.compartido.eventos.SobreEvento;
 
 /**
  * Lo que la suscripcion {@code salonActualizado} entrega (8.4 del diseno): las alertas a meseros y caja (un pedido llego
- * por QR, un comensal pidio la cuenta), el cambio de mesas libres y la pausa automatica de un QR (QR-17). Es un aviso y no
+ * por QR, un comensal pidio la cuenta), el cambio de mesas libres, la pausa automatica de un QR (QR-17) y la cuenta que se pago con una venta distinta (CT-08). Es un aviso y no
  * la verdad: la pantalla se corrige con la consulta {@code salon}. Cada tipo llena solo sus campos; los demas van nulos.
  *
  * @param tipo           que paso
- * @param mesa           la mesa, en un pedido por QR, una cuenta pedida o un QR pausado
- * @param cuentaId       la cuenta, en un pedido por QR o una cuenta pedida
+ * @param mesa           la mesa, en un pedido por QR, una cuenta pedida, un QR pausado o una discrepancia
+ * @param cuentaId       la cuenta, en un pedido por QR, una cuenta pedida o una discrepancia
  * @param lineas         cuantas lineas trajo el pedido por QR
  * @param abrioLaCuenta  si el pedido por QR abrio la cuenta de la mesa
  * @param solicitadaPor  quien pidio la cuenta: {@code QR} o el actor
@@ -30,7 +30,8 @@ public record AvisoDelSalon(Tipo tipo, String mesa, UUID cuentaId, Integer linea
         PEDIDO_QR,
         CUENTA_SOLICITADA,
         DISPONIBILIDAD,
-        QR_PAUSADO
+        QR_PAUSADO,
+        DISCREPANCIA
     }
 
     /**
@@ -54,6 +55,9 @@ public record AvisoDelSalon(Tipo tipo, String mesa, UUID cuentaId, Integer linea
                 case EventosDeRestaurantes.QR_PAUSADO -> Optional.of(new AvisoDelSalon(Tipo.QR_PAUSADO,
                         (String) d.get("mesa"), null, null, null, null, null, null, null,
                         Instant.parse((String) d.get("hasta"))));
+                case EventosDeRestaurantes.CUENTA_CON_DISCREPANCIA -> Optional.of(new AvisoDelSalon(Tipo.DISCREPANCIA,
+                        (String) d.get("mesa"), UUID.fromString((String) d.get("cuenta_id")), null, null, null, null, null,
+                        null, null));
                 case SalonServicio.TIPO_DISPONIBILIDAD -> disponibilidad(d);
                 default -> Optional.empty();
             };

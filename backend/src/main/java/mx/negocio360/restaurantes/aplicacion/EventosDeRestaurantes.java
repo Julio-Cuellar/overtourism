@@ -13,7 +13,7 @@ import mx.negocio360.restaurantes.dominio.LineaDeCuenta;
 
 /**
  * Los eventos de uso propio de Restaurantes (seccion 9.1 del diseno): {@code comanda_enviada}, {@code comanda_actualizada},
- * {@code pedido_qr_recibido}, {@code cuenta_solicitada} y {@code qr_pausado}. Llevan solo ids, la mesa, el numero de cuenta y las lineas, sin
+ * {@code pedido_qr_recibido}, {@code cuenta_solicitada}, {@code qr_pausado} y {@code cuenta_con_discrepancia}. Llevan solo ids, la mesa, el numero de cuenta y las lineas, sin
  * datos personales. Alimentan las suscripciones del tablero y del salon con aislamiento por negocio.
  */
 public final class EventosDeRestaurantes {
@@ -29,6 +29,9 @@ public final class EventosDeRestaurantes {
 
     /** El QR de una mesa se pauso solo por cuentas canceladas sin comensales (QR-17). */
     public static final String QR_PAUSADO = "restaurantes.qr_pausado";
+
+    /** Una cuenta se pago con una venta cuyas lineas no son las de la cuenta (CT-08, CT-09). */
+    public static final String CUENTA_CON_DISCREPANCIA = "restaurantes.cuenta_con_discrepancia";
 
     private EventosDeRestaurantes() {
     }
@@ -86,6 +89,15 @@ public final class EventosDeRestaurantes {
         datos.put("lineas", lineas);
         datos.put("abrio_la_cuenta", abrioLaCuenta);
         return evento(PEDIDO_QR_RECIBIDO, cuenta.negocioId(), ahora, datos);
+    }
+
+    /** {@code restaurantes.cuenta_con_discrepancia}: la venta que pago la cuenta no vendio lo mismo que la cuenta (CT-08). */
+    public static SobreEvento cuentaConDiscrepancia(Cuenta cuenta, String mesa, UUID ventaId, Instant ahora) {
+        var datos = new LinkedHashMap<String, Object>();
+        datos.put("cuenta_id", cuenta.id().toString());
+        datos.put("mesa", mesa);
+        datos.put("venta_id", ventaId.toString());
+        return evento(CUENTA_CON_DISCREPANCIA, cuenta.negocioId(), ahora, datos);
     }
 
     /** {@code restaurantes.qr_pausado}: el QR de esa mesa no acepta pedidos hasta {@code hasta} (QR-17). */

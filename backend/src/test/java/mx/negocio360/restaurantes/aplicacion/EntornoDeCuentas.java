@@ -81,6 +81,7 @@ final class EntornoDeCuentas {
     final PedidosQrServicio qr = new PedidosQrServicio(almacenSalon, almacen, menu, restaurantes, servicio, salon, eventos::add,
             hash, LimitesDeQr.PREDETERMINADOS, reloj);
     final CocinaServicio cocina = new CocinaServicio(almacen, almacenSalon, eventos::add, reloj);
+    final VinculoDeCuentasConVentas vinculo = new VinculoDeCuentasConVentas(almacen, servicio, salon, eventos::add);
 
     final ContextoNegocio ctxA = new ContextoNegocio(NEGOCIO_A, "ana");
     final ContextoNegocio ctxB = new ContextoNegocio(NEGOCIO_B, "beto");

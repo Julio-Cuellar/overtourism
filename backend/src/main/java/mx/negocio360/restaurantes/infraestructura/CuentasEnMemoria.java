@@ -38,6 +38,12 @@ public final class CuentasEnMemoria implements RepositorioCuentas, OcupacionDeMe
     }
 
     @Override
+    public synchronized Optional<Cuenta> cuentaDeVenta(UUID negocioId, UUID ventaId) {
+        return cuentas.values().stream().filter(c -> c.negocioId().equals(negocioId) && ventaId.equals(c.ventaId()))
+                .findFirst();
+    }
+
+    @Override
     public synchronized List<Cuenta> cuentas(UUID negocioId) {
         return new ArrayList<>(cuentas.values().stream().filter(c -> c.negocioId().equals(negocioId)).toList());
     }

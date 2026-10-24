@@ -133,6 +133,28 @@ class AvisosEnVivoTest {
     }
 
     @Test
+    @DisplayName("CT-08: la cuenta pagada con una venta distinta llega al salon como DISCREPANCIA con la mesa y la cuenta")
+    void salonDiscrepancia() {
+        var cuenta = e.servicio.abrirCuenta(e.ctxA, e.mesero, e.mesa1, 2);
+        e.servicio.agregarLinea(e.ctxA, e.mesero, cuenta.id(), e.cemita, 2, null, false);
+        e.servicio.enviarACocina(e.ctxA, e.mesero, cuenta.id());
+        e.servicio.pedirCuenta(e.ctxA, e.mesero, cuenta.id());
+        e.eventos.clear();
+        var ahora = e.reloj.instant();
+        var venta = UUID.randomUUID();
+        e.vinculo.procesar(new SobreEvento(UuidV7.generar(ahora), "venta.registrada", 1, EntornoDeCuentas.NEGOCIO_A,
+                "ventas", ahora, venta, null, Map.of("venta_id", venta.toString(), "referencia", "restaurantes:cuenta:" + cuenta.id(),
+                "lineas", List.of(Map.of("linea", 1, "producto_id", e.cemita.toString(), "cantidad", "1")))));
+
+        var aviso = e.eventosDe("restaurantes.cuenta_con_discrepancia").stream().map(AvisoDelSalon::de)
+                .flatMap(java.util.Optional::stream).findFirst().orElseThrow();
+
+        assertThat(aviso.tipo()).isEqualTo(AvisoDelSalon.Tipo.DISCREPANCIA);
+        assertThat(aviso.mesa()).isEqualTo("Mesa 1");
+        assertThat(aviso.cuentaId()).isEqualTo(cuenta.id());
+    }
+
+    @Test
     @DisplayName("la disponibilidad de otro tipo o de otro modulo y los eventos ajenos no producen aviso del salon")
     void salonIgnora() {
         var ahora = EntornoDeCuentas.AHORA;

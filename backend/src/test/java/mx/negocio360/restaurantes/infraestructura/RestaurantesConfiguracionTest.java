@@ -55,6 +55,8 @@ class RestaurantesConfiguracionTest {
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.CocinaServicio.class)
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.PedidosQrServicio.class)
                     .hasSingleBean(AvisosEnVivo.class)
+                    .hasSingleBean(mx.negocio360.restaurantes.aplicacion.VinculoDeCuentasConVentas.class)
+                    .hasSingleBean(EscuchaDeVentasEnCuentas.class)
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.HashDeDispositivo.class)
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.LimitesDeQr.class)
                     .hasSingleBean(mx.negocio360.restaurantes.aplicacion.OcupacionDeMesas.class)

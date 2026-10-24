@@ -557,7 +557,7 @@ extend type Subscription {
 }
 
 enum RestTipoDeAvisoDeComanda { ENVIADA ACTUALIZADA }
-enum RestTipoDeAvisoDelSalon { PEDIDO_QR CUENTA_SOLICITADA DISPONIBILIDAD QR_PAUSADO }
+enum RestTipoDeAvisoDelSalon { PEDIDO_QR CUENTA_SOLICITADA DISPONIBILIDAD QR_PAUSADO DISCREPANCIA }
 
 "mesa, numeroDeCuenta y lineas solo vienen en ENVIADA; lineasAnuladas solo en ACTUALIZADA."
 type RestAvisoDeComanda {
@@ -579,7 +579,7 @@ type RestLineaDeAviso {
   marcaAlergia: Boolean!
 }
 
-"Cada tipo llena solo sus campos: PEDIDO_QR (mesa, cuentaId, lineas, abrioLaCuenta), CUENTA_SOLICITADA (mesa, cuentaId, solicitadaPor), DISPONIBILIDAD (libres, total, abierto), QR_PAUSADO (mesa, hasta)."
+"Cada tipo llena solo sus campos: PEDIDO_QR (mesa, cuentaId, lineas, abrioLaCuenta), CUENTA_SOLICITADA (mesa, cuentaId, solicitadaPor), DISPONIBILIDAD (libres, total, abierto), QR_PAUSADO (mesa, hasta), DISCREPANCIA (mesa, cuentaId: la cuenta se pago con una venta que no vendio lo mismo, CT-08)."
 type RestAvisoDelSalon {
   tipo: RestTipoDeAvisoDelSalon!
   mesa: String
