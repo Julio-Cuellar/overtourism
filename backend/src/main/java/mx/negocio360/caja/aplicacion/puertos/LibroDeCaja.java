@@ -3,10 +3,12 @@ package mx.negocio360.caja.aplicacion.puertos;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import mx.negocio360.caja.FiltroCortes;
 import mx.negocio360.caja.dominio.Corte;
 import mx.negocio360.caja.dominio.EstadoVentaAplicada;
 import mx.negocio360.caja.dominio.MovimientoCaja;
 import mx.negocio360.caja.dominio.VentaAplicada;
+import mx.negocio360.compartido.paginacion.Pagina;
 
 /** Puerto de {@code movimiento_caja}, {@code venta_aplicada}, {@code evento_procesado} y {@code corte}. */
 public interface LibroDeCaja {
@@ -26,6 +28,17 @@ public interface LibroDeCaja {
      * @return movimientos del turno en orden
      */
     List<MovimientoCaja> movimientos(UUID negocioId, UUID turnoId);
+
+    /**
+     * Movimientos de un turno con cursor, en orden de registro (CF-02, D-131).
+     *
+     * @param negocioId negocio
+     * @param turnoId   turno
+     * @param primeros  tamano de pagina, de 1 a 100
+     * @param despues   cursor de la pagina anterior, o nulo
+     * @return la pagina pedida
+     */
+    Pagina<MovimientoCaja> movimientos(UUID negocioId, UUID turnoId, int primeros, String despues);
 
     /**
      * Lo que Caja hizo con una venta, si ya la vio (CJ-04).
@@ -70,10 +83,13 @@ public interface LibroDeCaja {
     void guardarCorte(Corte corte);
 
     /**
-     * Cortes del negocio.
+     * Cortes del negocio que cumplen el filtro, del mas reciente al mas antiguo, con cursor (CF-03, D-131).
      *
      * @param negocioId negocio
-     * @return cortes en orden de confirmacion
+     * @param filtro    filtro ya validado
+     * @param primeros  tamano de pagina, de 1 a 100
+     * @param despues   cursor de la pagina anterior, o nulo
+     * @return la pagina pedida
      */
-    List<Corte> cortes(UUID negocioId);
+    Pagina<Corte> cortes(UUID negocioId, FiltroCortes filtro, int primeros, String despues);
 }

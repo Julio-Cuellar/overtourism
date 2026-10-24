@@ -1,0 +1,4402 @@
+{
+  "info": {
+    "_postman_id": "5c3a1f4e-0000-4000-8000-3600000000a1",
+    "name": "Negocio 360: todos los módulos (API)",
+    "description": "Prueba todos los módulos de Negocio 360 de punta a punta: Identidad (REST), Negocios, Caja, Ventas, Clientes e Inventario (GraphQL).\n\nCOMO CORRERLA\n1. Desde backend/: docker compose up -d --wait y luego mvn spring-boot:run \"-Dspring-boot.run.profiles=desarrollo\". Ese perfil enciende Ventas, Caja e Inventario en memoria, los 6 productos [SIMULADO] y GET /dev/canal/codigo. Sin él la colección no funciona.\n2. Importa esta colección y el entorno negocio360.local (baseUrl = http://localhost:8080).\n3. Ejecuta las carpetas 0 a 5 EN ORDEN con el Runner: cada una guarda variables de colección ({{token}}, {{cajaId}}, {{turnoId}}, {{ventaId}}, {{articuloId}}…) que usan las siguientes. La 0 registra a un dueño nuevo con su negocio en cada corrida (correo, celular y nombre inventados).\n\nNOTAS\n- Toda escritura son dos peticiones: «a» prepara (guarda {{tokenPreparado}}) y «b» confirma. El token es de un solo uso y vence a los 5 minutos.\n- Las peticiones marcadas «Error» o «Pendiente» esperan un código de error concreto: forman parte de lo que se prueba.\n- Para repetir la colección varias veces seguidas puede hacer falta subir los topes de Identidad: \"-Dspring-boot.run.arguments=--identidad.politica.solicitudes-por-ip=1000\".\n- Los datos son inventados y viven en memoria (Ventas, Caja, Inventario): se pierden al reiniciar el backend.\n- Los scripts de prueba se verificaron con un corredor propio, no con Postman ni con Newman.\n- Guía para el frontend: docs/api/graphql-integracion-front.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Acceso con Identidad",
+      "description": "Registra al dueño de un negocio de ejemplo, lee su código (solo desarrollo), abre sesión y espera a que Negocios active su negocio. Deja {{token}} para todas las carpetas siguientes. Ejecuta esta carpeta primero.",
+      "item": [
+        {
+          "name": "0.1 Registro del dueño con su negocio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "description": "Guarda el formulario como pre-registro y manda un código al correo. Inventa un correo, un celular y un negocio nuevos en cada corrida.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Ana\", \"apellidos\": \"Prueba Postman\", \"correo\": \"{{correo}}\", \"telefono\": \"{{telefono}}\", \"aceptaAviso\": true, \"negocio\": {\"nombre\": \"{{negocioNombre}}\", \"giro\": \"RESTAURANTE\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('sufijo') || pm.info.requestName.startsWith('0.1')) pm.collectionVariables.set('sufijo', String(Math.floor(Math.random() * 1e7)).padStart(7, '0'));",
+                  "pm.collectionVariables.set('correo', pm.variables.replaceIn(\"postman.{{sufijo}}@example.com\"));",
+                  "pm.collectionVariables.set('telefono', pm.variables.replaceIn(\"222{{sufijo}}\"));",
+                  "pm.collectionVariables.set('negocioNombre', pm.variables.replaceIn(\"Fonda Postman {{sufijo}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 202', () => pm.response.to.have.status(202));",
+                  "let cuerpo = null; try { cuerpo = pm.response.json(); } catch (e) { cuerpo = null; }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.2 Leer el código de verificación (solo desarrollo)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dev/canal/codigo?correo={{correo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "canal",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "correo",
+                  "value": "{{correo}}"
+                }
+              ]
+            },
+            "description": "Existe solo con el perfil desarrollo: el código no se manda por correo todavía.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "let cuerpo = null; try { cuerpo = pm.response.json(); } catch (e) { cuerpo = null; }",
+                  "pm.test('Trae codigo', () => pm.expect(g(cuerpo, 'codigo')).to.exist);",
+                  "if (g(cuerpo, 'codigo') !== undefined) pm.collectionVariables.set('codigo', String(g(cuerpo, 'codigo')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.3 Verificar el correo y abrir sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/verificacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "verificacion"
+              ]
+            },
+            "description": "Crea la cuenta y devuelve el token. Es la única vez que el token viaja en claro.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo\": \"{{correo}}\", \"codigo\": \"{{codigo}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "let cuerpo = null; try { cuerpo = pm.response.json(); } catch (e) { cuerpo = null; }",
+                  "pm.test('Trae token', () => pm.expect(g(cuerpo, 'token')).to.exist);",
+                  "if (g(cuerpo, 'token') !== undefined) pm.collectionVariables.set('token', String(g(cuerpo, 'token')));",
+                  "if (g(cuerpo, 'cuenta.id') !== undefined) pm.collectionVariables.set('cuentaId', String(g(cuerpo, 'cuenta.id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.4 Esperar a que el negocio quede activo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            },
+            "description": "Negocios responde por el bus de eventos; si todavía no hay negocioActivo, la petición se repite sola hasta 12 veces.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "let cuerpo = null; try { cuerpo = pm.response.json(); } catch (e) { cuerpo = null; }",
+                  "const n = Number(pm.collectionVariables.get('_reintentos_04') || 0);",
+                  "const hecho = g(cuerpo, 'negocioActivo') !== undefined || n >= 12;",
+                  "if (hecho) {",
+                  "pm.test('Trae negocioActivo', () => pm.expect(g(cuerpo, 'negocioActivo')).to.exist);",
+                  "pm.test('Trae permisos', () => pm.expect(g(cuerpo, 'permisos')).to.exist);",
+                  "pm.test('rol', () => pm.expect(String(g(cuerpo, 'rol'))).to.eql(pm.variables.replaceIn(\"DUENO\")));",
+                  "}",
+                  "if (g(cuerpo, 'negocioActivo') !== undefined) pm.collectionVariables.set('negocioId', String(g(cuerpo, 'negocioActivo')));",
+                  "if (g(cuerpo, 'negocioActivo') === undefined && n < 12) { pm.collectionVariables.set('_reintentos_04', String(n + 1)); setTimeout(() => {}, 700); pm.execution.setNextRequest(pm.info.requestName); } else { pm.collectionVariables.unset('_reintentos_04'); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.5 Roles que ofrece el giro",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "let cuerpo = null; try { cuerpo = pm.response.json(); } catch (e) { cuerpo = null; }",
+                  "pm.test('Trae 0.codigo', () => pm.expect(g(cuerpo, '0.codigo')).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.6 Catálogo de permisos de todos los módulos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/permisos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permisos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "let cuerpo = null; try { cuerpo = pm.response.json(); } catch (e) { cuerpo = null; }",
+                  "pm.test('Trae 0.codigo', () => pm.expect(g(cuerpo, '0.codigo')).to.exist);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Negocios",
+      "description": "El panel del negocio (miNegocio, sucursales, disponibilidad) y la superficie pública del turista (sin sesión).",
+      "item": [
+        {
+          "name": "1.1 Mi negocio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ miNegocio { id nombre giro { codigo nombre } estado publicado zonaHoraria } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.miNegocio.id', () => pm.expect(JSON.stringify(g(cuerpo, 'data.miNegocio.id'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"{{negocioId}}\"))));",
+                  "pm.test('data.miNegocio.giro.codigo', () => pm.expect(JSON.stringify(g(cuerpo, 'data.miNegocio.giro.codigo'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"RESTAURANTE\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Sucursales",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ sucursales { id nombre esPrincipal activa } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.sucursales.0.esPrincipal', () => pm.expect(JSON.stringify(g(cuerpo, 'data.sucursales.0.esPrincipal'))).to.eql(JSON.stringify(true)));",
+                  "if (g(cuerpo, 'data.sucursales.0.id') !== undefined && g(cuerpo, 'data.sucursales.0.id') !== null) pm.collectionVariables.set('sucursalId', String(g(cuerpo, 'data.sucursales.0.id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Declarar la disponibilidad del día",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation { definirDisponibilidad(nivel: MODERADA, nota: \\\"Hay lugar en terraza\\\") { nivel nota venceEn } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.definirDisponibilidad.nivel', () => pm.expect(JSON.stringify(g(cuerpo, 'data.definirDisponibilidad.nivel'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"MODERADA\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 Mis altas de negocio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Los negocios que pidió esta cuenta y cómo respondió Negocios.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ misAltasDeNegocio { negocioId estado } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.misAltasDeNegocio', () => pm.expect(g(cuerpo, 'data.misAltasDeNegocio')).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.5 Reseñas de mi negocio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ resenas(primeros: 5) { resenas { id calificacion estado } hayMas cursorFinal } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.resenas', () => pm.expect(g(cuerpo, 'data.resenas')).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.6 Negocios públicos (turista, sin sesión)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Superficie pública: no pide token. Un negocio nuevo no aparece hasta que se publique.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ negociosPublicos(primeros: 5) { negocios { id nombre } pageInfo { hayMas } } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.negociosPublicos', () => pm.expect(g(cuerpo, 'data.negociosPublicos')).to.exist);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Caja y Ventas",
+      "description": "Crear caja, abrir turno, cobrar con productos simulados, anular y cortar. Toda escritura es preparar → confirmar. El dinero viaja como texto decimal exacto.",
+      "item": [
+        {
+          "name": "2.1a Preparar: crear caja",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"crearCaja\": {\"nombre\": \"Mostrador\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.1b Confirmar: crear caja",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));",
+                  "if (g(cuerpo, 'data.confirmarComando.recursoId') !== undefined && g(cuerpo, 'data.confirmarComando.recursoId') !== null) pm.collectionVariables.set('cajaId', String(g(cuerpo, 'data.confirmarComando.recursoId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2a Preparar: abrir turno con fondo de 300.00",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"abrirTurno\": {\"cajaId\": \"{{cajaId}}\", \"fondoInicial\": \"300.00\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2b Confirmar: abrir turno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));",
+                  "if (g(cuerpo, 'data.confirmarComando.recursoId') !== undefined && g(cuerpo, 'data.confirmarComando.recursoId') !== null) pm.collectionVariables.set('turnoId', String(g(cuerpo, 'data.confirmarComando.recursoId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Productos para vender (simulados)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Son 6 productos [SIMULADO] solo con el perfil desarrollo (y los de Misceláneos o Restaurantes cuando existan).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ productosParaVenta(primeros: 10) { productoId descripcion unidad precio admiteFraccion } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.productosParaVenta.0.productoId', () => pm.expect(g(cuerpo, 'data.productosParaVenta.0.productoId')).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3b Buscar un producto por texto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ productosParaVenta(texto: \\\"taco\\\", primeros: 5) { productoId descripcion } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.productosParaVenta.0.productoId', () => pm.expect(g(cuerpo, 'data.productosParaVenta.0.productoId')).to.exist);",
+                  "if (g(cuerpo, 'data.productosParaVenta.0.productoId') !== undefined && g(cuerpo, 'data.productosParaVenta.0.productoId') !== null) pm.collectionVariables.set('productoTaco', String(g(cuerpo, 'data.productosParaVenta.0.productoId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3c Buscar el camote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ productosParaVenta(texto: \\\"camote\\\", primeros: 5) { productoId descripcion admiteFraccion } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.productosParaVenta.0.admiteFraccion', () => pm.expect(JSON.stringify(g(cuerpo, 'data.productosParaVenta.0.admiteFraccion'))).to.eql(JSON.stringify(true)));",
+                  "if (g(cuerpo, 'data.productosParaVenta.0.productoId') !== undefined && g(cuerpo, 'data.productosParaVenta.0.productoId') !== null) pm.collectionVariables.set('productoCamote', String(g(cuerpo, 'data.productosParaVenta.0.productoId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4a Preparar: cobrar 3 tacos y medio kilo de camote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "El precio lo pone el servidor (12.00 × 3 + 60.00 × 0.5 = 66.00); los pagos deben sumar el total.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarVenta\": {\"turnoId\": \"{{turnoId}}\", \"lineas\": [{\"productoId\": \"{{productoTaco}}\", \"cantidad\": \"3\"}, {\"productoId\": \"{{productoCamote}}\", \"cantidad\": \"0.5\"}], \"pagos\": [{\"metodo\": \"EFECTIVO\", \"monto\": \"66.00\", \"recibido\": \"100.00\"}]}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4b Confirmar: cobrar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "datos trae cambio, folio, total y venta_id (ordenados por clave).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.datos.0.clave', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.datos.0.clave'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"cambio\"))));",
+                  "pm.test('data.confirmarComando.datos.0.valor', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.datos.0.valor'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"34.00\"))));",
+                  "pm.test('data.confirmarComando.datos.1.clave', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.datos.1.clave'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"folio\"))));",
+                  "pm.test('data.confirmarComando.datos.1.valor', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.datos.1.valor'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"1\"))));",
+                  "pm.test('data.confirmarComando.datos.2.valor', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.datos.2.valor'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"66.00\"))));",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));",
+                  "if (g(cuerpo, 'data.confirmarComando.recursoId') !== undefined && g(cuerpo, 'data.confirmarComando.recursoId') !== null) pm.collectionVariables.set('ventaId', String(g(cuerpo, 'data.confirmarComando.recursoId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Ver la venta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($i: ID!) { venta(id: $i) { id serie folio estado total pagos { metodo monto recibido cambio } lineas { descripcion cantidad importe } } }\", \"variables\": {\"i\": \"{{ventaId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.venta.estado', () => pm.expect(JSON.stringify(g(cuerpo, 'data.venta.estado'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"REGISTRADA\"))));",
+                  "pm.test('data.venta.total', () => pm.expect(JSON.stringify(g(cuerpo, 'data.venta.total'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"66.00\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.6 Ventas del turno (con cursor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($f: FiltroVentas) { ventas(filtro: $f, primeros: 5) { ventas { id folio estado total } pageInfo { hayMas cursorFinal } } }\", \"variables\": {\"f\": {\"turnoId\": \"{{turnoId}}\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.ventas.ventas.0.id', () => pm.expect(JSON.stringify(g(cuerpo, 'data.ventas.ventas.0.id'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"{{ventaId}}\"))));",
+                  "pm.test('data.ventas.pageInfo.hayMas', () => pm.expect(JSON.stringify(g(cuerpo, 'data.ventas.pageInfo.hayMas'))).to.eql(JSON.stringify(false)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.7 Resumen del turno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($t: ID!) { resumenTurno(turnoId: $t) { ventasRegistradas ventasAnuladas totalesPorMetodo { metodo monto } preparacionesVigentes } }\", \"variables\": {\"t\": \"{{turnoId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.resumenTurno.ventasRegistradas', () => pm.expect(JSON.stringify(g(cuerpo, 'data.resumenTurno.ventasRegistradas'))).to.eql(JSON.stringify(1)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.8 Saldo de la caja del turno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Efectivo esperado: 300.00 de fondo + 66.00 de la venta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($t: ID!) { saldoTurno(turnoId: $t) { estado ventasAplicadas esperadoPorMetodo { metodo monto } movimientos(primeros: 10) { movimientos { tipo metodo monto } pageInfo { hayMas } } } }\", \"variables\": {\"t\": \"{{turnoId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.saldoTurno.estado', () => pm.expect(JSON.stringify(g(cuerpo, 'data.saldoTurno.estado'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"ABIERTO\"))));",
+                  "pm.test('data.saldoTurno.ventasAplicadas', () => pm.expect(JSON.stringify(g(cuerpo, 'data.saldoTurno.ventasAplicadas'))).to.eql(JSON.stringify(1)));",
+                  "pm.test('data.saldoTurno.esperadoPorMetodo.0.monto', () => pm.expect(JSON.stringify(g(cuerpo, 'data.saldoTurno.esperadoPorMetodo.0.monto'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"366.00\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.9 Turno activo de la caja",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($c: ID!) { turnoActivo(cajaId: $c) { id estado fondoInicial abiertoPor } }\", \"variables\": {\"c\": \"{{cajaId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.turnoActivo.id', () => pm.expect(JSON.stringify(g(cuerpo, 'data.turnoActivo.id'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"{{turnoId}}\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.10 Cajas del negocio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ cajas { id nombre activa } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.cajas.0.id', () => pm.expect(JSON.stringify(g(cuerpo, 'data.cajas.0.id'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"{{cajaId}}\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.10b Error: los pagos no suman el total",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarVenta\": {\"turnoId\": \"{{turnoId}}\", \"lineas\": [{\"productoId\": \"{{productoTaco}}\", \"cantidad\": \"1\"}], \"pagos\": [{\"metodo\": \"EFECTIVO\", \"monto\": \"5.00\"}]}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error PAGOS_NO_CUADRAN', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('PAGOS_NO_CUADRAN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.10c Error: cupón inválido (no existe Pasaporte)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Sin el módulo Pasaporte todo código de cupón es inválido: se cobra sin cupón.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarVenta\": {\"turnoId\": \"{{turnoId}}\", \"lineas\": [{\"productoId\": \"{{productoTaco}}\", \"cantidad\": \"1\"}], \"pagos\": [{\"metodo\": \"EFECTIVO\", \"monto\": \"12.00\"}], \"codigoCupon\": \"PASAPORTE-20\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error CUPON_INVALIDO', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('CUPON_INVALIDO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.11a Preparar: anular la venta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"anularVenta\": {\"ventaId\": \"{{ventaId}}\", \"motivo\": \"Cobro duplicado (prueba)\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.11b Confirmar: anular",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.datos.0.valor', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.datos.0.valor'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"ANULADA\"))));",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.12a Preparar: meter 100.00 de efectivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarMovimientoCaja\": {\"turnoId\": \"{{turnoId}}\", \"tipo\": \"ENTRADA\", \"monto\": \"100.00\", \"nota\": \"Cambio del banco\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.12b Confirmar: entrada de efectivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.13a Preparar: cerrar turno contando 400.00 en efectivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Preparar pone el turno EN_CORTE. Esperado: 300 + 66 − 66 + 100 = 400.00.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"cerrarTurno\": {\"turnoId\": \"{{turnoId}}\", \"contado\": [{\"metodo\": \"EFECTIVO\", \"monto\": \"400.00\"}]}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.13b Confirmar: cerrar turno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "diferencia_efectivo debe ser 0.00.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.datos.1.valor', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.datos.1.valor'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"0.00\"))));",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.14 Cortes del negocio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ cortes(primeros: 5) { cortes { id turnoId diferenciaEfectivo esperadoPorMetodo { metodo monto } contadoPorMetodo { metodo monto } } pageInfo { hayMas } } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.cortes.cortes.0.turnoId', () => pm.expect(JSON.stringify(g(cuerpo, 'data.cortes.cortes.0.turnoId'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"{{turnoId}}\"))));",
+                  "pm.test('data.cortes.cortes.0.diferenciaEfectivo', () => pm.expect(JSON.stringify(g(cuerpo, 'data.cortes.cortes.0.diferenciaEfectivo'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"0.00\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.15 Error: cobrar en un turno cerrado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Cerrado el turno, Caja ya no deja vender en él.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarVenta\": {\"turnoId\": \"{{turnoId}}\", \"lineas\": [{\"productoId\": \"{{productoTaco}}\", \"cantidad\": \"1\"}], \"pagos\": [{\"metodo\": \"EFECTIVO\", \"monto\": \"12.00\"}]}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error TURNO_NO_ABIERTO', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('TURNO_NO_ABIERTO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.16 Error: pedir 500 ventas por página",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ ventas(primeros: 500) { ventas { id } } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error PAGINACION_INVALIDA', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('PAGINACION_INVALIDA'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Clientes",
+      "description": "Lo que Clientes ya tiene programado y lo que todavía no. Publicar el aviso de privacidad es un permiso sensible y la confirmación reforzada aún no existe, así que registrar clientes por GraphQL todavía no se puede de punta a punta.",
+      "item": [
+        {
+          "name": "3.1 Aviso de privacidad vigente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "null: el negocio todavía no publica un aviso.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ avisoPrivacidadVigente { version responsableNombre finalidades { codigo requiereConsentimiento } } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.avisoPrivacidadVigente', () => pm.expect(JSON.stringify(g(cuerpo, 'data.avisoPrivacidadVigente'))).to.eql(JSON.stringify(null)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Sugerir clientes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Entre 2 y 80 caracteres; el teléfono sale enmascarado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ sugerirClientes(texto: \\\"ana\\\") { id nombreCompleto telefonoEnmascarado } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.sugerirClientes', () => pm.expect(g(cuerpo, 'data.sugerirClientes')).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Error: texto de un solo caracter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ sugerirClientes(texto: \\\"a\\\") { id } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error CONSULTA_INVALIDA', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('CONSULTA_INVALIDA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 Error: publicar el aviso pide confirmación reforzada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"publicarAvisoPrivacidad\": {\"responsableNombre\": \"Fonda Postman\", \"responsableDomicilio\": \"Calle 5 de Mayo 10, Puebla\", \"finalidades\": [{\"codigo\": \"VENTA\", \"requiereConsentimiento\": false}], \"textoSimplificado\": \"Usamos tu nombre para atenderte.\", \"textoIntegral\": \"Aviso integral de ejemplo.\", \"contactoArco\": \"privacidad@example.com\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error CONFIRMACION_REQUERIDA', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('CONFIRMACION_REQUERIDA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 Error: registrar un cliente sin aviso de privacidad vigente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Antes de registrar clientes el negocio debe publicar su aviso de privacidad (L-01).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarCliente\": {\"nombre\": \"Josefina\", \"apellidos\": \"Prueba\", \"telefono\": \"+52222{{sufijo}}\", \"avisoVersion\": 1}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error AVISO_NO_VIGENTE', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('AVISO_NO_VIGENTE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 Pendiente: panorama de clientes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Depende del historial de compras (CLI-I3): no se inventan cifras.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ panoramaClientes { total } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error OPERACION_NO_DISPONIBLE', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('OPERACION_NO_DISPONIBLE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.7 Pendiente: lista de clientes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ clientes { nodos { id } } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error OPERACION_NO_DISPONIBLE', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('OPERACION_NO_DISPONIBLE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.8 Pendiente: registrar consentimiento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarConsentimiento\": {\"clienteId\": \"{{cuentaId}}\", \"finalidad\": \"PROMOCIONES\", \"estado\": \"OTORGADO\", \"medio\": \"PANEL\", \"avisoVersion\": 1}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error COMANDO_NO_DISPONIBLE', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('COMANDO_NO_DISPONIBLE'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Inventario",
+      "description": "Artículos, entradas, salidas, mermas, ajuste por conteo, saldo con costo promedio ponderado y kardex.",
+      "item": [
+        {
+          "name": "4.1a Preparar: crear el artículo Harina (g) con costal de 25 kg",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"crearArticulo\": {\"nombre\": \"Harina {{sufijo}}\", \"unidadBase\": \"g\", \"minimo\": \"1\", \"unidadMinimo\": \"kg\", \"unidadesPropias\": [{\"nombre\": \"costal\", \"factor\": \"25000\"}]}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.1b Confirmar: crear artículo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));",
+                  "if (g(cuerpo, 'data.confirmarComando.recursoId') !== undefined && g(cuerpo, 'data.confirmarComando.recursoId') !== null) pm.collectionVariables.set('articuloId', String(g(cuerpo, 'data.confirmarComando.recursoId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2a Preparar: entrada de 2 costales a 450.00",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarEntradaInventario\": {\"articuloId\": \"{{articuloId}}\", \"cantidad\": \"2\", \"unidad\": \"costal\", \"costoUnitario\": \"450.00\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2b Confirmar: entrada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3a Preparar: salida de 5 kg",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarSalidaInventario\": {\"articuloId\": \"{{articuloId}}\", \"cantidad\": \"5\", \"unidad\": \"kg\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3b Confirmar: salida",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4a Preparar: merma de 1 kg por daño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarMermaInventario\": {\"articuloId\": \"{{articuloId}}\", \"cantidad\": \"1\", \"unidad\": \"kg\", \"motivo\": \"DANO\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4b Confirmar: merma",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.5 Ver el artículo con su saldo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "50 kg − 5 kg − 1 kg = 44 000 g.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($i: ID!) { articulo(id: $i) { id nombre unidadBase cantidadBase cpp valor bajoMinimo unidadesPropias { nombre factor } } }\", \"variables\": {\"i\": \"{{articuloId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.articulo.cantidadBase', () => pm.expect(JSON.stringify(g(cuerpo, 'data.articulo.cantidadBase'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"44000.0000\"))));",
+                  "pm.test('data.articulo.bajoMinimo', () => pm.expect(JSON.stringify(g(cuerpo, 'data.articulo.bajoMinimo'))).to.eql(JSON.stringify(false)));",
+                  "pm.test('data.articulo.unidadesPropias.0.nombre', () => pm.expect(JSON.stringify(g(cuerpo, 'data.articulo.unidadesPropias.0.nombre'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"costal\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.6 Inventario del negocio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ inventario(primeros: 10) { nodos { id nombre cantidadBase cpp valor } pageInfo { hayMas } } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.inventario.nodos.0.id', () => pm.expect(g(cuerpo, 'data.inventario.nodos.0.id')).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.7 Kardex del artículo (página de 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($i: ID!) { kardex(articuloId: $i, primeros: 2) { nodos { tipo causaTipo cantidadBase saldoResultante } pageInfo { hayMas cursorFinal } } }\", \"variables\": {\"i\": \"{{articuloId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.kardex.nodos.0.tipo', () => pm.expect(JSON.stringify(g(cuerpo, 'data.kardex.nodos.0.tipo'))).to.eql(JSON.stringify(pm.variables.replaceIn(\"ENTRADA\"))));",
+                  "pm.test('data.kardex.pageInfo.hayMas', () => pm.expect(JSON.stringify(g(cuerpo, 'data.kardex.pageInfo.hayMas'))).to.eql(JSON.stringify(true)));",
+                  "if (g(cuerpo, 'data.kardex.pageInfo.cursorFinal') !== undefined && g(cuerpo, 'data.kardex.pageInfo.cursorFinal') !== null) pm.collectionVariables.set('cursor', String(g(cuerpo, 'data.kardex.pageInfo.cursorFinal')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.8 Kardex, página siguiente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($i: ID!, $d: String) { kardex(articuloId: $i, primeros: 5, despues: $d) { nodos { tipo } pageInfo { hayMas } } }\", \"variables\": {\"i\": \"{{articuloId}}\", \"d\": \"{{cursor}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.kardex.pageInfo.hayMas', () => pm.expect(JSON.stringify(g(cuerpo, 'data.kardex.pageInfo.hayMas'))).to.eql(JSON.stringify(false)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.9a Preparar: ajuste por conteo (se contaron 40 kg)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"ajustarPorConteo\": {\"articuloId\": \"{{articuloId}}\", \"cantidadContada\": \"40\", \"unidad\": \"kg\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.9b Confirmar: ajuste por conteo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.10 Error: búsqueda demasiado larga",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($t: String) { inventario(texto: $t, primeros: 5) { nodos { id } } }\", \"variables\": {\"t\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error CONSULTA_INVALIDA', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('CONSULTA_INVALIDA'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Seguridad y aislamiento",
+      "description": "Sin sesión, token inválido, token de confirmación ajeno o inventado, y un segundo negocio que no ve nada del primero. Esta carpeta registra a un segundo dueño (tokenB).",
+      "item": [
+        {
+          "name": "5.1 Sin token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ cajas { id } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error NO_AUTENTICADO', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('NO_AUTENTICADO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 Token que no existe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Un token que Identidad no reconoce responde 401 antes de llegar a GraphQL.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ cajas { id } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenInvalido}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 Confirmar sin sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"ventas.abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error NO_AUTENTICADO', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('NO_AUTENTICADO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.4 Confirmar con un prefijo que no existe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "No dice qué módulos existen.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"inventado.abcdefghijklmnopqrstuvwxyz0123456789ABC\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error TOKEN_INVALIDO', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('TOKEN_INVALIDO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.5 Registro del segundo dueño (B)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Beto\", \"apellidos\": \"Segundo\", \"correo\": \"{{correoB}}\", \"telefono\": \"{{telefonoB}}\", \"aceptaAviso\": true, \"negocio\": {\"nombre\": \"Taller B {{sufijo}}\", \"giro\": \"MISCELANEA\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('correoB', pm.variables.replaceIn(\"postman.b.{{sufijo}}@example.com\"));",
+                  "pm.collectionVariables.set('telefonoB', pm.variables.replaceIn(\"223{{sufijo}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 202', () => pm.response.to.have.status(202));",
+                  "let cuerpo = null; try { cuerpo = pm.response.json(); } catch (e) { cuerpo = null; }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.6 Código del segundo dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dev/canal/codigo?correo={{correoB}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dev",
+                "canal",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "correo",
+                  "value": "{{correoB}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "let cuerpo = null; try { cuerpo = pm.response.json(); } catch (e) { cuerpo = null; }",
+                  "if (g(cuerpo, 'codigo') !== undefined) pm.collectionVariables.set('codigoB', String(g(cuerpo, 'codigo')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.7 Verificar al segundo dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/registro/verificacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registro",
+                "verificacion"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo\": \"{{correoB}}\", \"codigo\": \"{{codigoB}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "let cuerpo = null; try { cuerpo = pm.response.json(); } catch (e) { cuerpo = null; }",
+                  "if (g(cuerpo, 'token') !== undefined) pm.collectionVariables.set('tokenB', String(g(cuerpo, 'token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.8 Esperar el negocio de B",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/yo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "yo"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "let cuerpo = null; try { cuerpo = pm.response.json(); } catch (e) { cuerpo = null; }",
+                  "const n = Number(pm.collectionVariables.get('_reintentos_58') || 0);",
+                  "const hecho = g(cuerpo, 'negocioActivo') !== undefined || n >= 12;",
+                  "if (hecho) {",
+                  "pm.test('Trae negocioActivo', () => pm.expect(g(cuerpo, 'negocioActivo')).to.exist);",
+                  "}",
+                  "if (g(cuerpo, 'negocioActivo') !== undefined) pm.collectionVariables.set('negocioIdB', String(g(cuerpo, 'negocioActivo')));",
+                  "if (g(cuerpo, 'negocioActivo') === undefined && n < 12) { pm.collectionVariables.set('_reintentos_58', String(n + 1)); setTimeout(() => {}, 700); pm.execution.setNextRequest(pm.info.requestName); } else { pm.collectionVariables.unset('_reintentos_58'); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.9 B no ve las cajas de A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"{ cajas { id } }\", \"variables\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.cajas', () => pm.expect(JSON.stringify(g(cuerpo, 'data.cajas'))).to.eql(JSON.stringify([])));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.10 B no ve la venta de A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($i: ID!) { venta(id: $i) { id } }\", \"variables\": {\"i\": \"{{ventaId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.venta', () => pm.expect(JSON.stringify(g(cuerpo, 'data.venta'))).to.eql(JSON.stringify(null)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.11 B no ve el artículo de A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($i: ID!) { articulo(id: $i) { id } }\", \"variables\": {\"i\": \"{{articuloId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.articulo', () => pm.expect(JSON.stringify(g(cuerpo, 'data.articulo'))).to.eql(JSON.stringify(null)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.12 B no ve el kardex de A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($i: ID!) { kardex(articuloId: $i) { nodos { id } } }\", \"variables\": {\"i\": \"{{articuloId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error ARTICULO_NO_ENCONTRADO', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('ARTICULO_NO_ENCONTRADO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.13 B no ve el turno de A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query($t: ID!) { saldoTurno(turnoId: $t) { estado } }\", \"variables\": {\"t\": \"{{turnoId}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error TURNO_NO_ENCONTRADO', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('TURNO_NO_ENCONTRADO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.14a A prepara una salida de inventario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($i: ComandoInput!) { prepararComando(input: $i) { token resumen expiraEn advertencias } }\", \"variables\": {\"i\": {\"registrarSalidaInventario\": {\"articuloId\": \"{{articuloId}}\", \"cantidad\": \"1\", \"unidad\": \"kg\"}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('Trae data.prepararComando.resumen', () => pm.expect(g(cuerpo, 'data.prepararComando.resumen')).to.exist);",
+                  "if (g(cuerpo, 'data.prepararComando.token') !== undefined && g(cuerpo, 'data.prepararComando.token') !== null) pm.collectionVariables.set('tokenPreparado', String(g(cuerpo, 'data.prepararComando.token')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.14b B intenta confirmar el token de A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Error TOKEN_INVALIDO', () => pm.expect(g(cuerpo, 'errors.0.extensions.codigo'), JSON.stringify(cuerpo.errors)).to.eql('TOKEN_INVALIDO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.14c A confirma su propio token (el de B no lo gastó)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation($t: String!) { confirmarComando(token: $t) { ok codigo mensajePlantilla recursoId datos { clave valor } } }\", \"variables\": {\"t\": \"{{tokenPreparado}}\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const g = (o, p) => p.split('.').reduce((a, k) => (a === undefined || a === null ? undefined : a[k]), o);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('Sin errores de GraphQL', () => pm.expect(cuerpo.errors, JSON.stringify(cuerpo.errors)).to.be.undefined);",
+                  "pm.test('data.confirmarComando.ok', () => pm.expect(JSON.stringify(g(cuerpo, 'data.confirmarComando.ok'))).to.eql(JSON.stringify(true)));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "tokenB",
+      "value": ""
+    },
+    {
+      "key": "tokenPreparado",
+      "value": ""
+    },
+    {
+      "key": "sufijo",
+      "value": ""
+    },
+    {
+      "key": "correo",
+      "value": ""
+    },
+    {
+      "key": "telefono",
+      "value": ""
+    },
+    {
+      "key": "negocioNombre",
+      "value": ""
+    },
+    {
+      "key": "correoB",
+      "value": ""
+    },
+    {
+      "key": "telefonoB",
+      "value": ""
+    },
+    {
+      "key": "codigo",
+      "value": ""
+    },
+    {
+      "key": "codigoB",
+      "value": ""
+    },
+    {
+      "key": "cuentaId",
+      "value": ""
+    },
+    {
+      "key": "negocioId",
+      "value": ""
+    },
+    {
+      "key": "negocioIdB",
+      "value": ""
+    },
+    {
+      "key": "sucursalId",
+      "value": ""
+    },
+    {
+      "key": "cajaId",
+      "value": ""
+    },
+    {
+      "key": "turnoId",
+      "value": ""
+    },
+    {
+      "key": "productoTaco",
+      "value": ""
+    },
+    {
+      "key": "productoCamote",
+      "value": ""
+    },
+    {
+      "key": "ventaId",
+      "value": ""
+    },
+    {
+      "key": "articuloId",
+      "value": ""
+    },
+    {
+      "key": "cursor",
+      "value": ""
+    },
+    {
+      "key": "tokenInvalido",
+      "value": "inventado-1234567890abcdefghijklmnopqrstuvwxyz"
+    }
+  ]
+}

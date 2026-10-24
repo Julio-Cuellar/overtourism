@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 import mx.negocio360.compartido.eventos.SobreEvento;
 import mx.negocio360.compartido.identidad.UuidV7;
+import mx.negocio360.compartido.pruebas.Permisos;
 import mx.negocio360.restaurantes.dominio.ModoInventario;
 import mx.negocio360.restaurantes.infraestructura.ConsumosEnMemoria;
 import org.junit.jupiter.api.DisplayName;
@@ -44,8 +45,8 @@ class ConsumidorDeVentasTest {
 
     private PlatilloVista platillo(String nombre, int rendimiento, InsumoComando... insumos) {
         var p = e.menu.crearPlatillo(e.ctxA, e.todo, new DatosPlatillo(nombre, null, new BigDecimal("85"), null, Set.of(), null));
-        var token = e.preparacion.preparar(e.ctxA, new GuardarRecetaComando(p.id(), rendimiento, List.of(insumos))).token();
-        e.preparacion.confirmar(e.ctxA, token);
+        var token = e.preparacion.preparar(e.ctxA, Permisos.TODOS, new GuardarRecetaComando(p.id(), rendimiento, List.of(insumos))).token();
+        e.preparacion.confirmar(e.ctxA, Permisos.TODOS, token);
         return e.menu.cambiarModo(e.ctxA, e.todo, p.id(), ModoInventario.RECETA);
     }
 
@@ -258,8 +259,8 @@ class ConsumidorDeVentasTest {
     void usaLaVersionDelMomentoDeLaVenta() {
         var antes = e.reloj.instant().plusSeconds(1);
         e.reloj.avanzar(Duration.ofHours(1));
-        var token = e.preparacion.preparar(e.ctxA, new GuardarRecetaComando(cemita.id(), 1, List.of(ins(pan, "2", "pieza", "0")))).token();
-        e.preparacion.confirmar(e.ctxA, token);
+        var token = e.preparacion.preparar(e.ctxA, Permisos.TODOS, new GuardarRecetaComando(cemita.id(), 1, List.of(ins(pan, "2", "pieza", "0")))).token();
+        e.preparacion.confirmar(e.ctxA, Permisos.TODOS, token);
 
         consumidor.procesar(registrada(EntornoDeRecetas.NEGOCIO_A, UUID.randomUUID(), antes, linea(cemita.id(), "1")));
 
@@ -315,8 +316,8 @@ class ConsumidorDeVentasTest {
     @Test
     @DisplayName("CM-06: un platillo en modo RECETA sin receta vigente en ese momento falla con SIN_RECETA, y lo demas de la venta si se descuenta")
     void fallo_sinReceta() {
-        var token = e.preparacion.preparar(e.ctxA, new GuardarRecetaComando(mole.id(), 40, List.of(ins(pollo, "4", "kg", "0")))).token();
-        e.preparacion.confirmar(e.ctxA, token);
+        var token = e.preparacion.preparar(e.ctxA, Permisos.TODOS, new GuardarRecetaComando(mole.id(), 40, List.of(ins(pollo, "4", "kg", "0")))).token();
+        e.preparacion.confirmar(e.ctxA, Permisos.TODOS, token);
         var sinReceta = e.menu.crearPlatillo(e.ctxA, e.todo, new DatosPlatillo("Nuevo platillo", null, BigDecimal.TEN, null, Set.of(), null));
         e.recetasAlmacen.insertar(mx.negocio360.restaurantes.dominio.Receta.nueva(UUID.randomUUID(), EntornoDeRecetas.NEGOCIO_A, sinReceta.id(), 1,
                 List.of(new mx.negocio360.restaurantes.dominio.InsumoDeReceta(pan, BigDecimal.ONE, "pieza", BigDecimal.ZERO)),

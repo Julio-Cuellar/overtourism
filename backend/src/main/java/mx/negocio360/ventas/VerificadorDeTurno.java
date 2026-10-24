@@ -5,7 +5,7 @@ import mx.negocio360.compartido.contexto.ContextoNegocio;
 
 /**
  * Pregunta que Ventas hace antes de preparar y de confirmar una venta: ¿el turno sigue abierto en este negocio?
- * (VT-01). Ventas define la pregunta y Caja la contesta con su propio adaptador, asi Ventas no depende de Caja (D-76).
+ * (VT-01). Ventas define la pregunta y Caja la contesta con su propio adaptador, asi Ventas no depende de Caja (D-135).
  */
 public interface VerificadorDeTurno {
 

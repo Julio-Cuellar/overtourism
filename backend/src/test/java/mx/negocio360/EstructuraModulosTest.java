@@ -23,12 +23,12 @@ class EstructuraModulosTest {
     }
 
     @Test
-    @DisplayName("la plataforma incluye los modulos clientes, compartido, identidad, inventario, negocios, ventas, caja, canal y restaurantes")
+    @DisplayName("la plataforma incluye los modulos clientes, compartido, identidad, inventario, negocios, ventas, caja y restaurantes")
     void modulos_laPlataforma_incluyenLosModulos() {
         var nombres = MODULOS.stream().map(ApplicationModule::getName).collect(Collectors.toSet());
 
         assertThat(nombres).contains("clientes", "compartido", "identidad", "inventario", "negocios", "ventas", "caja",
-                "canal", "restaurantes");
+                "restaurantes");
     }
 
     /** D-160 y R4: Restaurantes es vertical, asi que ningun otro modulo puede depender de el. */

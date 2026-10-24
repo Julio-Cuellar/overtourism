@@ -1,5 +1,6 @@
 package mx.negocio360.caja.aplicacion;
 
+import mx.negocio360.compartido.pruebas.Permisos;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
@@ -19,7 +20,7 @@ class ConsumidorVentasTest {
     private final UUID venta = UUID.randomUUID();
 
     private BigDecimal esperado(MetodoPago metodo) {
-        return e.api.saldoTurno(e.ctxA, turno).esperadoPorMetodo().get(metodo);
+        return e.api.saldoTurno(e.ctxA, Permisos.de(e.ctxA), turno).esperadoPorMetodo().get(metodo);
     }
 
     @Test
@@ -31,7 +32,7 @@ class ConsumidorVentasTest {
         assertThat(resultado).isEqualTo(ResultadoAplicacion.APLICADA);
         assertThat(esperado(MetodoPago.EFECTIVO)).isEqualTo(new BigDecimal("535.00"));
         assertThat(esperado(MetodoPago.TARJETA)).isEqualTo(new BigDecimal("100.00"));
-        assertThat(e.api.saldoTurno(e.ctxA, turno).ventasAplicadas()).isEqualTo(1);
+        assertThat(e.api.saldoTurno(e.ctxA, Permisos.de(e.ctxA), turno).ventasAplicadas()).isEqualTo(1);
         assertThat(e.libro.todos()).filteredOn(m -> m.tipo() == TipoMovimiento.VENTA)
                 .allSatisfy(m -> assertThat(m.ventaId()).isEqualTo(venta)).hasSize(2);
     }

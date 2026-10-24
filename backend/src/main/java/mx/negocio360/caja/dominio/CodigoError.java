@@ -2,7 +2,7 @@ package mx.negocio360.caja.dominio;
 
 /**
  * Codigos de error fijos de Caja ({@code docs/diseno/caja.md}, seccion 5.4). Cada codigo dice la regla que lo
- * produce (D-83). {@code CAJA_DUPLICADA}, {@code NOMBRE_CAJA_INVALIDO} y {@code TURNO_NO_ENCONTRADO} se agregaron al
+ * produce (D-142). {@code CAJA_DUPLICADA}, {@code NOMBRE_CAJA_INVALIDO} y {@code TURNO_NO_ENCONTRADO} se agregaron al
  * programar y estan anotados en la Bitacora.
  */
 public enum CodigoError {
@@ -15,6 +15,8 @@ public enum CodigoError {
     CAJA_DUPLICADA("CF-14"),
     /** Nombre vacio o de mas de 60 caracteres. */
     NOMBRE_CAJA_INVALIDO("CF-14"),
+    /** El negocio ya tiene 50 cajas. */
+    DEMASIADAS_CAJAS("CF-14"),
     /** El turno no existe en este negocio. */
     TURNO_NO_ENCONTRADO("CF-02"),
     /** La caja ya tiene un turno abierto o en corte. */
@@ -32,6 +34,11 @@ public enum CodigoError {
     RETIRO_MAYOR_AL_EFECTIVO("CJ-05"),
     /** Falta la nota del movimiento o pasa de 200 caracteres. */
     NOTA_REQUERIDA("CF-11"),
+    // Consultas
+    /** Tamano de pagina fuera de 1 a 100, o cursor que no emitimos nosotros. */
+    PAGINACION_INVALIDA("CF-03"),
+    /** Filtro de cortes con rango de mas de 92 dias o al reves. */
+    FILTRO_INVALIDO("CF-03"),
     // Corte
     /** Hay ventas preparadas sin confirmar en el turno. */
     CORTE_VENTAS_PENDIENTES("CJ-07"),
@@ -63,7 +70,7 @@ public enum CodigoError {
     }
 
     /**
-     * Regla del diseno que produce este codigo (D-83).
+     * Regla del diseno que produce este codigo (D-142).
      *
      * @return regla o funcion, por ejemplo {@code CJ-07}
      */

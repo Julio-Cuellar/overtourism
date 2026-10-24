@@ -14,6 +14,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.inventario.aplicacion.puertos.RepositorioPreparaciones;
 import mx.negocio360.inventario.dominio.CodigoError;
@@ -75,6 +76,25 @@ public final class ServicioPreparacion {
         repositorio.guardar(new Preparacion(hash(token), contexto.negocioId(), contexto.actor(), manejador.tipo(),
                 hash(json), json, resumen, expiraEn, null));
         return new PreparacionCreada(token, resumen, expiraEn, List.of());
+    }
+
+    /**
+     * El tipo del comando que espera confirmacion con ese token, para que el canal exija su permiso <b>antes</b> de gastar el
+     * token (D-126). Solo responde por una preparacion de ese negocio y ese actor, sin usar ni vencer.
+     *
+     * @param contexto negocio y actor que prepararon
+     * @param token    token en claro
+     * @return el tipo, por ejemplo {@code registrar_entrada}, si el token es vigente
+     */
+    public Optional<String> tipoDeComando(ContextoNegocio contexto, String token) {
+        if (token == null || token.isBlank() || token.length() > MAX_CARACTERES_DEL_TOKEN) {
+            return Optional.empty();
+        }
+        var ahora = reloj.instant();
+        return repositorio.porHash(hash(token))
+                .filter(f -> f.negocioId().equals(contexto.negocioId()) && f.actor().equals(contexto.actor()))
+                .filter(f -> f.usadoEn() == null && ahora.isBefore(f.expiraEn()))
+                .map(Preparacion::comandoTipo);
     }
 
     public ResultadoComando confirmar(ContextoNegocio contexto, String token) {

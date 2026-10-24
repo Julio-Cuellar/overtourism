@@ -1,5 +1,6 @@
 package mx.negocio360.caja.aplicacion;
 
+import mx.negocio360.compartido.pruebas.Permisos;
 import static mx.negocio360.caja.fakes.Escenario.fallaCon;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -36,7 +37,7 @@ class RevisionCajaTest {
     private final UUID venta = UUID.randomUUID();
 
     private BigDecimal esperado(MetodoPago metodo) {
-        return e.api.saldoTurno(e.ctxA, turno).esperadoPorMetodo().get(metodo);
+        return e.api.saldoTurno(e.ctxA, Permisos.de(e.ctxA), turno).esperadoPorMetodo().get(metodo);
     }
 
     private boolean procesado(SobreEvento evento) {
@@ -159,20 +160,20 @@ class RevisionCajaTest {
     @Test
     @DisplayName("CF-01: mientras el corte esta vigente, turnoActivo dice EN_CORTE")
     void turnoActivo_enCorte() {
-        e.api.preparar(e.ctxA, new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, new BigDecimal("500.00")),
+        e.api.preparar(e.ctxA, Permisos.de(e.ctxA), new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, new BigDecimal("500.00")),
                 false));
 
-        assertThat(e.api.turnoActivo(e.ctxA, cajaDelTurno()).orElseThrow().estado()).isEqualTo(EstadoTurno.EN_CORTE);
+        assertThat(e.api.turnoActivo(e.ctxA, Permisos.de(e.ctxA), cajaDelTurno()).orElseThrow().estado()).isEqualTo(EstadoTurno.EN_CORTE);
     }
 
     @Test
-    @DisplayName("CF-01 y D-81: con el corte vencido, turnoActivo dice ABIERTO para que el canal deje vender")
+    @DisplayName("CF-01 y D-140: con el corte vencido, turnoActivo dice ABIERTO para que el canal deje vender")
     void turnoActivo_corteVencido_abierto() {
-        e.api.preparar(e.ctxA, new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, new BigDecimal("500.00")),
+        e.api.preparar(e.ctxA, Permisos.de(e.ctxA), new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, new BigDecimal("500.00")),
                 false));
         e.reloj.avanzar(Duration.ofMinutes(5));
 
-        var activo = e.api.turnoActivo(e.ctxA, cajaDelTurno()).orElseThrow();
+        var activo = e.api.turnoActivo(e.ctxA, Permisos.de(e.ctxA), cajaDelTurno()).orElseThrow();
 
         assertThat(activo.estado()).isEqualTo(EstadoTurno.ABIERTO);
         assertThat(activo.corteVenceEn()).isNull();
@@ -190,7 +191,7 @@ class RevisionCajaTest {
         assertThat(verificador.abierto(e.ctxA, UUID.randomUUID())).isFalse();
         assertThat(verificador.abierto(e.ctxA, null)).isFalse();
 
-        e.api.preparar(e.ctxA, new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, new BigDecimal("500.00")),
+        e.api.preparar(e.ctxA, Permisos.de(e.ctxA), new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, new BigDecimal("500.00")),
                 false));
         assertThat(verificador.abierto(e.ctxA, turno)).isFalse();
 
@@ -209,11 +210,11 @@ class RevisionCajaTest {
         var enorme = new BigDecimal("1E+999999999");
         var otraCaja = e.crearCaja(e.ctxA, "Barra");
         assertTimeoutPreemptively(RAPIDO, () -> {
-            fallaCon(() -> e.api.preparar(e.ctxA, new RegistrarMovimientoCajaComando(turno,
+            fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), new RegistrarMovimientoCajaComando(turno,
                     TipoMovimientoManual.ENTRADA, enorme, "x")), CodigoError.MONTO_INVALIDO);
-            fallaCon(() -> e.api.preparar(e.ctxA, new AbrirTurnoComando(otraCaja, enorme)),
+            fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), new AbrirTurnoComando(otraCaja, enorme)),
                     CodigoError.FONDO_INVALIDO);
-            fallaCon(() -> e.api.preparar(e.ctxA, new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, enorme),
+            fallaCon(() -> e.api.preparar(e.ctxA, Permisos.de(e.ctxA), new CerrarTurnoComando(turno, Map.of(MetodoPago.EFECTIVO, enorme),
                     false)), CodigoError.CONTEO_INVALIDO);
         });
     }

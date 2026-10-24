@@ -35,4 +35,14 @@ public interface ClientesApi {
 
     /** El aviso de privacidad vigente del negocio, si publico alguno. */
     Optional<AvisoPrivacidad> avisoVigente(ContextoNegocio contexto);
+
+    /**
+     * El tipo del comando que espera confirmacion con ese token (por ejemplo {@code registrar_cliente}), para que el canal
+     * exija el permiso de ese comando antes de gastar el token (D-126).
+     *
+     * @param contexto negocio y actor que prepararon
+     * @param token    token en claro
+     * @return el tipo si el token es vigente y de esa persona; vacio en cualquier otro caso
+     */
+    Optional<String> tipoDeComando(ContextoNegocio contexto, String token);
 }

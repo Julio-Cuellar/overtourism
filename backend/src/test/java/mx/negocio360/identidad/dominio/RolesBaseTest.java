@@ -42,7 +42,7 @@ class RolesBaseTest {
     void dueno_tieneTodos() {
         var todos = RolesBase.todos().stream().flatMap(r -> r.permisos().stream()).collect(Collectors.toSet());
 
-        assertThat(permisosDe("DUENO")).containsAll(todos).hasSize(48);
+        assertThat(permisosDe("DUENO")).containsAll(todos).hasSize(63);
     }
 
     @Test
@@ -64,11 +64,12 @@ class RolesBaseTest {
     }
 
     @Test
-    @DisplayName("el cajero busca y registra clientes y sus consentimientos, y solo mira el salon, el menu, las cuentas y las comandas")
+    @DisplayName("el cajero busca y registra clientes y sus consentimientos, mira el salon, el menu, las cuentas y las comandas, y cobra y opera su caja")
     void cajero_soloBuscaYRegistra() {
-        assertThat(permisosDe("CAJERO")).containsExactlyInAnyOrder("clientes.sugerir", "clientes.cliente.registrar",
-                "clientes.consentimiento.registrar", "negocios.perfil.ver", "restaurantes.menu.ver",
-                "restaurantes.salon.ver", "restaurantes.cuenta.ver", "restaurantes.comanda.ver");
+        assertThat(permisosDe("CAJERO")).filteredOn(p -> !p.startsWith("ventas.") && !p.startsWith("caja."))
+                .containsExactlyInAnyOrder("clientes.sugerir", "clientes.cliente.registrar",
+                        "clientes.consentimiento.registrar", "negocios.perfil.ver", "restaurantes.menu.ver",
+                        "restaurantes.salon.ver", "restaurantes.cuenta.ver", "restaurantes.comanda.ver");
     }
 
     @Test
@@ -81,12 +82,13 @@ class RolesBaseTest {
     }
 
     @Test
-    @DisplayName("el cocinero ve el menu y las recetas sin costos, marca agotados y prepara comandas; taquillero y guia solo ven el perfil")
+    @DisplayName("el cocinero ve el menu y las recetas sin costos, marca agotados, prepara comandas y maneja existencias; taquillero y guia solo ven el perfil (el taquillero ademas cobra)")
     void cocineroTaquilleroYGuia() {
-        assertThat(permisosDe("COCINERO")).containsExactlyInAnyOrder("negocios.perfil.ver", "restaurantes.menu.ver",
-                "restaurantes.menu.agotar", "restaurantes.receta.ver", "restaurantes.comanda.ver",
-                "restaurantes.comanda.preparar");
-        assertThat(permisosDe("TAQUILLERO")).containsExactly("negocios.perfil.ver");
+        assertThat(permisosDe("COCINERO")).containsExactlyInAnyOrder("negocios.perfil.ver", "inventario.articulo.ver",
+                "inventario.movimiento.registrar", "restaurantes.menu.ver", "restaurantes.menu.agotar",
+                "restaurantes.receta.ver", "restaurantes.comanda.ver", "restaurantes.comanda.preparar");
+        assertThat(permisosDe("TAQUILLERO")).filteredOn(p -> !p.startsWith("ventas.") && !p.startsWith("caja."))
+                .containsExactly("negocios.perfil.ver");
         assertThat(permisosDe("GUIA")).containsExactly("negocios.perfil.ver");
     }
 
@@ -232,5 +234,62 @@ class RolesBaseTest {
                 .isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> RolesBase.todos().clear()).isInstanceOf(UnsupportedOperationException.class);
         assertThat(List.copyOf(RolesBase.plantilla(Giro.MUSEO))).isNotEmpty();
+    }
+
+    /** La matriz de la seccion 8.2 de docs/planes/integracion-ventas-caja.md: quien tiene cada permiso de Ventas y Caja. */
+    private static final java.util.Map<String, Set<String>> MATRIZ_VENTAS_Y_CAJA = java.util.Map.ofEntries(
+            java.util.Map.entry("ventas.venta.ver", Set.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO", "TAQUILLERO")),
+            java.util.Map.entry("ventas.venta.registrar", Set.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO", "TAQUILLERO")),
+            java.util.Map.entry("ventas.venta.anular", Set.of("DUENO", "ADMINISTRADOR", "GERENTE")),
+            java.util.Map.entry("caja.caja.gestionar", Set.of("DUENO", "ADMINISTRADOR")),
+            java.util.Map.entry("caja.turno.ver", Set.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO", "TAQUILLERO")),
+            java.util.Map.entry("caja.turno.abrir", Set.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO", "TAQUILLERO")),
+            java.util.Map.entry("caja.movimiento.registrar",
+                    Set.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO", "TAQUILLERO")),
+            java.util.Map.entry("caja.retiro.registrar", Set.of("DUENO", "ADMINISTRADOR", "GERENTE")),
+            java.util.Map.entry("caja.corte.cerrar", Set.of("DUENO", "ADMINISTRADOR", "GERENTE", "CAJERO", "TAQUILLERO")),
+            java.util.Map.entry("caja.corte.autorizar", Set.of("DUENO", "ADMINISTRADOR", "GERENTE")),
+            java.util.Map.entry("caja.corte.ver", Set.of("DUENO", "ADMINISTRADOR", "GERENTE")));
+
+    @Test
+    @DisplayName("D-127: los permisos de Ventas y Caja de cada rol son exactamente los de la matriz de la seccion 8.2")
+    void ventasYCaja_matrizDeLaSeccion82() {
+        for (var rol : RolesBase.todos()) {
+            var esperados = MATRIZ_VENTAS_Y_CAJA.entrySet().stream().filter(e -> e.getValue().contains(rol.codigo()))
+                    .map(java.util.Map.Entry::getKey).collect(Collectors.toSet());
+            var reales = rol.permisos().stream().filter(p -> p.startsWith("ventas.") || p.startsWith("caja."))
+                    .collect(Collectors.toSet());
+            assertThat(reales).as(rol.codigo()).isEqualTo(esperados);
+        }
+    }
+
+    @Test
+    @DisplayName("D-127: mesero, cocinero y guia no cobran ni tocan la caja; anular, retirar y autorizar son del gerente para arriba")
+    void ventasYCaja_quienNoCobraYQuienAnula() {
+        for (var rol : List.of("MESERO", "COCINERO", "GUIA")) {
+            assertThat(permisosDe(rol)).as(rol).noneMatch(p -> p.startsWith("ventas.") || p.startsWith("caja."));
+        }
+        for (var rol : List.of("CAJERO", "TAQUILLERO")) {
+            assertThat(permisosDe(rol)).as(rol).doesNotContain("ventas.venta.anular", "caja.retiro.registrar",
+                    "caja.corte.autorizar", "caja.corte.ver", "caja.caja.gestionar");
+        }
+    }
+
+    /** Inventario (IDN-4.4): quien tiene cada permiso. */
+    private static final java.util.Map<String, Set<String>> MATRIZ_INVENTARIO = java.util.Map.of(
+            "inventario.articulo.ver", Set.of("DUENO", "ADMINISTRADOR", "GERENTE", "COCINERO"),
+            "inventario.articulo.gestionar", Set.of("DUENO", "ADMINISTRADOR", "GERENTE"),
+            "inventario.movimiento.registrar", Set.of("DUENO", "ADMINISTRADOR", "GERENTE", "COCINERO"),
+            "inventario.conteo.ajustar", Set.of("DUENO", "ADMINISTRADOR", "GERENTE"));
+
+    @Test
+    @DisplayName("IDN-4.4: los permisos de Inventario de cada rol son exactamente los de la matriz")
+    void inventario_matriz() {
+        for (var rol : RolesBase.todos()) {
+            var esperados = MATRIZ_INVENTARIO.entrySet().stream().filter(e -> e.getValue().contains(rol.codigo()))
+                    .map(java.util.Map.Entry::getKey).collect(Collectors.toSet());
+            var reales = rol.permisos().stream().filter(p -> p.startsWith("inventario.")).collect(Collectors.toSet());
+            assertThat(reales).as(rol.codigo()).isEqualTo(esperados);
+        }
     }
 }

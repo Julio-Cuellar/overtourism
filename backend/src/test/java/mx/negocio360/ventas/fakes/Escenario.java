@@ -1,5 +1,6 @@
 package mx.negocio360.ventas.fakes;
 
+import mx.negocio360.compartido.pruebas.Permisos;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -30,7 +31,6 @@ public final class Escenario {
     public final RepositorioVentasEnMemoria ventas = new RepositorioVentasEnMemoria();
     public final RepositorioPreparacionesEnMemoria preparaciones = new RepositorioPreparacionesEnMemoria();
     public final PublicadorEventosEnMemoria eventos = new PublicadorEventosEnMemoria();
-    public final AutorizacionFija autorizacion = new AutorizacionFija();
     public final TurnosEnMemoria turnos = new TurnosEnMemoria();
 
     public final VentasApi api;
@@ -41,12 +41,12 @@ public final class Escenario {
             catalogo.con(negocio, Fixtures.boleto()).con(negocio, Fixtures.camote()).con(negocio, Fixtures.inactivo());
         }
         cupones.porcentaje(Fixtures.CODIGO_CUPON, Fixtures.CUPON, "10");
-        api = VentasServicio.armar(catalogo, cupones, turnos, ventas, preparaciones, eventos, autorizacion, reloj);
+        api = VentasServicio.armar(catalogo, cupones, turnos, ventas, preparaciones, eventos, reloj);
     }
 
     /** Prepara y confirma un comando, como lo haria el panel en dos pasos. */
     public ResultadoComando confirmar(ContextoNegocio contexto, Comando comando) {
-        return api.confirmar(contexto, api.preparar(contexto, comando).token());
+        return api.confirmar(contexto, Permisos.de(contexto), api.preparar(contexto, Permisos.de(contexto), comando).token());
     }
 
     /** Registra una venta y devuelve su id. */

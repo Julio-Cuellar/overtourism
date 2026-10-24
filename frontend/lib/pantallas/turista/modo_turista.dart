@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../estado/restaurante_demo.dart';
+import '../../widgets/adaptativo.dart';
+import '../restaurantes/alcance.dart';
 import 'explorar.dart';
 import 'pasaporte.dart';
+import 'restaurantes.dart';
 import 'ruta.dart';
 
-/// Modo turista: tres secciones en la barra inferior, pensado para una mano en el telefono.
+/// Modo turista: cuatro secciones en la barra inferior (o lateral en pantallas anchas), pensado para una mano en el
+/// teléfono. El restaurante de la demo se comparte para que la ficha muestre sus mesas libres en vivo.
 class ModoTurista extends StatefulWidget {
-  const ModoTurista({super.key});
+  const ModoTurista({super.key, required this.restaurante});
+
+  final RestauranteDemo restaurante;
 
   @override
   State<ModoTurista> createState() => _ModoTuristaState();
@@ -15,26 +22,26 @@ class ModoTurista extends StatefulWidget {
 class _ModoTuristaState extends State<ModoTurista> {
   int _seccion = 0;
 
-  static const _titulos = ['Explorar', 'Pasaporte', 'Ruta del día'];
+  static const _titulos = ['Explorar', 'Restaurantes', 'Pasaporte', 'Ruta del día'];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(_titulos[_seccion])),
-      body: IndexedStack(
-        index: _seccion,
-        children: const [Explorar(), Pasaporte(), RutaSugerida()],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _seccion,
-        onDestinationSelected: (indice) => setState(() => _seccion = indice),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore),
-              label: 'Explorar'),
-          NavigationDestination(icon: Icon(Icons.local_activity_outlined), selectedIcon: Icon(Icons.local_activity),
-              label: 'Pasaporte'),
-          NavigationDestination(icon: Icon(Icons.route_outlined), selectedIcon: Icon(Icons.route), label: 'Ruta'),
+    return AlcanceRestaurante(
+      restaurante: widget.restaurante,
+      child: NavegacionAdaptativa(
+        titulo: Text(_titulos[_seccion]),
+        indice: _seccion,
+        alCambiar: (indice) => setState(() => _seccion = indice),
+        destinos: const [
+          DestinoNavegacion(icono: Icons.explore_outlined, iconoActivo: Icons.explore, etiqueta: 'Explorar'),
+          DestinoNavegacion(icono: Icons.restaurant_outlined, iconoActivo: Icons.restaurant, etiqueta: 'Restaurantes'),
+          DestinoNavegacion(icono: Icons.local_activity_outlined, iconoActivo: Icons.local_activity, etiqueta: 'Pasaporte'),
+          DestinoNavegacion(icono: Icons.route_outlined, iconoActivo: Icons.route, etiqueta: 'Ruta'),
         ],
+        cuerpo: IndexedStack(
+          index: _seccion,
+          children: const [Explorar(), DirectorioRestaurantes(), Pasaporte(), RutaSugerida()],
+        ),
       ),
     );
   }

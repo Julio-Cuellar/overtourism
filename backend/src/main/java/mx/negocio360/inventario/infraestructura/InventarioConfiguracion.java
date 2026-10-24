@@ -16,8 +16,9 @@ import org.springframework.context.annotation.Profile;
 /**
  * Enciende Inventario con repositorios en memoria solo con {@code inventario.almacen=memoria} (el perfil de desarrollo lo
  * fija) y nunca con el perfil {@code produccion}: sin base de datos los saldos se pierden al reiniciar, asi que no se
- * enciende por accidente. Expone {@link InventarioApi}, que es lo que usan los demas modulos (hoy Restaurantes, R-I1 a
- * R-I4). No expone GraphQL: eso es de otro tramo. La version con PostgreSQL llega despues.
+ * enciende por accidente. Expone {@link InventarioApi}, que es lo que usan los demas modulos (el canal GraphQL y
+ * Restaurantes, R-I1 a R-I4). Los permisos no se inyectan: cada llamada del canal recibe la {@code Autorizacion} de la
+ * sesion. La version con PostgreSQL llega despues.
  */
 @Configuration(proxyBeanMethods = false)
 @Profile("!produccion")
@@ -48,7 +49,7 @@ public class InventarioConfiguracion {
         // Los movimientos manuales y el consumo por venta comparten la secuencia: el kardex se ordena por id.
         var ids = new SecuenciaDeIds();
         var manejadores = Manejadores.todos(almacen, almacen, almacen, eventos, reloj, ids);
-        var preparacion = new ServicioPreparacion(new PreparacionesDeInventarioEnMemoria(), manejadores, reloj);
+        var preparacion = new ServicioPreparacion(new PreparacionesEnMemoria(), manejadores, reloj);
         var consumo = new ConsumosServicio(almacen, almacen, almacen, almacen, eventos, reloj, ids);
         return new InventarioServicio(preparacion, almacen, almacen, almacen, consumo);
     }

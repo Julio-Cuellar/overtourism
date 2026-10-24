@@ -13,7 +13,7 @@ import org.springframework.modulith.NamedInterface;
  * <p>Copia sus listas al crearse (quien lo armo no puede cambiarlo despues) y admite listas nulas o con elementos
  * nulos, porque esos casos los reporta {@link CalculadoraVenta} con su codigo de error.
  *
- * @param turnoId     turno de Caja; Ventas pregunta a Caja si esta ABIERTO (VT-01, D-76)
+ * @param turnoId     turno de Caja; Ventas pregunta a Caja si esta ABIERTO (VT-01, D-135)
  * @param lineas      productos y cantidades; el precio lo pone Catalogo (VT-02)
  * @param pagos       formas de pago; deben sumar el total (VT-04)
  * @param codigoCupon codigo del cupon del Pasaporte, opcional (VT-07)

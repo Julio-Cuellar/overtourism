@@ -28,14 +28,14 @@ Se pidió el diseño de Ventas y Caja para el comerciante, separados, con entida
 | D-48, D-65 | `cliente_id` opcional y total neto de cupón | ACEPTADA | Incluidos en `venta.registrada` |
 | D-55 | `prepararComando` / `confirmarComando` de plataforma | PROPUESTA | Ventas y Caja agregan variantes, sin mutaciones propias |
 | D-63 | Sin bot | ACEPTADA | Sin REST en P1 |
-| D-76 | Ventas no conoce a Caja; el canal pasa el `turno_id`; Caja escucha a Ventas | PROPUESTA (nueva) | Evita el ciclo |
-| D-77 | Contrato de `venta.registrada` v1 y `venta.anulada` v1 | PROPUESTA (nueva) | Congela lo que ya consumen Clientes e Inventario |
-| D-78 | Cupón: se cotiza al preparar y se canjea al confirmar, en la misma transacción | PROPUESTA (nueva) | Necesita `cotizarCupon` en Pasaporte |
-| D-79 | Folio consecutivo al confirmar | PROPUESTA (nueva) | |
-| D-80 | Lo del museo y del misceláneo vive en Catálogo y en Museos, no en Ventas | PROPUESTA (nueva) | Cumple R4 |
-| D-81 | Preparar el corte pone el turno `EN_CORTE` | PROPUESTA (nueva) | Excepción a «preparar no escribe» |
-| D-82 | Anular usa preparar → confirmar, con motivo y permiso | PROPUESTA (nueva) | |
-| D-83 | Todo el código se documenta con JavaDoc que cita reglas y códigos de error | ACEPTADA (nueva) | Dicho por el usuario el 2026-10-14 |
+| D-135 | Ventas no conoce a Caja; el canal pasa el `turno_id`; Caja escucha a Ventas | PROPUESTA (nueva) | Evita el ciclo |
+| D-136 | Contrato de `venta.registrada` v1 y `venta.anulada` v1 | PROPUESTA (nueva) | Congela lo que ya consumen Clientes e Inventario |
+| D-137 | Cupón: se cotiza al preparar y se canjea al confirmar, en la misma transacción | PROPUESTA (nueva) | Necesita `cotizarCupon` en Pasaporte |
+| D-138 | Folio consecutivo al confirmar | PROPUESTA (nueva) | |
+| D-139 | Lo del museo y del misceláneo vive en Catálogo y en Museos, no en Ventas | PROPUESTA (nueva) | Cumple R4 |
+| D-140 | Preparar el corte pone el turno `EN_CORTE` | PROPUESTA (nueva) | Excepción a «preparar no escribe» |
+| D-141 | Anular usa preparar → confirmar, con motivo y permiso | PROPUESTA (nueva) | |
+| D-142 | Todo el código se documenta con JavaDoc que cita reglas y códigos de error | ACEPTADA (nueva) | Dicho por el usuario el 2026-10-14 |
 
 No hay decisión aceptada que este plan contradiga. Mi primer borrador (fuera del repositorio) hacía que Pasaporte escuchara a Ventas, lo que chocaba con D-34; se corrigió.
 
@@ -51,7 +51,7 @@ No hay decisión aceptada que este plan contradiga. Mi primer borrador (fuera de
 | RQ-06 | Anular una venta | Cuando un encargado anula con motivo, la venta queda `ANULADA`, sale `venta.anulada` y la caja la compensa | VT-09, CJ-03 | Técnica |
 | RQ-07 | Corte de caja | Cuando el cajero cuenta 10.00 menos de lo esperado, el corte muestra −10.00 y cierra el turno; con diferencia sobre el umbral pide autorización | CJ-06 a CJ-08, CJ-12 | UX, viabilidad |
 
-**No funcionales:** aislamiento entre negocios (RLS) · idempotencia de listeners · sin `double` en dinero · eventos en la misma transacción · datos simulados rotulados · JavaDoc completo (D-83).
+**No funcionales:** aislamiento entre negocios (RLS) · idempotencia de listeners · sin `double` en dinero · eventos en la misma transacción · datos simulados rotulados · JavaDoc completo (D-142).
 
 ## 5. Alcance
 
@@ -113,7 +113,7 @@ Nombres por confirmar entre liz, uriel y julio (D-31). **Punto de integración:*
 |---|---|
 | Suma de tareas (E) | 7.1 |
 | Pruebas | incluidas en cada fase (TDD) |
-| Documentación (JavaDoc, D-83) | incluida en cada fase |
+| Documentación (JavaDoc, D-142) | incluida en cada fase |
 | Integración y corrección | 0.75 |
 | Preparación de la demo | incluida en F6 |
 | **Subtotal** | 7.85 |
@@ -147,7 +147,7 @@ Recomiendo **B**: el tiempo de mañana rinde más en terminar Clientes e Inventa
 | No alcanza el tiempo | Alta | Alto | F2 no termina hoy | Opción B; orden de recorte de §5 | Equipo |
 | Contratos de Catálogo y Pasaporte sin dueño | Alta | Alto | F1 sin respuesta | Dobles de prueba y cobrar sin cupón | A |
 | Un evento de venta llega después del corte | Media | Medio | Diferencias inexplicables | CJ-06, CJ-07 y CJ-11 | B |
-| Ciclo entre módulos por un atajo | Baja | Alto | `verify()` en rojo | D-76; prueba desde F2 | A |
+| Ciclo entre módulos por un atajo | Baja | Alto | `verify()` en rojo | D-135; prueba desde F2 | A |
 | Docker apagado | Media | Medio | Testcontainers falla | Encender Docker antes de F5 | C |
 
 ## 12. Validación por fase
@@ -163,7 +163,7 @@ Recomiendo **B**: el tiempo de mañana rinde más en terminar Clientes e Inventa
 ## 13. Preguntas
 
 1. **¿Programamos para la demo o lo mostramos como mockup?** Recomiendo B (mockup ahora, código después). Si A: hoy se dedican dos personas y se deja Inventario. Si B: no se programa nada de Ventas ni Caja antes del evento.
-2. **¿Aceptan D-76 a D-82 tal como están?** Recomiendo aprobarlas todas. Si alguna cambia, cambia el contrato de eventos y hay que avisar a Clientes e Inventario.
+2. **¿Aceptan D-135 a D-141 tal como están?** Recomiendo aprobarlas todas. Si alguna cambia, cambia el contrato de eventos y hay que avisar a Clientes e Inventario.
 3. **¿Quién es dueño de Catálogo y de Pasaporte?** Recomiendo que lo sea quien haga Ventas, para congelar F1 en una sola conversación.
 4. **¿Quién toma A, B y C?** Recomiendo que Ventas lo tome quien no esté en Clientes ni Identidad.
 

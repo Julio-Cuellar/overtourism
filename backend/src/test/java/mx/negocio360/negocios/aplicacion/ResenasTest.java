@@ -483,7 +483,8 @@ class ResenasTest {
         var historial = ejecutor.enNegocio(e.negocioId, () -> jdbc.sql("SELECT accion || '|' || actor FROM "
                 + "negocios.historial_negocio WHERE negocio_id = :id AND accion LIKE '%RESENA' ORDER BY ocurrido_en")
                 .param("id", e.negocioId).query(String.class).list());
-        assertThat(historial).containsExactly("OCULTAR_RESENA|operador-prueba", "RESTITUIR_RESENA|operador-prueba");
+        // El reloj de la prueba esta fijo: las dos filas tienen el mismo ocurrido_en y su orden en la consulta no esta definido.
+        assertThat(historial).containsExactlyInAnyOrder("OCULTAR_RESENA|operador-prueba", "RESTITUIR_RESENA|operador-prueba");
     }
 
     @Test

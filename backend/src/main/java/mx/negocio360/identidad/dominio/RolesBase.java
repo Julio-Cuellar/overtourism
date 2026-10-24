@@ -11,12 +11,13 @@ import mx.negocio360.compartido.seguridad.PermisoDeclarado;
 
 /**
  * Los nueve roles base y la plantilla de cada giro (D-69, AM-09). Es la fuente de estos datos para la aplicacion; la
- * migracion V022 los siembra en la base y una prueba comprueba que los dos coinciden. Los permisos de Inventario se
- * agregan cuando ese modulo este autorizado (IDN-4.4). Los de Negocios siguen la matriz de la seccion 7.7 de
+ * migracion V022 los siembra en la base y una prueba comprueba que los dos coinciden. Los de Ventas y Caja siguen la
+ * matriz de la seccion 8.2 de {@code docs/planes/integracion-ventas-caja.md} (D-127). Los de Inventario (IDN-4.4):
+ * los encargados lo manejan todo y la cocina ve existencias y registra salidas y mermas. Los de Negocios siguen la matriz de la seccion 7.7 de
  * {@code docs/diseno/negocios.md} (D-96, cambio 5): todos ven el perfil del negocio y cada rol suma lo suyo.
  * Los de Restaurantes siguen la matriz de la seccion 11 de {@code docs/diseno/restaurantes.md} (R0, migracion V037);
- * {@code MESERO_CAJA} (D-171) es el mesero que tambien cobra y, hasta que la Pista A declare los permisos de Ventas y
- * Caja, tiene los mismos permisos que {@code MESERO}.
+ * {@code MESERO_CAJA} (D-171) es el mesero que tambien cobra y, hasta que una migracion le conceda los permisos de
+ * Ventas y Caja (ya declarados por la integracion), tiene los mismos permisos que {@code MESERO}.
  * Un permiso que ningun modulo declara impide el arranque (AZ-03, {@link #verificar}).
  */
 public final class RolesBase {
@@ -38,6 +39,20 @@ public final class RolesBase {
     private static final List<String> NEGOCIOS_SOLO_DUENO = List.of("negocios.negocio.pausar", "negocios.negocio.cerrar");
     private static final List<String> NEGOCIOS_GERENTE = List.of("negocios.perfil.ver", "negocios.horario.editar",
             "negocios.disponibilidad.editar", "negocios.empleado.ver", "negocios.resena.ver", "negocios.resena.responder");
+
+    /** Ventas y Caja (D-127, seccion 8.2 de docs/planes/integracion-ventas-caja.md): quien cobra y opera su caja. */
+    private static final List<String> VENTAS_Y_CAJA_OPERACION = List.of("ventas.venta.ver", "ventas.venta.registrar",
+            "caja.turno.ver", "caja.turno.abrir", "caja.movimiento.registrar", "caja.corte.cerrar");
+    /** Anular, retirar efectivo, autorizar diferencias y auditar cortes: del gerente para arriba. */
+    private static final List<String> VENTAS_Y_CAJA_ENCARGADO = List.of("ventas.venta.anular",
+            "caja.retiro.registrar", "caja.corte.autorizar", "caja.corte.ver");
+    private static final List<String> CAJA_CREAR = List.of("caja.caja.gestionar");
+
+    /** Inventario (IDN-4.4): quien administra el negocio lo maneja todo; la cocina ve existencias y registra salidas y mermas. */
+    private static final List<String> INVENTARIO_ENCARGADO = List.of("inventario.articulo.ver",
+            "inventario.articulo.gestionar", "inventario.movimiento.registrar", "inventario.conteo.ajustar");
+    private static final List<String> INVENTARIO_COCINA = List.of("inventario.articulo.ver",
+            "inventario.movimiento.registrar");
 
     /**
      * Permisos de Restaurantes (seccion 11 del diseno). El dueno y el administrador los tienen todos; el gerente, todos
@@ -61,19 +76,22 @@ public final class RolesBase {
 
     private static final List<Rol> TODOS = List.of(
             rol("DUENO", "Dueño", concatenar(EQUIPO_Y_AUDITORIA, OPERACION_DE_CLIENTES, SOLO_RESPONSABLE,
-                    NEGOCIOS_ADMINISTRADOR, NEGOCIOS_SOLO_DUENO, RESTAURANTES_TODOS)),
+                    NEGOCIOS_ADMINISTRADOR, NEGOCIOS_SOLO_DUENO, VENTAS_Y_CAJA_OPERACION, VENTAS_Y_CAJA_ENCARGADO,
+                    CAJA_CREAR, INVENTARIO_ENCARGADO, RESTAURANTES_TODOS)),
             rol("ADMINISTRADOR", "Administrador", concatenar(EQUIPO_Y_AUDITORIA, OPERACION_DE_CLIENTES,
-                    NEGOCIOS_ADMINISTRADOR, RESTAURANTES_TODOS)),
+                    NEGOCIOS_ADMINISTRADOR, VENTAS_Y_CAJA_OPERACION, VENTAS_Y_CAJA_ENCARGADO, CAJA_CREAR,
+                    INVENTARIO_ENCARGADO, RESTAURANTES_TODOS)),
             rol("GERENTE", "Gerente", concatenar(List.of("identidad.equipo.ver", "clientes.sugerir", "clientes.lista.ver",
                     "clientes.panorama.ver", "clientes.ficha.ver", "clientes.cliente.registrar", "clientes.cliente.editar",
-                    "clientes.consentimiento.registrar"), NEGOCIOS_GERENTE, RESTAURANTES_GERENTE)),
+                    "clientes.consentimiento.registrar"), NEGOCIOS_GERENTE, VENTAS_Y_CAJA_OPERACION,
+                    VENTAS_Y_CAJA_ENCARGADO, INVENTARIO_ENCARGADO, RESTAURANTES_GERENTE)),
             rol("CAJERO", "Cajero", concatenar(List.of("clientes.sugerir", "clientes.cliente.registrar",
-                    "clientes.consentimiento.registrar"), NEGOCIOS_VER, RESTAURANTES_CAJERO)),
+                    "clientes.consentimiento.registrar"), NEGOCIOS_VER, VENTAS_Y_CAJA_OPERACION, RESTAURANTES_CAJERO)),
             rol("MESERO", "Mesero", concatenar(List.of("clientes.sugerir"), NEGOCIOS_VER, RESTAURANTES_MESERO)),
             rol("MESERO_CAJA", "Mesero con caja",
                     concatenar(List.of("clientes.sugerir"), NEGOCIOS_VER, RESTAURANTES_MESERO)),
-            rol("COCINERO", "Cocinero", concatenar(NEGOCIOS_VER, RESTAURANTES_COCINERO)),
-            rol("TAQUILLERO", "Taquillero", NEGOCIOS_VER),
+            rol("COCINERO", "Cocinero", concatenar(NEGOCIOS_VER, INVENTARIO_COCINA, RESTAURANTES_COCINERO)),
+            rol("TAQUILLERO", "Taquillero", concatenar(NEGOCIOS_VER, VENTAS_Y_CAJA_OPERACION)),
             rol("GUIA", "Guía", NEGOCIOS_VER));
 
     private static final Map<Giro, List<String>> PLANTILLAS = Map.of(

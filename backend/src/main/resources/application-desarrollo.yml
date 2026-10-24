@@ -23,14 +23,13 @@ spring:
     placeholders:
       app_user: negocio360_app
 
-# F4 en demo: Ventas, Caja y el canal GraphQL con repositorios en memoria y Catalogo, Pasaporte y permisos SIMULADOS
-# (D-90). Todas las sesiones sin negocio usan este negocio de demostracion. Los datos se pierden al reiniciar.
-negocio360:
-  demo:
-    habilitada: true
-    negocio-id: 0192f000-0000-7000-8000-000000000360
-    # Flutter web y el navegador en la misma laptop (la app movil no necesita CORS).
-    cors-origenes: http://localhost:*,http://127.0.0.1:*
+# Ventas, Caja e Inventario con almacenes en memoria (F2 a F4 de docs/planes/integracion-ventas-caja.md): los datos se
+# pierden al reiniciar. La version con PostgreSQL llega en F6; con el perfil de produccion estos modulos no se encienden.
+ventas:
+  almacen: memoria
+  productos-simulados: true
+caja:
+  almacen: memoria
 
 # Restaurantes (R1): menu y seguimiento de Negocios en memoria hasta que llegue la persistencia (R7). Se pierde al reiniciar.
 restaurantes:

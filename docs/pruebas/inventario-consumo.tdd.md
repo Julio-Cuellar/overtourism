@@ -45,7 +45,7 @@ Cada una se aplicó a una copia, se corrieron las pruebas nuevas y el archivo se
 | Regla o garantía | Prueba | Tipo |
 |---|---|---|
 | R-I1, R-I3: varios artículos en una llamada con unidad base, CPP, `activo` y `rastreo`; los ausentes y los de otro negocio no aparecen; más de 100 ids falla | `ArticulosPorIdTest` | unidad |
-| D-191: crear sin rastreo o con `NINGUNO` funciona; `LOTE` y `SERIE` se rechazan; el dominio conserva el rastreo | `ArticulosPorIdTest` | unidad |
+| D-201: crear sin rastreo o con `NINGUNO` funciona; `LOTE` y `SERIE` se rechazan; el dominio conserva el rastreo | `ArticulosPorIdTest` | unidad |
 | K-01 idempotencia, llave con consumidor y negocio, fecha del hecho, alertas por cruce (A-02), saldo negativo (A-01), eventos con `causa_id` | `ConsumoPorVentaTest` | unidad |
 | K-02 una línea mala no descuenta ninguna; carrera por el saldo no deja consumo guardado | `ConsumoPorVentaTest` | unidad |
 | K-03 reversa al costo original, idempotente; K-04 marca y omisión posterior | `ConsumoPorVentaTest` | unidad |
@@ -63,4 +63,4 @@ Cada una se aplicó a una copia, se corrieron las pruebas nuevas y el archivo se
 2. **Sin lotes, FEFO ni series.** El costo es el CPP.
 3. **Nada corrió con la aplicación arrancada** (misma causa que el resto de la suite).
 4. **JavaDoc:** `javadoc -Xdoclint:all` sobre los tipos nuevos no marca nada faltante; quedan las advertencias de `@param` de `Articulo` y `CrearArticuloComando`, de estilo anterior.
-5. La decisión D-192 (reversa en un artículo dado de baja) y D-190 son propuestas mías.
+5. La decisión D-202 (reversa en un artículo dado de baja) y D-200 son propuestas mías.

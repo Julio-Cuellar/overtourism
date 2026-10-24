@@ -2,7 +2,7 @@ package mx.negocio360.ventas.dominio;
 
 /**
  * Codigos de error fijos de Ventas ({@code docs/diseno/ventas.md}, seccion 5.3). Cada codigo dice la regla que lo
- * produce, para ir de un error en el registro a su regla en el diseno (D-83).
+ * produce, para ir de un error en el registro a su regla en el diseno (D-142).
  */
 public enum CodigoError {
     // Datos de la venta
@@ -48,8 +48,11 @@ public enum CodigoError {
     VENTA_YA_ANULADA("VT-09"),
     /** Falta el motivo de anulacion o pasa de 200 caracteres. */
     MOTIVO_REQUERIDO("VT-09"),
-    /** El actor no tiene permiso de anular. */
-    SIN_PERMISO_ANULAR("VT-09"),
+    // Consultas
+    /** Tamano de pagina fuera de 1 a 100, o cursor que no emitimos nosotros. */
+    PAGINACION_INVALIDA("VF-02"),
+    /** Filtro de ventas con rango de mas de 92 dias, serie demasiado larga o folio menor que 1. */
+    FILTRO_INVALIDO("VF-02"),
     // Preparar y confirmar
     /** Token vacio, desconocido o ajeno. */
     TOKEN_INVALIDO("D-23"),

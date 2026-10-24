@@ -3,20 +3,14 @@ package mx.negocio360.negocios.web;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import mx.negocio360.compartido.graphql.EntradaGraphQl;
 import mx.negocio360.negocios.FiltroPublico;
 import mx.negocio360.negocios.NegocioPublicoVista;
 import mx.negocio360.negocios.NegociosPublicosApi;
 import mx.negocio360.negocios.PaginaPublica;
 import mx.negocio360.negocios.PaginaResenasPublicas;
-import mx.negocio360.negocios.PreparacionResena;
 import mx.negocio360.negocios.ResenaPublicaVista;
 import mx.negocio360.negocios.ResenasPublicasApi;
-import mx.negocio360.negocios.dominio.CodigoError;
-import mx.negocio360.negocios.dominio.NegociosException;
 import org.springframework.graphql.data.method.annotation.Argument;
-import org.springframework.graphql.data.method.annotation.ContextValue;
-import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
@@ -27,8 +21,8 @@ import org.springframework.stereotype.Controller;
  * publican con el par de la plataforma {@code prepararComando} y {@code confirmarComando} (RS-09), con el id de dispositivo
  * del encabezado {@code X-Dispositivo-Id} como autor (RS-11) y solo con el modo demostracion encendido (DM-03).
  *
- * <p>Hoy solo Negocios implementa {@code prepararComando} y {@code confirmarComando}. Cuando Clientes tenga sus
- * resolvedores, estos dos campos tendran que repartirse entre modulos: GraphQL solo admite un resolvedor por campo.
+ * <p>{@code prepararComando} y {@code confirmarComando} ya no se resuelven aqui: son del despachador de la plataforma
+ * (D-125) y la variante {@code publicarResena} la atiende {@link ComandosDeNegocios}.
  */
 @Controller
 public class PublicoGraphQlController {
@@ -56,39 +50,6 @@ public class PublicoGraphQlController {
     public PaginaResenasPublicas resenasDeNegocio(@Argument UUID negocioId, @Argument int primeros,
                                                   @Argument String despues) {
         return resenas.resenasDeNegocio(negocioId, primeros, despues);
-    }
-
-    // ---- publicar una reseña: preparar y confirmar ----
-
-    @MutationMapping
-    public PreparacionResena prepararComando(@Argument Map<String, Object> input,
-                                             @ContextValue(EntradaGraphQl.CLAVE) EntradaGraphQl entrada) {
-        // El esquema deja pasar exactamente una variante (@oneOf); aqui solo existe la de las reseñas.
-        if (!(input.get("publicarResena") instanceof Map<?, ?> datos)) {
-            throw new NegociosException(CodigoError.CONSULTA_INVALIDA);
-        }
-        return resenas.prepararResena(entrada.dispositivo(), uuid(datos.get("negocioId")),
-                entero(datos.get("calificacion")), datos.get("comentario") instanceof String c ? c : null);
-    }
-
-    /** Los errores de la confirmacion salen como resultado con codigo y texto fijos, como pide el contrato (D-23). */
-    @MutationMapping
-    public Map<String, Object> confirmarComando(@Argument String token,
-                                                @ContextValue(EntradaGraphQl.CLAVE) EntradaGraphQl entrada) {
-        var resultado = new LinkedHashMap<String, Object>();
-        try {
-            var publicada = resenas.confirmarResena(entrada.dispositivo(), token);
-            resultado.put("ok", true);
-            resultado.put("codigo", "OK");
-            resultado.put("mensajePlantilla", "Tu reseña quedó publicada.");
-            resultado.put("recursoId", publicada.resenaId());
-        } catch (NegociosException e) {
-            resultado.put("ok", false);
-            resultado.put("codigo", e.codigo().name());
-            resultado.put("mensajePlantilla", e.codigo().mensaje());
-            resultado.put("recursoId", null);
-        }
-        return resultado;
     }
 
     // ---- formas que el esquema pide distintas de las vistas ----
@@ -119,20 +80,5 @@ public class PublicoGraphQlController {
         info.put("hayMas", hayMas);
         info.put("cursorFinal", cursorFinal);
         return info;
-    }
-
-    private static UUID uuid(Object valor) {
-        try {
-            return UUID.fromString(String.valueOf(valor));
-        } catch (IllegalArgumentException e) {
-            throw new NegociosException(CodigoError.CONSULTA_INVALIDA);
-        }
-    }
-
-    private static int entero(Object valor) {
-        if (valor instanceof Number n) {
-            return n.intValue();
-        }
-        throw new NegociosException(CodigoError.CALIFICACION_INVALIDA);
     }
 }

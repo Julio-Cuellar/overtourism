@@ -73,4 +73,14 @@ public interface InventarioApi {
      * omitirlo cuando llegue (K-04). Falla con ARTICULO_INACTIVO si algun articulo ya se dio de baja; se puede reintentar.
      */
     ConsumoResultado revertirConsumo(ContextoNegocio contexto, String consumidor, UUID causaId);
+
+    /**
+     * El tipo del comando que espera confirmacion con ese token (por ejemplo {@code registrar_entrada}), para que el canal
+     * exija el permiso de ese comando antes de gastar el token (D-126).
+     *
+     * @param contexto negocio y actor que prepararon
+     * @param token    token en claro
+     * @return el tipo si el token es vigente y de esa persona; vacio en cualquier otro caso
+     */
+    Optional<String> tipoDeComando(ContextoNegocio contexto, String token);
 }

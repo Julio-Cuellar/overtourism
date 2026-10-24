@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
+import mx.negocio360.compartido.seguridad.Autorizacion;
 import mx.negocio360.compartido.seguridad.TokenOpaco;
 
 /**
@@ -69,18 +70,22 @@ public final class ServicioPreparacion {
     /**
      * Valida el comando sin ejecutarlo y crea su token.
      *
-     * @param contexto negocio y actor
-     * @param comando  comando a preparar
+     * @param contexto     negocio y actor
+     * @param autorizacion permisos de la persona; el manejador declara cuales exige el comando (D-126)
+     * @param comando      comando a preparar
      * @return token en claro, resumen y vencimiento
+     * @throws mx.negocio360.compartido.seguridad.PermisoDenegadoException si falta algun permiso del comando
      * @throws IllegalArgumentException si no hay manejador para ese comando (error de programacion)
      */
-    public PreparacionCreada preparar(ContextoNegocio contexto, Comando comando) {
+    public PreparacionCreada preparar(ContextoNegocio contexto, Autorizacion autorizacion, Comando comando) {
         Objects.requireNonNull(contexto, "contexto");
+        Objects.requireNonNull(autorizacion, "autorizacion");
         Objects.requireNonNull(comando, "comando");
         var manejador = porClase.get(comando.getClass());
         if (manejador == null) {
             throw new IllegalArgumentException("No hay manejador para " + comando.getClass().getName());
         }
+        exigirPermisos(manejador, autorizacion, comando);
         var resumen = resumenDe(manejador, contexto, comando);
         var json = serializar(comando);
         var token = TokenOpaco.nuevo();
@@ -93,14 +98,18 @@ public final class ServicioPreparacion {
     /**
      * Ejecuta el comando preparado con ese token.
      *
-     * @param contexto negocio y actor; deben ser los mismos que prepararon
-     * @param token    token en claro
+     * @param contexto     negocio y actor; deben ser los mismos que prepararon
+     * @param autorizacion permisos de la persona <b>ahora</b>: se vuelven a exigir antes de gastar el token (D-126)
+     * @param token        token en claro
      * @return resultado del manejador
+     * @throws mx.negocio360.compartido.seguridad.PermisoDenegadoException si ya no tiene algun permiso del comando; el
+     *                          token no se gasta
      * @throws RuntimeException la excepcion del modulo con TOKEN_INVALIDO, TOKEN_USADO, TOKEN_EXPIRADO o
      *                          COMANDO_CAMBIO, o la que lance el manejador
      */
-    public ResultadoComando confirmar(ContextoNegocio contexto, String token) {
+    public ResultadoComando confirmar(ContextoNegocio contexto, Autorizacion autorizacion, String token) {
         Objects.requireNonNull(contexto, "contexto");
+        Objects.requireNonNull(autorizacion, "autorizacion");
         if (token == null || token.isBlank() || token.length() > MAX_CARACTERES_DEL_TOKEN) {
             throw traductor.apply(FalloPreparacion.TOKEN_INVALIDO);
         }
@@ -121,11 +130,25 @@ public final class ServicioPreparacion {
             repositorio.vaciar(tokenHash);
             throw traductor.apply(FalloPreparacion.COMANDO_CAMBIO);
         }
+        return confirmarComando(manejador, contexto, autorizacion, fila, tokenHash, ahora);
+    }
+
+    /**
+     * Lee el comando guardado, exige sus permisos <b>antes</b> de gastar el token (D-126), gasta el token y ejecuta.
+     * Si a la persona le quitaron un permiso entre preparar y confirmar, el token sigue vivo y el error es
+     * {@code PERMISO_DENEGADO}.
+     */
+    private <C extends Comando> ResultadoComando confirmarComando(ManejadorComando<C> manejador,
+                                                                  ContextoNegocio contexto,
+                                                                  Autorizacion autorizacion, Preparacion fila,
+                                                                  String tokenHash, java.time.Instant ahora) {
+        var comando = leer(manejador, fila.comando(), tokenHash);
+        exigirPermisos(manejador, autorizacion, comando);
         if (!repositorio.marcarUsada(tokenHash, ahora)) {
             throw traductor.apply(FalloPreparacion.TOKEN_USADO);
         }
         try {
-            return ejecutar(manejador, contexto, fila.comando(), fila.resumen());
+            return manejador.confirmar(contexto, comando, fila.resumen());
         } finally {
             repositorio.vaciar(tokenHash);
         }
@@ -152,16 +175,22 @@ public final class ServicioPreparacion {
         return manejador.ambito(manejador.claseComando().cast(comando));
     }
 
-    private <C extends Comando> ResultadoComando ejecutar(ManejadorComando<C> manejador, ContextoNegocio contexto,
-                                                          String json, String resumen) {
-        C comando;
+    /** Reconstruye el comando guardado; si ya no se puede leer, el comando cambio y se vacia la preparacion. */
+    private <C extends Comando> C leer(ManejadorComando<C> manejador, String json, String tokenHash) {
         try {
-            comando = mapeador.readValue(json, manejador.claseComando());
+            return mapeador.readValue(json, manejador.claseComando());
         } catch (JsonProcessingException e) {
             // Sin la causa: el mensaje de Jackson puede citar el contenido del comando.
+            repositorio.vaciar(tokenHash);
             throw traductor.apply(FalloPreparacion.COMANDO_CAMBIO);
         }
-        return manejador.confirmar(contexto, comando, resumen);
+    }
+
+    private <C extends Comando> void exigirPermisos(ManejadorComando<C> manejador, Autorizacion autorizacion,
+                                                    Comando comando) {
+        for (var permiso : manejador.permisos(manejador.claseComando().cast(comando))) {
+            autorizacion.exigir(permiso);
+        }
     }
 
     private String serializar(Comando comando) {

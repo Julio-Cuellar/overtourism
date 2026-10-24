@@ -1,5 +1,6 @@
 package mx.negocio360.caja.fakes;
 
+import mx.negocio360.compartido.pruebas.Permisos;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -40,23 +41,29 @@ public final class Escenario {
     public final Dobles.Eventos eventos = new Dobles.Eventos();
     public final Dobles.Ventas ventas = new Dobles.Ventas();
     public final Dobles.Reglas reglas = new Dobles.Reglas();
-    public final Dobles.Autorizacion autorizacion = new Dobles.Autorizacion();
 
     public final CajaApi api;
     public final ConsumidorVentas consumidor;
 
     public Escenario() {
-        api = CajaServicio.armar(cajas, libro, preparaciones, eventos, ventas, reglas, autorizacion, reloj);
+        api = CajaServicio.armar(cajas, libro, preparaciones, eventos, ventas, reglas, reloj);
         consumidor = new ConsumidorVentas(cajas, libro);
     }
 
     /** Prepara y confirma un comando, como lo haria el panel en dos pasos. */
     public ResultadoComando confirmar(ContextoNegocio contexto, Comando comando) {
-        return api.confirmar(contexto, api.preparar(contexto, comando).token());
+        return api.confirmar(contexto, Permisos.de(contexto), api.preparar(contexto, Permisos.de(contexto), comando).token());
     }
 
+    /** Prepara y confirma un comando con los permisos que se le den, para probar quien puede y quien no. */
+    public ResultadoComando confirmar(ContextoNegocio contexto, mx.negocio360.compartido.seguridad.Autorizacion permisos,
+                                      Comando comando) {
+        return api.confirmar(contexto, permisos, api.preparar(contexto, permisos, comando).token());
+    }
+
+    /** Crear cajas es del administrador y el dueno (D-127): el montaje de las pruebas lo hace con todos los permisos. */
     public UUID crearCaja(ContextoNegocio contexto, String nombre) {
-        return confirmar(contexto, new CrearCajaComando(nombre)).recursoId();
+        return confirmar(contexto, Permisos.TODOS, new CrearCajaComando(nombre)).recursoId();
     }
 
     /** Crea la caja «Taquilla» y abre un turno con ese fondo. Devuelve el turno. */

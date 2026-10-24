@@ -1,16 +1,30 @@
-# Restaurantes — diseño del módulo vertical (v0.5, P1a programada)
+<!--
+Copia en Markdown del artefacto «Módulo Restaurantes» (diseño v0.5, 16 de octubre de 2026), convertida del HTML publicado
+el 2026-10-24 para dejarla en el repositorio. El contenido es el del artefacto, sin cambios. No es el archivo original del
+autor del módulo: si existe en otra rama, manda ese. Ver la entrada de la Bitácora del 2026-10-24.
+-->
 
-| | |
-|---|---|
-| **Estado** | **P1a programada (R0 a R3)** con la autorización del 2026-10-16; P1b y la persistencia siguen en diseño y **no** están autorizadas (CLAUDE.md, «Convenciones»). Evidencia en `docs/pruebas/restaurantes-r0.tdd.md` y `docs/pruebas/restaurantes-p1a.tdd.md` |
-| **Fecha** | v0.1 a v0.5: 2026-10-16 |
-| **Pista** | **C** del plan de integración (`docs/planes/integracion-ventas-caja.md` §13.1): la que construye Restaurantes. La B es Misceláneos (su equipo) y la A es la integración de Ventas y Caja. Decisiones `D-160` a `D-199` (el rango se amplió dos veces; `D-180` en adelante no estaba asignado en este repositorio), migraciones `V037` y `V060` a `V069` |
-| **Hecho con** | `/ecc:plan` y la skill `disenar-modulo`. Modelo a imitar: `inventario.md` y `negocios.md` |
-| **Artefacto** | Versión visual de este documento (enlace en la Bitácora) |
 
-> **Aclaración de nombre.** El pedido decía «producto horizontal de Restaurantes». Restaurantes es **vertical**: depende de Inventario, Ventas y Negocios, y ninguno de ellos lo conoce (R4). Lo que el pedido llamó «módulos verticales» se diseña aquí como **submódulos internos** (paquetes dentro de `restaurantes`), no como módulos de Spring Modulith.
 
----
+Negocio 360 · módulo vertical · diseño v0.5 · 16 de octubre de 2026
+
+# Restaurantes
+
+De la receta al plato en la mesa: menú con costo teórico, descuento automático de insumos al vender, servicio en salón con cocina y un menú público para el turista.
+
+P1a programada (R0 a R3). P1b y la persistencia siguen sin autorización.
+
+Pista C · decisiones D-160 a D-199 · Migraciones V037 y V060 a V069 · Documento fuente: `docs/diseno/restaurantes.md`
+
+- **9** paquetes internos
+- **108** reglas con prueba
+- **8** eventos publicados
+- **18** permisos
+- **≈ 14.5** días-persona de P1 (servidor)
+- **205** pruebas en verde
+- **16** mutaciones detectadas
+- **1** pregunta abierta
+**Versión 0.5.** P1a está programada con TDD: menú, recetas con costo teórico y consumo de insumos por venta, con 205 pruebas en verde y 16 de 16 mutaciones detectadas. Todavía no se ha visto correr en la aplicación completa: los contextos de Spring no arrancan por la integración pendiente de Ventas y Caja, e Inventario aún no ofrece lo que Restaurantes necesita. El detalle está en «Estado de la implementación».
 
 ## Estado de la implementación (v0.5)
 
@@ -20,12 +34,10 @@ P1a (R0 a R3) está programada con TDD el 2026-10-16: 205 pruebas en verde (185 
 |---|---|---|
 | R0 Módulo, permisos y rol | Hecha | `MESERO_CAJA` aún sin los permisos de Ventas y Caja (migración posterior, propuesta `V039`) |
 | R1 Menú | Hecha: platillos, categorías, etiquetas, temporada, agotado, publicar, baja, menú público, fuente de productos y seguimiento de Negocios | Variante `darDeBajaPlatillo` en el despachador de comandos (D-125, Pista A) |
-| R2 Recetas | Hecha: versiones, costo teórico y margen, comando `guardarReceta`, `desactivarReceta` | Variante `guardarReceta` en el despachador. Hecho: `InventarioPuerto` conectado con `InventarioApi` por `InventarioApiComoPuerto` (R-I1 a R-I4, 2026-10-16) |
-| R3 Consumo | Hecha: descuento por receta con la versión del momento de la venta, reversa, fallos y aviso | Suscripción `alertasRestaurante` y el reintento manual (P2). El consumo real ya descuenta contra Inventario en memoria (R-I2, 2026-10-16) |
+| R2 Recetas | Hecha: versiones, costo teórico y margen, comando `guardarReceta`, `desactivarReceta` | Variante `guardarReceta` en el despachador. Conectar `InventarioPuerto` con `InventarioApi` (R-I1, R-I2, R-I4) |
+| R3 Consumo | Hecha: descuento por receta con la versión del momento de la venta, reversa, fallos y aviso | Suscripción `alertasRestaurante` y el reintento manual (P2). El consumo real espera `registrarConsumo` de Inventario (R-I2) |
 
-**Desviaciones respecto del diseño**, todas con prueba: (1) el `rendimiento` vive en cada **versión** de la receta y no en la receta, para que una venta vieja conserve las porciones de su versión (RC-04, RC-07); (2) la regla nueva **MN-14**: agotado y fuera de temporada no hacen «no vendible» un platillo para Ventas, porque una cuenta ordenada antes de agotarse se cobra igual; (3) se agregaron `cambiarModoDeInventario` y `desactivarReceta` al esquema GraphQL; (4) `negocio.actualizado` de Negocios **ya trae** `giro` y `publicado`, así que R-N2 y R-N3 están cumplidos; lo que falta es que Negocios publique `negocio.estado_cambiado`, que hoy no se emite; (5) Inventario se usa por un puerto propio (`InventarioPuerto`); con `inventario.almacen=memoria` lo atiende `InventarioApiComoPuerto` y sin ese bean responde «no disponible» (R-I1 a R-I4 cumplidos el 2026-10-16); (6) los repositorios son en memoria (`restaurantes.almacen=memoria` en el perfil de desarrollo) hasta R7.
-
----
+**Desviaciones respecto del diseño**, todas con prueba: (1) el `rendimiento` vive en cada **versión** de la receta y no en la receta, para que una venta vieja conserve las porciones de su versión (RC-04, RC-07); (2) la regla nueva **MN-14**: agotado y fuera de temporada no hacen «no vendible» un platillo para Ventas, porque una cuenta ordenada antes de agotarse se cobra igual; (3) se agregaron `cambiarModoDeInventario` y `desactivarReceta` al esquema GraphQL; (4) `negocio.actualizado` de Negocios **ya trae**`giro` y `publicado`, así que R-N2 y R-N3 están cumplidos; lo que falta es que Negocios publique `negocio.estado_cambiado`, que hoy no se emite; (5) Inventario se usa por un puerto propio (`InventarioPuerto`) con un adaptador que responde «no disponible» hasta que existan R-I1, R-I2 y R-I4; (6) los repositorios son en memoria (`restaurantes.almacen=memoria` en el perfil de desarrollo) hasta R7.
 
 ## Cambios de la v0.4
 
@@ -41,8 +53,6 @@ Tercera ronda (2026-10-16). El equipo confirmó mi lectura del QR y cerró las p
 
 Queda abierta una sola pregunta: el modelo de IA de P2 (pregunta 20).
 
----
-
 ## Cambios de la v0.3
 
 Segunda ronda de respuestas del equipo (2026-10-16). Lo que cambió:
@@ -55,8 +65,6 @@ Segunda ronda de respuestas del equipo (2026-10-16). Lo que cambió:
 | 4. «¿A qué te refieres?» sobre «el dueño de Negocios» | Mi error de redacción: me refería al **responsable del módulo Negocios** (la persona del equipo que lo programa), no al dueño del comercio. La pregunta 21 se reformuló. El dueño del comercio (rol `DUENO`) tiene todos los permisos de Restaurantes, como dijiste |
 
 El total de P1 del servidor sube de ≈ 13 a ≈ **14.5 días-persona**, más ≈ 2.5 de la página web.
-
----
 
 ## Cambios de la v0.2
 
@@ -75,15 +83,13 @@ El equipo respondió las 15 preguntas de la v0.1 el 2026-10-16. Lo que cambió e
 
 El total de P1 sube de ≈ 11 a ≈ 13 días-persona.
 
----
-
 ## 1. Objetivo
 
 Restaurantes convierte la operación diaria de una fonda, un restaurante o una cocina económica en datos útiles para el dueño y para el turista:
 
 1. **Para el dueño:** menú con precios, recetas con costo teórico y margen, descuento automático de insumos al vender, servicio en salón (mesas, cuentas, comandas a cocina) y qué platillos dejan dinero.
-2. **Para el turista:** menú publicado con etiquetas de dieta declaradas, platillos de temporada y mesas libres en vivo.
-3. **Para la plataforma:** dato verificable de qué se vende y a qué costo, base del pronóstico, de las rutas y del tablero agregado.
+1. **Para el turista:** menú publicado con etiquetas de dieta declaradas, platillos de temporada y mesas libres en vivo.
+1. **Para la plataforma:** dato verificable de qué se vende y a qué costo, base del pronóstico, de las rutas y del tablero agregado.
 
 **Qué es suyo** (dueño de los datos): platillos, categorías de menú, etiquetas, recetas y sus versiones, zonas y mesas, cuentas, líneas, comandas, consumos fallidos y la disponibilidad que publica.
 
@@ -98,8 +104,6 @@ Restaurantes convierte la operación diaria de una fonda, un restaurante o una c
 | Cuentas de personal, roles y permisos | Identidad |
 | Datos del cliente | Clientes |
 
----
-
 ## 2. Arquitectura y dependencias
 
 ### 2.1 Reglas que cumple
@@ -113,28 +117,52 @@ Restaurantes convierte la operación diaria de una fonda, un restaurante o una c
 | R5 | Sus eventos son aditivos y versionados. |
 | R6 | No aplica (solo entre horizontales). |
 
-```java
+```
 @ApplicationModule(displayName = "Restaurantes", allowedDependencies = {"compartido", "inventario"})
 package mx.negocio360.restaurantes;
 ```
 
-Antes `ApplicationModules.verify()` fallaba con `inventario` porque `InventarioApi` no exponía sus tipos. Inventario los expone con `@NamedInterface("api")` (R-I4, D-193) y el módulo declara `allowedDependencies = {"compartido", "inventario", "inventario::api"}`.
+Hoy `ApplicationModules.verify()` fallaría con `inventario` porque `InventarioApi` no expone sus tipos con `@NamedInterface` (pendiente M6 de la Bitácora). Se pide a Inventario (R-I4, sección 10).
 
 ### 2.2 Submódulos internos
 
 Un solo módulo Modulith con nueve paquetes. Cada paquete es dueño de sus tablas y se llaman entre sí solo por interfaces de aplicación, sin ciclos.
 
-| Paquete | Qué hace | Prioridad |
-|---|---|---|
-| `menu` | Platillos, categorías, etiquetas, temporada, agotado, publicación. Implementa `FuenteDeProductos`. | **P1a** |
-| `recetas` | Recetas versionadas, insumos, merma, rendimiento, costo teórico y margen. | **P1a** |
-| `consumo` | Escucha `venta.registrada` y `venta.anulada`; descuenta y revierte insumos en Inventario; guarda consumos fallidos. | **P1a** |
-| `publico` | `menuPublico`, `mesaPorQr` y `estadoDePedidoQr` sin sesión (vistas de solo lectura, lista permitida de campos). | **P1a** |
-| `salon` | Zonas, mesas, servicio abierto o cerrado, disponibilidad publicada y el QR de cada mesa (token, pausa e interruptor). | **P1b** |
-| `cuentas` | Cuenta por mesa (que también abre el primer pedido por QR), líneas, cancelación con motivo, pedir cuenta (el comensal o el personal), entregar al cobro y vincular la venta. | **P1b** |
-| `cocina` | Comandas por estación (cocina y barra), estados, tableros y tiempos. | **P1b** |
-| `analisis` | Margen real vs. teórico, platillos más vendidos, ingeniería de menú. Todo determinista. | P2 |
-| `asistente` | Borrador de menú desde foto o voz, traducción rotulada. Usa IA. | P2 |
+`menu`P1a
+
+Platillos, categorías, etiquetas, temporada, agotado y publicación. Implementa FuenteDeProductos para Ventas.
+
+`recetas`P1a
+
+Recetas versionadas, insumos con merma, rendimiento, costo teórico y margen.
+
+`consumo`P1a
+
+Escucha venta.registrada y venta.anulada; descuenta y revierte insumos en Inventario; guarda los fallos.
+
+`publico`P1a
+
+Menú público, ficha de mesa por QR y seguimiento del pedido, sin sesión: vistas de solo lectura con lista permitida de campos.
+
+`salon`P1b
+
+Zonas, mesas, servicio abierto o cerrado, la disponibilidad que se publica y el QR de cada mesa con su pausa e interruptor.
+
+`cuentas`P1b
+
+Cuenta por mesa (la abre también el primer pedido por QR), líneas, cancelación con motivo, pedir cuenta, entregar al cobro y vincular la venta.
+
+`cocina`P1b
+
+Una comanda por estación (cocina y barra), estados, tableros y tiempos de preparación.
+
+`analisis`P2
+
+Margen real contra teórico, más vendidos e ingeniería de menú. Todo determinista.
+
+`asistente`P2
+
+Borrador de menú desde foto o voz y traducción rotulada. Usa IA.
 
 ```mermaid
 flowchart LR
@@ -195,20 +223,58 @@ flowchart LR
 
 Línea sólida: llamada síncrona permitida. Línea punteada: evento por el bus. **Restaurantes no escribe ventas** (plan de integración §11.4): la app cobra llamando a Ventas por GraphQL.
 
----
-
 ## 3. Alcance
 
 ### 3.1 Cortes
 
-| Corte | Qué entrega | Estimado |
-|---|---|---|
-| **P1a · Restaurante en el panel y en la app** | Menú con precios, etiquetas, temporada y agotado. Recetas con costo teórico y margen. Descuento de insumos al vender y reversa al anular. Menú público para el turista. | ≈ 4.75 d-p |
-| **P1b · Servicio en salón** | Zonas y mesas, abrir servicio, cuentas con líneas, comandas por estación (cocina y barra) con tablero, **QR en cada mesa: los comensales piden desde la web o la app y el pedido va directo a cocina**, pedir cuenta, cobro por GraphQL, mesas libres publicadas. | ≈ 6.75 d-p |
-| Persistencia y cierre | Migraciones, RLS forzada, siembra demo, revisión. | ≈ 3 d-p |
-| **P2** | Análisis de platillos (ingeniería de menú), borrador de menú desde foto o voz con IA, traducción rotulada, combos y comida corrida, propina, reintento de consumo fallido, reabrir cuenta anulada, reinicio diario de agotados, plano visual de mesas, **código de mesa rotatorio opcional para el QR** (D-192). | por estimar |
-| **P3** | Reservaciones, pronóstico de demanda por platillo, sugerencia de insumos con IA, dividir cuenta, pago desde el QR, modificadores con precio, stock comprometido, precios por horario. | |
-| **Fuera** | Facturación electrónica, cálculo de impuestos, nómina, integración con apps de reparto. | |
+P1a≈ 4.75 d-p
+
+#### Restaurante en el panel y en la app
+
+- Menú con precios, etiquetas, temporada y agotado
+- Recetas con costo teórico y margen
+- Descuento de insumos al vender y reversa al anular
+- Menú público para el turista
+
+P1b≈ 6.75 d-p
+
+#### Servicio en salón
+
+- Zonas, mesas y servicio abierto o cerrado
+- Cuentas con líneas y cancelación con motivo
+- Comandas por estación: cocina y barra
+- QR en cada mesa: carta, reseñas y pedido directo a cocina, con alerta a meseros
+- Pedir cuenta (comensal o personal) y cobrar por GraphQL
+- Mesas libres publicadas
+
+P2por estimar
+
+#### Después del corte
+
+- Ingeniería de menú
+- Menú desde foto o voz (IA)
+- Traducción rotulada (IA)
+- Combos y comida corrida
+- Propina
+- Reintento de consumo fallido
+- Reabrir cuenta anulada
+- Plano visual de mesas
+- Código de mesa rotatorio (opcional)
+
+P3
+
+#### Más adelante
+
+- Reservaciones
+- Pronóstico por platillo (IA)
+- Sugerencia de insumos (IA)
+- Dividir cuenta
+- Pago desde el QR
+- Modificadores con precio
+- Stock comprometido
+- Precios por horario
+
+Persistencia y cierre (migraciones, seguridad por fila, siembra de demostración y revisión): ≈ 3 d-p. **Fuera de alcance:** facturación electrónica, cálculo de impuestos, nómina e integración con apps de reparto.
 
 Total P1 del servidor ≈ **14.5 días-persona** (4.75 + 6.75 + 3), más ≈ 2.5 de la página web pública (frontend, estimación por confirmar). Supuesto: una persona en la pista C con el contrato de Inventario y Ventas congelado.
 
@@ -219,12 +285,12 @@ De abajo hacia arriba: **pedido por QR** (el QR queda con la carta, el restauran
 ### 3.3 Camino dorado propuesto para la demo
 
 1. El dueño abre el servicio. La ficha del turista muestra «Mesas libres 12 de 12».
-2. Un comensal escanea el **QR de la mesa 5** (sin la app: se abre la web con la carta, el restaurante y sus reseñas) y pide 2 cemitas y 1 agua de horchata. **El pedido va directo a cocina y a barra** y el mesero recibe la alerta. La mesa pasa a ocupada: libres 11 de 12.
-3. Los chiles en nogada aparecen «Agotado» porque el restaurante los marcó; otro comensal pide mole, y cocina avisa que ya no hay. El mesero **cancela la línea con el motivo «Agotado»** y el comensal lo ve en su pantalla.
-4. Cocina y barra marcan lista su comanda cada una; el mesero entrega.
-5. El comensal toca **Pedir la cuenta**; mesero y caja reciben el aviso. El cajero cobra con `registrarVenta`, la cuenta queda pagada y la mesa libre. Si alguien escanea otra vez, se abre una cuenta nueva.
-6. En Inventario se ven los insumos descontados (pan, milanesa, quesillo…) y una alerta de bajo mínimo.
-7. En el panel: costo teórico y margen de cada platillo.
+1. Un comensal escanea el **QR de la mesa 5** (sin la app: se abre la web con la carta, el restaurante y sus reseñas) y pide 2 cemitas y 1 agua de horchata. **El pedido va directo a cocina y a barra** y el mesero recibe la alerta. La mesa pasa a ocupada: libres 11 de 12.
+1. Los chiles en nogada aparecen «Agotado» porque el restaurante los marcó; otro comensal pide mole, y cocina avisa que ya no hay. El mesero **cancela la línea con el motivo «Agotado»** y el comensal lo ve en su pantalla.
+1. Cocina y barra marcan lista su comanda cada una; el mesero entrega.
+1. El comensal toca **Pedir la cuenta**; mesero y caja reciben el aviso. El cajero cobra con `registrarVenta`, la cuenta queda pagada y la mesa libre. Si alguien escanea otra vez, se abre una cuenta nueva.
+1. En Inventario se ven los insumos descontados (pan, milanesa, quesillo…) y una alerta de bajo mínimo.
+1. En el panel: costo teórico y margen de cada platillo.
 
 ### 3.4 Calendario
 
@@ -233,15 +299,17 @@ Hoy (2026-10-16) cae dentro del evento (15 al 17 de octubre). Este diseño es pa
 ## 4. Cómo funciona
 
 ### 4.1 Menú y venta por mostrador (P1a)
+
 El dueño crea platillos. **El id del platillo es el `producto_id`** que Ventas conoce (D-162): Ventas llama a `FuenteDeProductos.preciosParaVenta` y recibe nombre, unidad `pieza`, precio y `admiteFraccion = false`. La app cobra con `registrarVenta`; Ventas publica `venta.registrada`; Restaurantes lo escucha y descuenta los insumos de la receta.
 
 ### 4.2 Receta y costo teórico (P1a)
+
 La receta es una lista de insumos (artículos de Inventario) con cantidad, unidad y merma, por `rendimiento` porciones. Guardar es **preparar → confirmar**: el servidor valida unidades con `aBase`, calcula costo teórico y margen con el CPP de Inventario y los muestra antes de confirmar. Cada guardado crea una versión nueva e inmutable.
 
 Ejemplo con cifras **simuladas**: cemita poblana, precio 85.00.
 
 | Insumo | Neto | Merma | Bruto | CPP | Costo |
-|---|---:|---:|---:|---:|---:|
+|---|---|---|---|---|---|
 | Pan de cemita | 1 pieza | 0 % | 1 | 6.00 | 6.00 |
 | Milanesa | 120 g | 5 % | 126 g | 0.18 | 22.68 |
 | Quesillo | 50 g | 0 % | 50 g | 0.16 | 8.00 |
@@ -249,25 +317,31 @@ Ejemplo con cifras **simuladas**: cemita poblana, precio 85.00.
 | Chipotle | 10 g | 0 % | 10 g | 0.12 | 1.20 |
 | Papalo | 3 g | 0 % | 3 g | 0.05 | 0.15 |
 | Cebolla | 20 g | 0 % | 20 g | 0.03 | 0.60 |
-| **Costo teórico** | | | | | **43.25** |
+| **Costo teórico** |  |  |  |  | **43.25** |
 
 Margen = 85.00 − 43.25 = **41.75** (49.12 % del precio; costo de ingredientes 50.88 %). Si a un insumo le falta CPP, el costo se marca **incompleto** y se listan los insumos sin costo; nunca se estima (RC-05).
 
 ### 4.3 Servicio en salón (P1b)
+
 La **cuenta abierta vive en Restaurantes**. Ventas registra una venta de un solo golpe, así que una cuenta que dura una hora no cabe en ella (H-R2). El mesero abre la cuenta, agrega líneas, envía a cocina (cada envío crea **una comanda por estación**: cocina y barra, según la categoría de cada platillo) y pide la cuenta. Quien tiene Caja la cobra: la app pide `cuentaParaCobro`, que devuelve las líneas agregadas y una **referencia** opaca `restaurantes:cuenta:<id>`; luego llama a `registrarVenta` con esa referencia. Al llegar `venta.registrada`, Restaurantes marca la cuenta como pagada y libera la mesa.
 
 ### 4.4 Consumo de insumos
+
 Al llegar `venta.registrada`, por cada línea cuyo producto sea un platillo con modo `RECETA`: toma la **versión de receta vigente en el `ocurrido_en` de la venta**, calcula `cantidad × (1 + merma/100) × cantidadVendida ÷ rendimiento`, suma por artículo y llama **una vez** a `registrarConsumo` con `consumidor = "restaurantes"` y `causaId = venta_id`. Inventario lo hace atómico e idempotente. Un fallo permanente se guarda en `consumo_fallido` y avisa; **la venta nunca se bloquea** (A-01 de Inventario).
 
 ### 4.5 Disponibilidad de mesas
+
 Restaurantes calcula `libres`, `total` y `abierto` y publica `negocio.disponibilidad_cambiada` (evento genérico C-01, D-33) solo cuando algo cambia. Negocios lo consume y lo muestra en la ficha (D-107). Restaurantes **no** tiene WebSocket público propio.
 
 ### 4.6 QR en cada mesa (P1b)
+
 Cada mesa tiene un QR con un enlace opaco y rotable. Quien lo escanea abre la **app** si la tiene, o una **página web** si no, con la carta, el restaurante y sus reseñas; no necesita cuenta. Si el restaurante tiene el servicio abierto, puede **pedir**: el pedido va **de inmediato** a cocina y barra y alerta a los meseros, sin aceptación previa. El primer pedido de una mesa libre abre su cuenta. El comensal sigue su pedido en pantalla y ve si algo se cancela y por qué.
 
 El control es posterior: el restaurante marca los platillos agotados, el mesero cancela la línea con un motivo y el comensal lo ve. Cuando el comensal (o el personal) **pide la cuenta**, la cuenta pasa a por cobrar y avisa a meseros y caja; mesero o caja cobran con Ventas y la mesa se libera. El siguiente escaneo abre una cuenta nueva. Pagar desde el QR es P3. Reglas en la sección 5.8.
 
 ## 5. Reglas de dominio
+
+Filtrar reglas
 
 Cada regla es comprobable y tiene su prueba de aceptación. Prioridad entre corchetes cuando no es P1.
 
@@ -302,7 +376,7 @@ Cada regla es comprobable y tiene su prueba de aceptación. Prioridad entre corc
 | RC-06 | Margen = precio − costo; porcentaje = margen ÷ precio. Con costo incompleto no hay margen. Los precios se entienden como precio final al público; Restaurantes no calcula impuestos. | 85.00 y 43.25: 41.75 y 49.12 %. |
 | RC-07 | Una venta usa la **versión vigente en su `ocurrido_en`**, no en el momento de procesarla. | Venta de las 13:00, receta cambiada a las 13:05, evento procesado a las 13:10: usa la versión anterior. |
 | RC-08 | Guardar receta es preparar → confirmar. El resumen trae costo, margen y avisos; confirmar vuelve a validar (`COMANDO_CAMBIO` si cambió un precio o una unidad). | Cambiar el precio entre los pasos da `COMANDO_CAMBIO`. |
-| RC-09 | Desactivar la receta de un platillo en modo `RECETA` falla (`RECETA_REQUERIDA`) hasta cambiar su modo. | |
+| RC-09 | Desactivar la receta de un platillo en modo `RECETA` falla (`RECETA_REQUERIDA`) hasta cambiar su modo. |  |
 | RC-10 | Costo y margen solo los ve quien tenga `restaurantes.costo.ver`. Sin ese permiso la receta se ve sin costos. | Un cocinero ve insumos y cantidades, no costos. |
 
 ### 5.3 Consumo (CM)
@@ -313,11 +387,11 @@ Cada regla es comprobable y tiene su prueba de aceptación. Prioridad entre corc
 | CM-02 | Suma por artículo todas las líneas de la venta y hace **una** llamada `registrarConsumo(consumidor = "restaurantes", causaId = venta_id, ocurridoEn, lineas)`. | Dos cemitas en líneas distintas: una llamada con la suma. |
 | CM-03 | Idempotente: `evento_procesado (consumidor, evento_id)` y, en Inventario, `(negocio, causaId, consumidor)` (K-01). | El mismo evento dos veces deja un solo descuento. |
 | CM-04 | `venta.anulada` llama a `revertirConsumo("restaurantes", venta_id)` aunque Restaurantes nunca haya visto la venta. Si llegó antes, Inventario guarda la marca `ANULADO_PREVIO` (K-04). | Anulada antes que registrada: el consumo posterior devuelve `OMITIDO_ANULADO_PREVIO`. |
-| CM-05 | Redondeo: se calcula con escala 8 y se redondea **una vez** por artículo, HALF_UP a 4 decimales (D-20). | |
+| CM-05 | Redondeo: se calcula con escala 8 y se redondea **una vez** por artículo, HALF_UP a 4 decimales (D-20). |  |
 | CM-06 | Error **permanente** (artículo inactivo, unidad no convertible, receta ausente): se guarda en `consumo_fallido` con las líneas, se publica `restaurantes.consumo_fallido`, se marca el evento procesado y **no se reintenta**. Error **reintentable** (`CONCURRENCIA`, `ERROR_TEMPORAL`): no se marca procesado y el bus reintenta (D-122). | Artículo dado de baja: una fila en `consumo_fallido`, una alerta, la venta intacta. |
-| CM-07 | El stock negativo se permite; las alertas las da Inventario (A-01). | |
-| CM-08 | El aviso de fallo guarda tipo e id, nunca los datos de la venta en el registro del servidor. | |
-| CM-09 | **[P2]** `reintentarConsumo(ventaId)` vuelve a intentar con las líneas guardadas y la receta vigente en el `ocurrido_en` original. | |
+| CM-07 | El stock negativo se permite; las alertas las da Inventario (A-01). |  |
+| CM-08 | El aviso de fallo guarda tipo e id, nunca los datos de la venta en el registro del servidor. |  |
+| CM-09 | **[P2]** `reintentarConsumo(ventaId)` vuelve a intentar con las líneas guardadas y la receta vigente en el `ocurrido_en` original. |  |
 
 ### 5.4 Salón y disponibilidad (MS)
 
@@ -327,10 +401,10 @@ Cada regla es comprobable y tiene su prueba de aceptación. Prioridad entre corc
 | MS-02 | **Estado derivado**, no guardado: `BLOQUEADA` (marca manual), `OCUPADA` (tiene cuenta abierta o por cobrar) o `LIBRE`. | Abrir y pagar una cuenta cambia el estado sin otra escritura. |
 | MS-03 | Una mesa tiene a lo más una cuenta no pagada (índice único parcial). | Abrir otra cuenta falla con `MESA_OCUPADA`, también con dos peticiones simultáneas. |
 | MS-04 | `libres` = mesas activas, no bloqueadas y sin cuenta. `total` = mesas activas no bloqueadas. `abierto` = servicio abierto. | Bloquear una mesa libre baja `libres` y `total` en 1. |
-| MS-05 | `abrirServicio` y `cerrarServicio` (manuales). Cerrar con cuentas abiertas exige permiso de gerente y motivo. Sin servicio abierto no se abren cuentas (`SERVICIO_CERRADO`). | |
+| MS-05 | `abrirServicio` y `cerrarServicio` (manuales). Cerrar con cuentas abiertas exige permiso de gerente y motivo. Sin servicio abierto no se abren cuentas (`SERVICIO_CERRADO`). |  |
 | MS-06 | Publica `negocio.disponibilidad_cambiada` **solo cuando cambia** `(libres, total, abierto)` respecto de lo último publicado (`disponibilidad_publicada`), en la misma transacción del cambio. Cada evento trae el estado completo y `actualizado_en`, así que un reordenamiento no daña. | Cerrar y abrir una cuenta deja dos eventos; repetir `bloquearMesa` sobre una ya bloqueada, ninguno. |
-| MS-07 | Baja lógica de mesas y zonas; no se borra lo que tiene cuentas históricas. | |
-| MS-08 | Modo de servicio del restaurante: `MESAS`, `MOSTRADOR` o `AMBOS`. En `MOSTRADOR` la cuenta no lleva mesa (para llevar). | |
+| MS-07 | Baja lógica de mesas y zonas; no se borra lo que tiene cuentas históricas. |  |
+| MS-08 | Modo de servicio del restaurante: `MESAS`, `MOSTRADOR` o `AMBOS`. En `MOSTRADOR` la cuenta no lleva mesa (para llevar). |  |
 | MS-09 | Cada mesa activa tiene un QR (sección 5.8). Dar de baja la mesa invalida su QR. | Mesa dada de baja: `mesaPorQr` responde `null`. |
 
 ### 5.5 Cuentas y líneas (CT)
@@ -341,15 +415,15 @@ Cada regla es comprobable y tiene su prueba de aceptación. Prioridad entre corc
 | CT-02 | Agregar línea: cuenta `ABIERTA`; platillo **ordenable** (activo, en temporada, no agotado); cantidad entera de 1 a 99; nota de hasta 80 caracteres; bandera `marca_alergia` opcional. | Agregar a una cuenta por cobrar falla con `CUENTA_NO_ABIERTA`. |
 | CT-03 | Estados de línea: `PENDIENTE` (solo del personal; se quita libremente) → `ENVIADA` → `ANULADA`. Las líneas del QR **nacen `ENVIADA`**. Anular exige **motivo** (QR-10): con `restaurantes.linea.anular` (el mesero la tiene) mientras su comanda no esté `LISTA`; después, con `linea.anular_preparada` (gerente en adelante) y preparar → confirmar, porque ya hay merma. Queda registrada. | Un mesero anula una línea en `NUEVA` y no una en `LISTA`. Sin motivo falla con `MOTIVO_REQUERIDO`. |
 | CT-04 | `enviarACocina` crea **una comanda por estación** (cocina y barra, según la categoría de cada platillo; sin categoría, cocina) con las líneas `PENDIENTE` (al menos una) y las pasa a `ENVIADA`. Publica `restaurantes.comanda_enviada` por cada comanda. | Un envío con una cemita y una bebida crea dos comandas. Enviar sin líneas pendientes falla con `SIN_LINEAS_PENDIENTES`. |
-| CT-05 | `pedirCuenta`: `ABIERTA` → `POR_COBRAR`. Lo pide el personal o el comensal por QR (QR-13). Exige al menos una línea no anulada y ninguna `PENDIENTE` (`LINEAS_SIN_ENVIAR`). Guarda `total_calculado` con los precios vigentes y publica `restaurantes.cuenta_solicitada`. | |
-| CT-06 | `reabrirCuenta`: `POR_COBRAR` → `ABIERTA`, antes del cobro. | |
-| CT-07 | `cuentaParaCobro` (cuenta `POR_COBRAR`) devuelve las líneas **agregadas por platillo**, el total calculado y la `referencia`. Es de solo lectura: Restaurantes no escribe la venta. | |
+| CT-05 | `pedirCuenta`: `ABIERTA` → `POR_COBRAR`. Lo pide el personal o el comensal por QR (QR-13). Exige al menos una línea no anulada y ninguna `PENDIENTE` (`LINEAS_SIN_ENVIAR`). Guarda `total_calculado` con los precios vigentes y publica `restaurantes.cuenta_solicitada`. |  |
+| CT-06 | `reabrirCuenta`: `POR_COBRAR` → `ABIERTA`, antes del cobro. |  |
+| CT-07 | `cuentaParaCobro` (cuenta `POR_COBRAR`) devuelve las líneas **agregadas por platillo**, el total calculado y la `referencia`. Es de solo lectura: Restaurantes no escribe la venta. |  |
 | CT-08 | **Vínculo con la venta:** al llegar `venta.registrada` con `referencia = restaurantes:cuenta:<id>` de una cuenta del mismo negocio, la cuenta pasa a `PAGADA` con su `venta_id`. Idempotente por `venta_id`. Si las líneas vendidas difieren de las de la cuenta, queda `discrepancia = true` y se avisa. | Evento repetido: una cuenta pagada. |
 | CT-09 | **La venta gana:** una venta registrada sobre una cuenta `ABIERTA` (alguien cobró mientras se reabría) también la marca `PAGADA`, con discrepancia. | Carrera entre reabrir y cobrar: la cuenta termina pagada. |
-| CT-10 | `venta.anulada` de una venta vinculada deja la cuenta `PAGADA` con `venta_anulada = true`; la mesa no se reocupa. **[P2]** reabrir. | |
+| CT-10 | `venta.anulada` de una venta vinculada deja la cuenta `PAGADA` con `venta_anulada = true`; la mesa no se reocupa. **[P2]** reabrir. |  |
 | CT-11 | `cancelarCuenta` con motivo (el mesero tiene `restaurantes.cuenta.cancelar`): directa si ninguna línea llegó a `LISTA`; si alguna está `LISTA` o `ENTREGADA`, exige `linea.anular_preparada` y preparar → confirmar. Anula las líneas y libera la mesa. | Una cuenta por QR sin comensales se cancela con motivo `SIN_COMENSALES`. |
 | CT-12 | La cuenta **no guarda datos personales** del cliente. Si hay cliente, lo pasa la app a Ventas (`cliente_id`). La nota de línea y el hash del dispositivo (QR-12) se borran a los 30 días (D-172). | Una tarea diaria vacía las notas y los hashes viejos. |
-| CT-13 | El precio que cobra Ventas es el vigente al confirmar la venta. La cuenta muestra el vigente al pedirla. Limitación conocida (H-R4). | |
+| CT-13 | El precio que cobra Ventas es el vigente al confirmar la venta. La cuenta muestra el vigente al pedirla. Limitación conocida (H-R4). |  |
 | CT-14 | `Idempotency-Key` en `abrirCuenta` y `agregarLinea`: reintentar la misma petición no duplica. | Mismo `Idempotency-Key` dos veces: una línea. |
 | CT-15 | `liberarMesa` (gerente en adelante, con motivo): cierra una cuenta que se cobró fuera del flujo (sin `referencia`) y libera la mesa sin vincular venta. Queda auditado. | Una cuenta `POR_COBRAR` cobrada a mano se cierra sin `venta_id`. |
 
@@ -360,22 +434,22 @@ Cada regla es comprobable y tiene su prueba de aceptación. Prioridad entre corc
 | CD-01 | Estados: `NUEVA` → `EN_PREPARACION` → `LISTA` → `ENTREGADA`; solo se permite devolver `LISTA` → `EN_PREPARACION`. Cada cambio guarda actor y hora. | `NUEVA` → `LISTA` falla con `TRANSICION_INVALIDA`. |
 | CD-02 | `restaurantes.comanda.preparar` avanza hasta `LISTA`; `restaurantes.comanda.entregar` marca `ENTREGADA`. | El mesero no puede marcar `LISTA`. |
 | CD-03 | **Estaciones con estado propio** (D-179): cada comanda pertenece a una estación (`COCINA` o `BARRA`, la de la categoría de sus platillos) y tiene su propio estado. El tablero de cada estación muestra sus comandas no entregadas, de la más antigua a la más nueva. | Una cemita lista en cocina no cambia el estado de la comanda de bebidas. |
-| CD-04 | Tiempo de preparación = `LISTA` − `enviada_en`, calculado por el código. Se resalta si pasa un umbral (regla versionada, 15 min por omisión). | |
-| CD-05 | Anular una línea enviada actualiza la comanda (`comanda_actualizada`) y el tablero la muestra tachada. | |
-| CD-06 | Las líneas con `marca_alergia` se resaltan en el tablero. No se guarda detalle médico. | |
+| CD-04 | Tiempo de preparación = `LISTA` − `enviada_en`, calculado por el código. Se resalta si pasa un umbral (regla versionada, 15 min por omisión). |  |
+| CD-05 | Anular una línea enviada actualiza la comanda (`comanda_actualizada`) y el tablero la muestra tachada. |  |
+| CD-06 | Las líneas con `marca_alergia` se resaltan en el tablero. No se guarda detalle médico. |  |
 | CD-07 | Las suscripciones solo entregan eventos del negocio de la sesión (SG-16). | Dos negocios conectados: ninguno recibe avisos del otro. |
 | CD-08 | Las comandas de un mismo envío comparten un `envio_id`, así que el mesero ve «mesa 5: cocina lista, barra en preparación». Anular una línea enviada actualiza solo la comanda de su estación. | Anular una bebida no toca la comanda de cocina. |
-| CD-09 | Quien trabaja en barra usa el rol `COCINERO` y ve las dos estaciones; el filtro es de pantalla, no de permiso (D-191). | |
+| CD-09 | Quien trabaja en barra usa el rol `COCINERO` y ve las dos estaciones; el filtro es de pantalla, no de permiso (D-191). |  |
 
 ### 5.7 Menú público (PB)
 
 | ID | Regla | Prueba |
 |---|---|---|
 | PB-01 | `menuPublico` responde solo si el negocio está **visible**: `ACTIVO` y publicado (R-N2). Si no, responde `null`. | Negocio pausado: `null`; al reanudar, vuelve. |
-| PB-02 | Idioma `es-MX` por omisión. Con `en`, un platillo sin traducción sale en español con `traducido = false`. Una traducción automática se rotula (D-43). | |
+| PB-02 | Idioma `es-MX` por omisión. Con `en`, un platillo sin traducción sale en español con `traducido = false`. Una traducción automática se rotula (D-43). |  |
 | PB-03 | **Lista permitida de campos:** id, nombre, descripción, precio, categoría, etiquetas, agotado, foto con URL firmada, `actualizado_en`. Nunca costos, recetas, insumos, margen, notas, ni estados internos (PU-03). | Ninguna consulta pública devuelve esos campos, ni con alias. |
-| PB-04 | Sin sesión. Tope de 200 platillos, tasa limitada, sin paginación. | |
-| PB-05 | Muestra el precio vigente (el mismo que cobra Ventas) y la leyenda «Precios y disponibilidad sujetos a cambio». | |
+| PB-04 | Sin sesión. Tope de 200 platillos, tasa limitada, sin paginación. |  |
+| PB-05 | Muestra el precio vigente (el mismo que cobra Ventas) y la leyenda «Precios y disponibilidad sujetos a cambio». |  |
 | PB-06 | Lee de una **vista de solo lectura** (`v_menu_publico`), igual que `v_negocio_publico`. | La aplicación no tiene `SELECT` sobre las tablas base en la ruta pública. |
 
 ### 5.8 Mesa por QR (QR)
@@ -390,42 +464,42 @@ Un QR por mesa, definido en P1 (D-180). **Qué es:** un enlace opaco a la mesa. 
 | QR-04 | **La página pública** (web o app) muestra tres cosas, todas con consultas públicas que ya existen o están diseñadas: la carta (`menuPublico`, PB-01 a PB-06), el restaurante (`negocioPublico`) y sus reseñas (`resenasDeNegocio`). No pide cuenta ni registro. Con el negocio no visible no hay nada que mostrar. | Negocio pausado: el QR responde `null`. |
 | QR-05 | `acepta_pedidos` es verdadero si el negocio es visible, el restaurante tiene el QR habilitado (`qr_habilitado`), el servicio está abierto, la mesa no está bloqueada ni pausada y su cuenta no fue solicitada. Si la mesa **no tiene cuenta, el primer pedido la abre** (`origen = QR`). Dos primeros pedidos simultáneos dejan **una** cuenta (índice único, MS-03). | Dos `pedirPorQr` simultáneos sobre una mesa libre: una cuenta, dos pedidos. |
 | QR-06 | Las líneas del QR nacen `ENVIADA` y el pedido crea **de inmediato una comanda por estación** (CT-04). No hay aceptación previa del personal. Un platillo agotado, fuera de temporada o inactivo se rechaza con su código (`PLATILLO_AGOTADO`, `FUERA_DE_TEMPORADA`, `PLATILLO_NO_ORDENABLE`). | Un pedido por QR aparece en el tablero de cocina sin ninguna acción del mesero. |
-| QR-07 | **Alerta a los meseros:** cada pedido publica `restaurantes.pedido_qr_recibido` (mesa, número de líneas y si abrió la cuenta). Llega por `salonActualizado` a quien tenga `restaurantes.salon.ver`. | |
+| QR-07 | **Alerta a los meseros:** cada pedido publica `restaurantes.pedido_qr_recibido` (mesa, número de líneas y si abrió la cuenta). Llega por `salonActualizado` a quien tenga `restaurantes.salon.ver`. |  |
 | QR-08 | `confirmarPresencia(cuentaId)` (`restaurantes.cuenta.abrir`) marca que un mesero ya está con la mesa. Es solo informativo: no cambia cocina ni cobro. Sirve para distinguir cuentas por QR todavía no atendidas. | Una cuenta por QR nace sin presencia confirmada. |
-| QR-09 | **El restaurante es responsable de marcar lo que no hay** (`menu.agotar`, MN-05). Un platillo agotado sale deshabilitado en la página y el servidor lo rechaza. Nada se marca solo. | |
+| QR-09 | **El restaurante es responsable de marcar lo que no hay** (`menu.agotar`, MN-05). Un platillo agotado sale deshabilitado en la página y el servidor lo rechaza. Nada se marca solo. |  |
 | QR-10 | **El mesero cancela y avisa.** `anularLinea(lineaId, motivo)` exige un código: `AGOTADO`, `ERROR_DEL_PEDIDO`, `SIN_COMENSALES`, `COCINA_NO_PUEDE` u `OTRO` (con texto de hasta 80 caracteres). El servidor compone el mensaje que ve el comensal a partir del código; el texto libre solo acompaña a `OTRO`. | Cancelar con `AGOTADO`: el comensal ve «Cancelado: agotado». |
 | QR-11 | `estadoDePedidoQr(token, dispositivoId)`, **sin sesión**, devuelve las líneas pedidas **desde ese dispositivo** con su estado (`EN_COCINA`, `PREPARANDO`, `LISTO`, `ENTREGADO`, `CANCELADO` con su motivo) y el estado de la cuenta. La página lo consulta cada ~10 segundos. Nunca devuelve líneas de otros dispositivos ni totales de la mesa. En P1 no hay WebSocket público (D-186). | Dos dispositivos en la misma mesa: cada uno ve solo lo suyo. |
-| QR-12 | La página genera un id aleatorio de dispositivo y lo guarda en el navegador. El servidor guarda solo su **hash con clave** (`linea_cuenta.dispositivo_hash`), nunca el id. Se borra a los 30 días (CT-12). | |
+| QR-12 | La página genera un id aleatorio de dispositivo y lo guarda en el navegador. El servidor guarda solo su **hash con clave** (`linea_cuenta.dispositivo_hash`), nunca el id. Se borra a los 30 días (CT-12). |  |
 | QR-13 | `pedirCuentaPorQr(token)` y `pedirCuenta` del personal hacen lo mismo: la cuenta pasa a `POR_COBRAR` y se publica `restaurantes.cuenta_solicitada` para meseros y caja. Desde entonces `pedirPorQr` falla con `CUENTA_SOLICITADA` («pide al mesero»); el personal puede reabrirla (CT-06). | Después de pedir la cuenta, un pedido nuevo por QR falla. |
 | QR-14 | **Cobro y liberación:** mesero con caja (`MESERO_CAJA`) o cajero cobran con `registrarVenta` (CT-07); al llegar `venta.registrada` la cuenta pasa a `PAGADA` y la mesa se libera (CT-08). **El siguiente escaneo abre una cuenta nueva** con otro número; la pagada no recibe más líneas. | Tras el pago, `acepta_pedidos` vuelve a ser verdadero y un pedido abre una cuenta distinta. |
 | QR-15 | **Límites del pedido y de la cuenta:** hasta 20 líneas por pedido, cantidad de 1 a 10 por línea, 60 líneas por cuenta de QR y un monto estimado máximo por cuenta (regla versionada, 3,000.00 por omisión). Al pasarlos, `LIMITE_QR_EXCEDIDO` («pide al mesero»); el personal puede seguir agregando. Todo `pedirPorQr` lleva `Idempotency-Key`. | El pedido de 21 líneas falla; repetir la llave no duplica. |
 | QR-16 | **Límite de tasa** por token, por dispositivo y por IP (5 pedidos por minuto por token por omisión), además del tope global de la puerta (SG-10). Excederlo responde `TASA_EXCEDIDA`. | Seis pedidos en un minuto con el mismo token: el sexto se rechaza. |
 | QR-17 | **Defensa contra bromas:** tres cuentas por QR canceladas con motivo `SIN_COMENSALES` en la misma mesa dentro de una hora **pausan el QR de esa mesa** (`qr_pausado_hasta`, una hora) y avisan a quien tenga `servicio.operar`. El restaurante puede apagar los pedidos por QR de todo el local (`qr_habilitado = false`) y volver a encenderlos. | La tercera cancelación por `SIN_COMENSALES` pausa la mesa; `mesaPorQr` devuelve `acepta_pedidos = false`. |
-| QR-18 | Sin datos personales de quien pide: no hay cuenta, nombre ni teléfono. La nota (80 caracteres) y la bandera de alergia siguen CT-12. | |
+| QR-18 | Sin datos personales de quien pide: no hay cuenta, nombre ni teléfono. La nota (80 caracteres) y la bandera de alergia siguen CT-12. |  |
 | QR-19 | Contra QR suplantados: la página muestra el nombre del negocio y la mesa, y el QR impreso lleva el enlace en texto. Un token de la mesa A no puede pedir en la mesa B ni en otro negocio. | Dos negocios: el token de uno no crea líneas en el otro. |
 | QR-20 | Todo pedido va a la **cuenta de la mesa**. No hay cuenta por comensal (dividir es P3) ni pago desde el QR (P3). Quienes están en la misma mesa comparten la cuenta. | `cuentaParaCobro` suma las líneas no anuladas de todos los orígenes. |
-| QR-21 | El enlace abre la app si está instalada y, si no, una **web pública** (D-185). El servidor entrega la URL (`qrDeMesa`); el cliente dibuja el QR. La web exige CORS acotado a su origen para las consultas públicas (R-F2). | |
+| QR-21 | El enlace abre la app si está instalada y, si no, una **web pública** (D-185). El servidor entrega la URL (`qrDeMesa`); el cliente dibuja el QR. La web exige CORS acotado a su origen para las consultas públicas (R-F2). |  |
 
 ### 5.9 Seguridad y consistencia (SR)
 
 | ID | Regla | Prueba |
 |---|---|---|
-| SR-01 | `negocio_id` sale siempre del contexto de la sesión, nunca de un argumento (SG-02). La única excepción es `menuPublico`, cuyo objeto es el negocio consultado. | |
+| SR-01 | `negocio_id` sale siempre del contexto de la sesión, nunca de un argumento (SG-02). La única excepción es `menuPublico`, cuyo objeto es el negocio consultado. |  |
 | SR-02 | Seguridad por fila forzada en todas las tablas (`app.negocio_id`). | Un negocio no ve ni escribe filas de otro (prueba contra Postgres real). |
 | SR-03 | Cada operación GraphQL está declarada en la tabla de operaciones con su permiso (SG-21), y el permiso se exige también al confirmar un comando antes de gastar el token (D-126). | Quitar el rol entre los dos pasos da `PERMISO_DENEGADO` sin gastar el token. |
 | SR-04 | Cada caso de uso es una sola transacción y publica sus eventos por el outbox (D-103, `FronteraTransaccional`). | Una falla a la mitad no deja evento ni cambio. |
-| SR-05 | Los costos y márgenes exigen `restaurantes.costo.ver`. | |
-| SR-06 | Auditoría de la plataforma para: cambio de precio, anular línea enviada, cancelar cuenta, cerrar servicio con cuentas, guardar receta. | |
-| SR-07 | Los errores se enmascaran; cada código tiene plantilla en español de México; el servidor no improvisa texto. | |
+| SR-05 | Los costos y márgenes exigen `restaurantes.costo.ver`. |  |
+| SR-06 | Auditoría de la plataforma para: cambio de precio, anular línea enviada, cancelar cuenta, cerrar servicio con cuentas, guardar receta. |  |
+| SR-07 | Los errores se enmascaran; cada código tiene plantilla en español de México; el servidor no improvisa texto. |  |
 
 ### 5.10 Demostración (DM)
 
 | ID | Regla | Prueba |
 |---|---|---|
-| DM-01 | Al llegar `negocio.registrado` de un negocio **simulado** con giro `RESTAURANTE`, se crea su extensión y, con el perfil `demo`, un menú sembrado y rotulado «de demostración». | |
-| DM-02 | La siembra crea sus artículos en Inventario por su API pública, no por tablas. | |
-| DM-03 | `restablecer` borra cuentas, comandas y consumos fallidos de los negocios simulados y deja la siembra como estaba. No toca negocios reales. | |
-| DM-04 | Prohibido con el perfil `produccion`: la aplicación no arranca si la bandera de demo está encendida. | |
+| DM-01 | Al llegar `negocio.registrado` de un negocio **simulado** con giro `RESTAURANTE`, se crea su extensión y, con el perfil `demo`, un menú sembrado y rotulado «de demostración». |  |
+| DM-02 | La siembra crea sus artículos en Inventario por su API pública, no por tablas. |  |
+| DM-03 | `restablecer` borra cuentas, comandas y consumos fallidos de los negocios simulados y deja la siembra como estaba. No toca negocios reales. |  |
+| DM-04 | Prohibido con el perfil `produccion`: la aplicación no arranca si la bandera de demo está encendida. |  |
 
 ### 5.11 IA (IA) — P2
 
@@ -436,8 +510,6 @@ Un QR por mesa, definido en P1 (D-180). **Qué es:** un enlace opaco a la mesa. 
 | IA-03 | La traducción automática se rotula como tal y el dueño puede editarla (D-43). |
 | IA-04 | El modelo solo recibe la imagen o el texto que la persona subió. Nunca recibe cuentas, ventas, clientes ni recetas. |
 | IA-05 | Si el modelo falla o no responde, la captura manual sigue funcionando. |
-
----
 
 ## 6. Datos
 
@@ -588,8 +660,6 @@ stateDiagram-v2
 
 La mesa no tiene estado propio: se deriva de su cuenta (MS-02).
 
----
-
 ## 7. API interna en Java
 
 Restaurantes no ofrece API Java a otros módulos (R4: nadie depende de él). Sus casos de uso los llaman los resolvedores GraphQL de `restaurantes.web`. Lo único que otros módulos ven de él es la implementación de `FuenteDeProductos` (interfaz de `compartido`).
@@ -607,8 +677,6 @@ Restaurantes no ofrece API Java a otros módulos (R4: nadie depende de él). Sus
 **Puerto hacia Inventario** (interfaz propia `InventarioPuerto`, con adaptador sobre `InventarioApi` y un doble en pruebas, para poder programar sin esperar a Inventario): `aBase`, `articulo`, `registrarConsumo`, `revertirConsumo`.
 
 **Códigos de error** (cada uno con plantilla en español): `PRECIO_INVALIDO`, `NOMBRE_DUPLICADO`, `RECETA_REQUERIDA`, `MODO_INVENTARIO_CONFLICTO`, `PLATILLO_AGOTADO`, `FUERA_DE_TEMPORADA`, `PLATILLO_NO_ORDENABLE`, `PLATILLO_EN_CUENTA_ABIERTA`, `ETIQUETA_INVALIDA`, `LIMITE_EXCEDIDO`, `INSUMO_REPETIDO`, `UNIDAD_NO_CONVERTIBLE`, `SERIE_EN_RECETA`, `ARTICULO_INACTIVO`, `MESA_OCUPADA`, `SERVICIO_CERRADO`, `CUENTA_NO_ABIERTA`, `SIN_LINEAS_PENDIENTES`, `LINEAS_SIN_ENVIAR`, `MOTIVO_REQUERIDO`, `CUENTA_SOLICITADA`, `QR_INVALIDO`, `QR_PAUSADO`, `QR_DESHABILITADO`, `LIMITE_QR_EXCEDIDO`, `TASA_EXCEDIDA`, `TRANSICION_INVALIDA`, `PERMISO_DENEGADO`, `CONCURRENCIA`, `TOKEN_INVALIDO`, `TOKEN_EXPIRADO`, `TOKEN_USADO`, `COMANDO_CAMBIO`.
-
----
 
 ## 8. GraphQL (propuesta)
 
@@ -642,7 +710,7 @@ Tipos con prefijo `Rest` (D-130): `Cuenta`, `Mesa` y `Platillo` chocarían con I
 
 **Operaciones públicas** (sin sesión; las únicas de Restaurantes que escriben). El pedido es directo y no usa preparar → confirmar: no hay aceptación del personal (D-181). El control es posterior, con la cancelación con motivo (QR-10). Llevan límite de tasa por token, dispositivo e IP (QR-16):
 
-```graphql
+```
 extend type Query {
   mesaPorQr(token: String!): RestMesaPublica
   # Sondeo cada ~10 s. Solo devuelve lo pedido desde ese dispositivo (QR-11).
@@ -676,7 +744,7 @@ input AnularLineaInput {               # del personal
 
 Se agregan variantes a `ComandoInput` con el prefijo `restaurantes.`:
 
-```graphql
+```
 extend input ComandoInput {
   guardarReceta: GuardarRecetaInput        # restaurantes.receta.editar
   darDeBajaPlatillo: BajaPlatilloInput     # restaurantes.menu.editar
@@ -709,21 +777,21 @@ Los avisos de «platillo listo» para el mesero salen por `comandasDeCocina` fil
 
 ### 8.5 Ejemplo de cobro de una cuenta
 
-```graphql
+```
 query { cuentaParaCobro(cuentaId: "0192c1…") {
   referencia total
   lineas { productoId descripcion cantidad } } }
 ```
-```graphql
+
+```
 mutation { prepararComando(input: { registrarVenta: {
   turnoId: "0192a3…"
   referencia: "restaurantes:cuenta:0192c1…"
   lineas: [ { productoId: "0192f3…", cantidad: "2" } ]
   pagos: [ { metodo: EFECTIVO, monto: "200.00", recibido: "200.00" } ] } }) { token resumen } }
 ```
-`referencia` es el campo nuevo que se pide a Ventas (R-V1).
 
----
+`referencia` es el campo nuevo que se pide a Ventas (R-V1).
 
 ## 9. Eventos
 
@@ -750,22 +818,20 @@ Los cinco de uso propio (`comanda_enviada`, `comanda_actualizada`, `pedido_qr_re
 |---|---|---|---|
 | `venta.registrada` v1 | Ventas | CM-01 a CM-06 y CT-08, CT-09 | `restaurantes/contratos/VentaRegistradaV1`, tolerante: ignora campos que no conoce, tolera opcionales ausentes |
 | `venta.anulada` v1 | Ventas | CM-04 y CT-10 | `restaurantes/contratos/VentaAnuladaV1` |
-| `negocio.registrado` v1 | Negocios | Crea la extensión si el giro es `RESTAURANTE` (DM-01) | |
-| `negocio.estado_cambiado` v1 | Negocios | Actualiza `visible` (PB-01) | |
-| `negocio.actualizado` v1 | Negocios | Actualiza `visible` si trae la publicación (R-N2) | |
+| `negocio.registrado` v1 | Negocios | Crea la extensión si el giro es `RESTAURANTE` (DM-01) |  |
+| `negocio.estado_cambiado` v1 | Negocios | Actualiza `visible` (PB-01) |  |
+| `negocio.actualizado` v1 | Negocios | Actualiza `visible` si trae la publicación (R-N2) |  |
 
 Reglas para quien consume (plan de integración §10.4): lector propio sin importar tipos de `ventas`; idempotente por `(consumidor, evento_id)`; un evento que no se pudo aplicar **no** se marca como procesado; prueba de contrato con el evento real.
-
----
 
 ## 10. Qué necesita de otros módulos
 
 | # | De quién | Qué | Estado | Pedido |
 |---|---|---|---|---|
-| R-I1 | Inventario | `aBase` devuelve también `rastreo` y `activo` (D-27) | **Hecho (2026-10-16)**: `InventarioApi.articulosPorId` devuelve `id`, `nombre`, `unidadBase`, `cpp`, `activo` y `rastreo`; `aBase` no cambió (D-190) | RC-03 se cumple |
-| R-I2 | Inventario | `registrarConsumo` y `revertirConsumo` (inventario.md §6.4) | **Hecho (2026-10-16)**: `registrarConsumo` y `revertirConsumo` en `InventarioApi`, sin lotes ni series | La atomicidad real (K-02) llega con la transacción de PostgreSQL |
-| R-I3 | Inventario | CPP de varios artículos en una llamada | **Hecho (2026-10-16)**: `articulosPorId` trae el CPP de hasta 100 artículos por llamada | El adaptador pide por tandas de 100 |
-| R-I4 | Inventario | `@NamedInterface` para los tipos de `InventarioApi` (M6) | **Hecho (2026-10-16)**: `@NamedInterface("api")` en los tipos expuestos (D-193) | `verify()` pasa |
+| R-I1 | Inventario | `aBase` devuelve también `rastreo` y `activo` (D-27) | **Falta**: `CantidadEnBase` hoy trae solo `articuloId`, `cantidadBase`, `unidadBase`, `factorAplicado` | Sin esto no se cumple RC-03 |
+| R-I2 | Inventario | `registrarConsumo` y `revertirConsumo` (inventario.md §6.4) | **Falta** (fase 4 de Inventario) | Mientras tanto, doble en pruebas |
+| R-I3 | Inventario | CPP de varios artículos en una llamada | **Falta**: `ArticuloVista` trae `cpp` por artículo | Interino: `articulo(id)` por insumo (máx. 30) |
+| R-I4 | Inventario | `@NamedInterface` para los tipos de `InventarioApi` (M6) | **Falta** | `verify()` lo exige |
 | R-I5 | Inventario | Evento o consulta cuando se da de baja un artículo usado en recetas | No existe | Opcional (H-R12) |
 | R-V1 | Ventas (Pista A) | Campo opcional `referencia` (texto de hasta 80) en `registrarVenta`, guardado y devuelto en `venta.registrada` v1 | Aceptado (respuesta 3). **Falta** pedirlo y congelarlo con la Pista A antes del hito H-0 | **Bloqueante** de P1b (H-R1) |
 | R-V2 | Plataforma (Pista A) | `FuenteDeProductos` con método opcional `modoInventario(negocioId, productoId)` (por omisión `NINGUNO`) para que Inventario valide K-05 sin conocer verticales | **Falta** | H-R5 |
@@ -775,12 +841,10 @@ Reglas para quien consume (plan de integración §10.4): lector propio sin impor
 | R-N3 | Negocios | `negocio.registrado` con `giro` | **Cumplido**: trae `giro` | DM-01 |
 | R-ID1 | Identidad | Permisos `restaurantes.*` y el rol base `MESERO_CAJA` en `RolesBase`, con migración `V037` | Por hacer (archivo compartido, serializado) | Sección 11 |
 | R-C1 | Caja | **[P2]** Propina: tipo de movimiento o método | No existe | H-R3 |
-| R-N4 | Negocios | ~~Puesto `BARTENDER`~~ | **Retirado** (D-191): la barra usa `COCINERO` | |
+| R-N4 | Negocios | ~~Puesto `BARTENDER`~~ | **Retirado** (D-191): la barra usa `COCINERO` |  |
 | R-F1 | Plataforma (Pista A) | Límite de tasa por **token y por dispositivo** para operaciones públicas **con escritura** (`pedirPorQr`, `pedirCuentaPorQr`); hoy la puerta limita por cuenta y por IP | **Falta** | QR-16, SG-10 |
 | R-F2 | Plataforma (Pista A) | CORS acotado al origen de la web pública para las consultas y mutaciones públicas, y que `X-Dispositivo-Id` o `dispositivoId` no se registre en los avisos | **Falta** | QR-21, D-185 |
 | R-N5 | Negocios | La web pública usa `negocioPublico` y `resenasDeNegocio` sin cambios | Existen | QR-04 |
-
----
 
 ## 11. Permisos y roles
 
@@ -814,7 +878,7 @@ Son 18 permisos en P1.
 
 **Cobro configurable (D-171, aceptada).** Por omisión el mesero no cobra (matriz del plan de integración §8.2). Si el dueño quiere que alguien atienda y cobre, le asigna el rol `MESERO_CAJA`: es una configuración **por persona**. Los permisos sueltos por persona esperan a los roles personalizados de Identidad (D-74, P2).
 
-**Estado (R0 programada, 2026-10-16).** `MESERO_CAJA` existe en `RolesBase` y en la `V037`, en la plantilla del giro RESTAURANTE entre `MESERO` y `COCINERO`, pero hoy solo tiene los permisos del mesero: `ventas.venta.ver`, `ventas.venta.registrar` y `caja.turno.ver` se agregan en una migración posterior (propuesta `V039`) cuando la Pista A los declare. Evidencia en `docs/pruebas/restaurantes-r0.tdd.md`.
+**Estado (R0 programada, 2026-10-16).**`MESERO_CAJA` existe en `RolesBase` y en la `V037`, en la plantilla del giro RESTAURANTE entre `MESERO` y `COCINERO`, pero hoy solo tiene los permisos del mesero: `ventas.venta.ver`, `ventas.venta.registrar` y `caja.turno.ver` se agregan en una migración posterior (propuesta `V039`) cuando la Pista A los declare. Evidencia en `docs/pruebas/restaurantes-r0.tdd.md`.
 
 ## 12. Componentes de IA
 
@@ -831,8 +895,6 @@ Ninguno es necesario para el piso de P1; el producto funciona sin IA. El equipo 
 
 Aplicación del principio rector: el modelo interpreta una foto y propone; el código valida tipos y rangos, calcula cifras y escribe tras la confirmación.
 
----
-
 ## 13. Datos y fuentes (20 % de la rúbrica)
 
 | Fuente | Para qué | Estado |
@@ -845,8 +907,6 @@ Aplicación del principio rector: el modelo interpreta una foto y propone; el c�
 | **Datos simulados** | Menú, recetas, cuentas y costos de la demo | Siempre rotulados «de demostración» (`es_simulado`) |
 
 Los números de la sección 4.2 son simulados. Por convención de `CLAUDE.md`, ninguna cifra oficial se carga de memoria: se verifica contra la fuente.
-
----
 
 ## 14. Diagramas de secuencia
 
@@ -991,8 +1051,6 @@ sequenceDiagram
   RE-->>App: platillos, precios y etiquetas declaradas
 ```
 
----
-
 ### 14.7 Pedido desde el QR de la mesa
 
 ```mermaid
@@ -1053,8 +1111,6 @@ Una prueba por regla (columna «Prueba» de la sección 5), más estos recorrido
 
 Estructura de pruebas: `ContratoDeFuenteDeProductosTest` (extiende la clase abstracta de Pista A), `ContratoVentaRegistradaV1Test`, `ConsumidorIdempotenteTest`, `EstructuraModulosTest` y pruebas contra Postgres real para seguridad por fila e índices parciales. Mutaciones sobre los puntos críticos: versión de receta por `ocurrido_en`, suma por artículo, índice de mesa, permiso al confirmar.
 
----
-
 ## 16. Fases y reparto (TDD)
 
 Cada fase: pruebas primero (RED con el motivo correcto), código mínimo (GREEN), `mvn clean verify`, y una entrada en la Bitácora. **Ninguna empieza sin autorización escrita.** Sigue el plan de integración: R1 y R2 pueden empezar con el contrato congelado (hito H-0) y un doble de Ventas.
@@ -1093,8 +1149,6 @@ Propiedad de archivos (plan de integración §13.3): `restaurantes/**` y `restau
 | La web pública todavía no existe | Alta | Sin ella el QR no sirve a quien no tiene la app, y es el camino principal | Pantalla de frontend de ≈ 2.5 d-p y CORS (R-F2); el pedido por QR depende de ella |
 | Un comensal sigue esperando algo que ya se canceló | Media | Mala experiencia y disputa | El estado se sondea cada 10 segundos y el motivo de la cancelación se muestra en su pantalla (QR-10, QR-11); el mesero además avisa en persona |
 
----
-
 ## 18. Hallazgos
 
 | ID | Hallazgo | Gravedad | Propuesta |
@@ -1121,8 +1175,6 @@ Propiedad de archivos (plan de integración §13.3): `restaurantes/**` y `restau
 | H-R20 | Un pedido por QR sin aceptación previa va directo a cocina: quien tenga una foto del QR puede pedir comida sin estar en el local | Alta | Defensas posteriores y no bloqueantes (D-187); es el costo de la decisión del equipo |
 | H-R21 | «Dueño» se usó para dos cosas: el dueño del comercio (rol `DUENO`) y el responsable de programar un módulo (quien mantiene Negocios) | Baja | En este documento «dueño» es siempre el del comercio; la otra figura se llama «responsable del módulo» |
 | H-R22 | Si se cobra sin la `referencia` (a mano en Caja), la cuenta no se cierra y la mesa queda ocupada | Media | CT-15, `liberarMesa` con motivo |
-
----
 
 ## 19. Decisiones
 
@@ -1185,7 +1237,7 @@ Rango de la Pista C: `D-160` a `D-199` (ampliado dos veces; `D-180` en adelante 
 | 13 | ¿Quién toma la pista C? | «¿Qué es la pista C?» | Aclarado en la sección 16 |
 | 14 | ¿Estaciones con estado propio? | Desde P1 | D-179 |
 | 15 | ¿Combos y comida corrida en P2? | Sí | D-182 |
-| + | «Los QR en las mesas quedan definidos en P1» | | D-180, D-181, sección 5.8 |
+| + | «Los QR en las mesas quedan definidos en P1» |  | D-180, D-181, sección 5.8 |
 
 ### 20.2 Segunda ronda (2026-10-16)
 
@@ -1219,16 +1271,18 @@ Quedan además los **pedidos a otras pistas** sin hacer (sección 10): R-V1 (`re
 **Fonda Doña Chela** (Centro, 12 mesas en tres zonas: Salón, Terraza, Barra):
 
 | Categoría | Platillo | Precio | Modo | Etiquetas |
-|---|---|---:|---|---|
+|---|---|---|---|---|
 | Antojitos | Cemita poblana | 85.00 | `RECETA` | `TIPICO_POBLANO`, `PICANTE` |
 | Antojitos | Chalupas (orden de 5) | 70.00 | `RECETA` | `TIPICO_POBLANO` |
 | Platos fuertes | Mole poblano con pollo | 120.00 | `RECETA` (rendimiento 40) | `TIPICO_POBLANO` |
 | Platos fuertes | Tacos árabes (orden) | 95.00 | `RECETA` | `TIPICO_POBLANO` |
 | Platos fuertes | Chiles en nogada | 260.00 | `RECETA` | `TIPICO_POBLANO`, `DE_TEMPORADA`, `CONTIENE_ALCOHOL` |
 | Bebidas | Agua de horchata | 35.00 | `RECETA` | `VEGETARIANO` |
-| Bebidas | Refresco embotellado | 30.00 | `VINCULO_DIRECTO` | |
+| Bebidas | Refresco embotellado | 30.00 | `VINCULO_DIRECTO` |  |
 | Postres | Arroz con leche | 45.00 | `NINGUNO` | `SIN_GLUTEN` |
 
 La categoría **Bebidas** va a la estación `BARRA` y las demás a `COCINA`. Las 12 mesas se siembran con su QR.
 
 Los otros cuatro restaurantes simulados de Negocios (DM-xx) reciben de 3 a 6 platillos sin receta. Los artículos de Doña Chela (pan de cemita, milanesa, quesillo, aguacate, chipotle, papalo, cebolla…) se crean en Inventario por su API pública (DM-02). Precios, CPP y temporada son datos de ejemplo.
+
+Borrador v0.1. Todas las decisiones están en estado PROPUESTA hasta que el equipo las confirme. Las cifras de ejemplo (precios, costos, temporada) son simuladas y están rotuladas como tales.

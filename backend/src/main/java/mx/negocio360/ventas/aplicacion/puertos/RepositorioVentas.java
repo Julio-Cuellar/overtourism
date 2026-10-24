@@ -3,6 +3,8 @@ package mx.negocio360.ventas.aplicacion.puertos;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import mx.negocio360.compartido.paginacion.Pagina;
+import mx.negocio360.ventas.FiltroVentas;
 import mx.negocio360.ventas.dominio.Venta;
 
 /** Puerto de las tablas {@code venta}, {@code linea_venta}, {@code pago_venta} y {@code serie_folio}. */
@@ -32,6 +34,17 @@ public interface RepositorioVentas {
      * @return ventas en orden de folio
      */
     List<Venta> porTurno(UUID negocioId, UUID turnoId);
+
+    /**
+     * Ventas del negocio que cumplen el filtro, de la mas reciente a la mas antigua, con cursor (VF-02, D-131).
+     *
+     * @param negocioId negocio del contexto
+     * @param filtro    filtro ya validado
+     * @param primeros  tamano de pagina, de 1 a 100
+     * @param despues   cursor de la pagina anterior, o nulo
+     * @return la pagina pedida
+     */
+    Pagina<Venta> buscar(UUID negocioId, FiltroVentas filtro, int primeros, String despues);
 
     /**
      * Siguiente folio de la serie, con bloqueo de fila en la misma transaccion de confirmar (VT-06).

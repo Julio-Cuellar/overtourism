@@ -1,14 +1,20 @@
-# Esquema del modulo de Ventas (docs/diseno/ventas.md, F4). Sin negocioId: el negocio sale de la sesion (SG-02).
-# Los comandos se preparan y confirman con prepararComando y confirmarComando (D-55).
+# Esquema de Ventas (docs/diseno/ventas.md, v0.2). Sin negocioId: el negocio sale de la sesión (SG-02).
+# Las escrituras viajan por prepararComando y confirmarComando (D-55, D-125).
 
 extend type Query {
-  "VF-01: una venta del negocio, o null si no existe en este negocio."
+  "VF-01. Una venta del negocio con sus líneas y pagos; null si no existe en este negocio."
   venta(id: ID!): Venta
-  "VF-02: ventas de un turno."
-  ventasDelTurno(turnoId: ID!): [Venta!]!
+
+  "VF-02. Ventas del negocio, de la más reciente a la más antigua. Máximo 100 por página."
+  ventas(filtro: FiltroVentas, primeros: Int! = 20, despues: String): VentaConexion!
+
+  "VF-03. Conteos, totales por método y preparaciones vigentes de un turno (el corte de Caja usa lo mismo)."
+  resumenTurno(turnoId: ID!): ResumenTurno!
+
+  "G1. Productos que se pueden vender, de las fuentes del negocio (Catálogo o verticales). Máximo 50."
+  productosParaVenta(texto: String, primeros: Int! = 20): [ProductoParaVenta!]!
 }
 
-enum MetodoPago { EFECTIVO TARJETA TRANSFERENCIA }
 enum EstadoVenta { REGISTRADA ANULADA }
 
 type Venta {
@@ -19,16 +25,23 @@ type Venta {
   turnoId: ID!
   subtotal: Decimal!
   descuento: Decimal!
+  "Neto de cupón (D-65)."
   total: Decimal!
   lineas: [LineaVenta!]!
   pagos: [PagoVenta!]!
+  "Opcional y opaco: el cliente que eligió el cajero (VT-13)."
+  clienteId: ID
+  "Opcional y opaco: el cupón del Pasaporte que se canjeó."
+  cuponId: ID
   ocurridoEn: DateTime!
   anuladaEn: DateTime
+  motivoAnulacion: String
 }
 
 type LineaVenta {
   linea: Int!
   productoId: ID!
+  "Copia al vender (VT-02)."
   descripcion: String!
   cantidad: Decimal!
   unidad: String!
@@ -40,21 +53,60 @@ type LineaVenta {
 type PagoVenta {
   metodo: MetodoPago!
   monto: Decimal!
+  "Solo efectivo."
   recibido: Decimal
+  "Solo efectivo."
   cambio: Decimal
   referencia: String
 }
 
+type VentaConexion {
+  ventas: [Venta!]!
+  pageInfo: PageInfo!
+}
+
+input FiltroVentas {
+  turnoId: ID
+  estado: EstadoVenta
+  "Inclusive. Con hasta debe haber a lo más 92 días de rango."
+  desde: DateTime
+  hasta: DateTime
+  serie: String
+  folio: Int
+}
+
+type ResumenTurno {
+  turnoId: ID!
+  ventasRegistradas: Int!
+  ventasAnuladas: Int!
+  "Solo los métodos con pagos."
+  totalesPorMetodo: [MontoPorMetodo!]!
+  preparacionesVigentes: Int!
+}
+
+type ProductoParaVenta {
+  productoId: ID!
+  descripcion: String!
+  unidad: String!
+  precio: Decimal!
+  admiteFraccion: Boolean!
+}
+
 extend input ComandoInput {
+  "VF-10."
   registrarVenta: RegistrarVentaInput
+  "VF-11."
   anularVenta: AnularVentaInput
 }
 
-"VF-10: el precio lo pone Catalogo; los pagos deben sumar el total (VT-02, VT-04)."
+"VF-10. El precio lo pone la fuente de productos (VT-02); los pagos deben sumar el total (VT-04)."
 input RegistrarVentaInput {
   turnoId: ID!
+  "De 1 a 100 líneas."
   lineas: [LineaVentaInput!]!
-  pagos: [PagoInput!]!
+  "De 1 a 10 pagos."
+  pagos: [PagoVentaInput!]!
+  "Máximo 40 caracteres. Sin Pasaporte, cualquier código es CUPON_INVALIDO (D-134)."
   codigoCupon: String
   clienteId: ID
 }
@@ -65,7 +117,7 @@ input LineaVentaInput {
   serie: String
 }
 
-input PagoInput {
+input PagoVentaInput {
   metodo: MetodoPago!
   monto: Decimal!
   "Solo en efectivo: lo que entrega el cliente, para calcular el cambio."
@@ -73,7 +125,7 @@ input PagoInput {
   referencia: String
 }
 
-"VF-11: anular con motivo (VT-09)."
+"VF-11. Motivo de hasta 200 caracteres (VT-09)."
 input AnularVentaInput {
   ventaId: ID!
   motivo: String!

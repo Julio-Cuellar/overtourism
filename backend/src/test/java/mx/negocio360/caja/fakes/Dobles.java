@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import mx.negocio360.caja.aplicacion.puertos.AutorizacionCaja;
 import mx.negocio360.caja.aplicacion.puertos.ConteoDeVentas;
 import mx.negocio360.caja.aplicacion.puertos.PublicadorEventos;
 import mx.negocio360.caja.aplicacion.puertos.ReglasCaja;
@@ -61,16 +60,6 @@ public final class Dobles {
         @Override
         public BigDecimal umbralDiferencia(UUID negocioId) {
             return umbral;
-        }
-    }
-
-    /** Solo los actores de la lista son encargados. */
-    public static final class Autorizacion implements AutorizacionCaja {
-        private final Set<String> encargados = new HashSet<>(Set.of("encargado-a", "encargado-b"));
-
-        @Override
-        public boolean esEncargado(ContextoNegocio contexto) {
-            return encargados.contains(contexto.actor());
         }
     }
 }

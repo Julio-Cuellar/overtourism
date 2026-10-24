@@ -240,7 +240,7 @@ Son consecuencia de una venta que ya fue confirmada. Por eso no usan preparar �
 
 Valores de `consumidor`: `vinculo` (lo usa el listener propio de Inventario) y `restaurantes`.
 
-> **Hecho el 2026-10-16** (lo pidió Restaurantes, R-I1 a R-I4): `articulosPorId(ids)` devuelve `id`, `nombre`, `unidadBase`, `cpp`, `activo` y `rastreo` de hasta 100 artículos (D-190); `registrarConsumo` y `revertirConsumo` funcionan sin lotes ni series, con la marca `ANULADO_PREVIO` (K-01 a K-04) y repositorios en memoria; el rastreo existe en el dominio pero solo se crean artículos `NINGUNO` (D-191). Códigos nuevos fuera de esta tabla: `RASTREO_NO_SOPORTADO` y `CONSUMIDOR_INVALIDO` (D-191, D-192). `revertirConsumo` falla con `ARTICULO_INACTIVO` si algún artículo ya se dio de baja (D-192). Los tipos de la API se exponen con `@NamedInterface("api")` (D-193).
+> **Hecho el 2026-10-16** (lo pidió Restaurantes, R-I1 a R-I4): `articulosPorId(ids)` devuelve `id`, `nombre`, `unidadBase`, `cpp`, `activo` y `rastreo` de hasta 100 artículos (D-200); `registrarConsumo` y `revertirConsumo` funcionan sin lotes ni series, con la marca `ANULADO_PREVIO` (K-01 a K-04) y repositorios en memoria; el rastreo existe en el dominio pero solo se crean artículos `NINGUNO` (D-201). Códigos nuevos fuera de esta tabla: `RASTREO_NO_SOPORTADO` y `CONSUMIDOR_INVALIDO` (D-201, D-202). `revertirConsumo` falla con `ARTICULO_INACTIVO` si algún artículo ya se dio de baja (D-202). Los tipos de la API se exponen con `@NamedInterface("api")` (D-203).
 
 ### 6.5 Códigos de error
 

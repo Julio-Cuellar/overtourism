@@ -1,11 +1,12 @@
 package mx.negocio360.compartido.comandos;
 
+import java.util.List;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
 
 /**
  * Caso de uso de un comando dentro del patron preparar -&gt; confirmar.
  *
- * <p>{@link #preparar} valida y devuelve el resumen que ve la persona; salvo excepciones documentadas (D-81) no
+ * <p>{@link #preparar} valida y devuelve el resumen que ve la persona; salvo excepciones documentadas (D-140) no
  * escribe. {@link #confirmar} recibe el mismo comando y el resumen que se mostro, revalida (el mundo pudo cambiar
  * entre los dos pasos), escribe y publica los eventos en una sola transaccion. Si el resumen recalculado ya no es el
  * que se mostro, debe fallar con el codigo {@code COMANDO_CAMBIO} de su modulo (VT-05).
@@ -55,5 +56,17 @@ public interface ManejadorComando<C extends Comando> {
      */
     default String ambito(C comando) {
         return null;
+    }
+
+    /**
+     * Permisos que exige este comando, ademas del que la puerta de GraphQL comprueba por variante (D-126). El servicio
+     * los exige <b>todos</b> al preparar y otra vez al confirmar, antes de gastar el token: si a la persona le quitan
+     * el rol entre los dos pasos, recibe {@code PERMISO_DENEGADO} y el token no se gasta.
+     *
+     * @param comando comando que se prepara o se confirma
+     * @return codigos de permiso; vacia si el comando no pide ninguno
+     */
+    default List<String> permisos(C comando) {
+        return List.of();
     }
 }

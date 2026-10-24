@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import mx.negocio360.compartido.pruebas.Permisos;
 import mx.negocio360.compartido.seguridad.PermisoDenegadoException;
 import mx.negocio360.restaurantes.dominio.CodigoError;
 import mx.negocio360.restaurantes.dominio.ModoInventario;
@@ -55,15 +56,15 @@ class ManejadorGuardarRecetaTest {
     }
 
     private String guardar(GuardarRecetaComando c) {
-        var preparada = e.preparacion.preparar(e.ctxA, c);
-        e.preparacion.confirmar(e.ctxA, preparada.token());
+        var preparada = e.preparacion.preparar(e.ctxA, Permisos.TODOS, c);
+        e.preparacion.confirmar(e.ctxA, Permisos.TODOS, preparada.token());
         return preparada.resumen();
     }
 
     @Test
     @DisplayName("RC-05, RC-06 y RC-08: preparar muestra los insumos, el costo teorico 43.25 y el margen 41.75 (49.12 %) sin escribir nada")
     void preparar_muestraCostoYMargen() {
-        var preparada = e.preparacion.preparar(e.ctxA, comando(ingredientesDeLaCemita()));
+        var preparada = e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(ingredientesDeLaCemita()));
 
         assertThat(preparada.resumen()).contains("Cemita poblana").contains("versión 1").contains("Milanesa: 120 g (merma 5 %)")
                 .contains("$43.25").contains("$85.00").contains("$41.75").contains("49.12 %");
@@ -73,9 +74,9 @@ class ManejadorGuardarRecetaTest {
     @Test
     @DisplayName("RC-01: confirmar guarda la version 1, activa la receta y el platillo ya puede pasar a modo RECETA")
     void confirmar_creaLaVersion1() {
-        var token = e.preparacion.preparar(e.ctxA, comando(ingredientesDeLaCemita())).token();
+        var token = e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(ingredientesDeLaCemita())).token();
 
-        var resultado = e.preparacion.confirmar(e.ctxA, token);
+        var resultado = e.preparacion.confirmar(e.ctxA, Permisos.TODOS, token);
 
         assertThat(resultado.codigo()).isEqualTo("OK");
         assertThat(resultado.recursoId()).isEqualTo(cemita.id());
@@ -105,7 +106,7 @@ class ManejadorGuardarRecetaTest {
     @Test
     @DisplayName("RC-02: las unidades distintas a la base se aceptan si se pueden convertir (kg a g) y el costo usa la cantidad en base")
     void conversion() {
-        var resumen = e.preparacion.preparar(e.ctxA, comando(List.of(insumo(milanesa, "0.12", "kg", "0")))).resumen();
+        var resumen = e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(List.of(insumo(milanesa, "0.12", "kg", "0")))).resumen();
 
         assertThat(resumen).contains("Milanesa: 0.12 kg").contains("$21.60");
     }
@@ -115,7 +116,7 @@ class ManejadorGuardarRecetaTest {
     void costoIncompleto() {
         var sinCosto = e.inventario.articulo("Chile en polvo", "g", null);
 
-        var resumen = e.preparacion.preparar(e.ctxA, comando(List.of(insumo(pan, "1", "pieza", "0"), insumo(sinCosto, "5", "g", "0")))).resumen();
+        var resumen = e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(List.of(insumo(pan, "1", "pieza", "0"), insumo(sinCosto, "5", "g", "0")))).resumen();
 
         assertThat(resumen).contains("Costo teórico incompleto").contains("Chile en polvo").doesNotContain("Margen");
     }
@@ -125,7 +126,7 @@ class ManejadorGuardarRecetaTest {
     void sinPermisoDeCostos() {
         e.permisos.concedidos = Set.of(PermisosDeRestaurantes.MENU_EDITAR, PermisosDeRestaurantes.RECETA_EDITAR);
 
-        var resumen = e.preparacion.preparar(e.ctxA, comando(ingredientesDeLaCemita())).resumen();
+        var resumen = e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(ingredientesDeLaCemita())).resumen();
 
         assertThat(resumen).contains("Milanesa: 120 g").doesNotContain("Costo").doesNotContain("Margen").doesNotContain("43.25");
     }
@@ -136,7 +137,7 @@ class ManejadorGuardarRecetaTest {
         var serie = e.inventario.articulo("Licuadora", "pieza", "900");
         e.inventario.reemplazar(new InventarioDePrueba.Articulo(serie, "Licuadora", "pieza", new BigDecimal("900"), true, Rastreo.SERIE));
 
-        falla(() -> e.preparacion.preparar(e.ctxA, comando(List.of(insumo(serie, "1", "pieza", "0")))), CodigoError.SERIE_EN_RECETA);
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(List.of(insumo(serie, "1", "pieza", "0")))), CodigoError.SERIE_EN_RECETA);
     }
 
     @Test
@@ -145,14 +146,14 @@ class ManejadorGuardarRecetaTest {
         var viejo = e.inventario.articulo("Viejo", "g", "1");
         e.inventario.reemplazar(new InventarioDePrueba.Articulo(viejo, "Viejo", "g", BigDecimal.ONE, false, Rastreo.NINGUNO));
 
-        falla(() -> e.preparacion.preparar(e.ctxA, comando(List.of(insumo(viejo, "1", "g", "0")))), CodigoError.ARTICULO_INACTIVO);
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(List.of(insumo(viejo, "1", "g", "0")))), CodigoError.ARTICULO_INACTIVO);
     }
 
     @Test
     @DisplayName("un articulo que no existe en el negocio y una unidad que no se convierte tienen su propio codigo")
     void articuloOUnidad() {
-        falla(() -> e.preparacion.preparar(e.ctxA, comando(List.of(insumo(UUID.randomUUID(), "1", "g", "0")))), CodigoError.ARTICULO_NO_ENCONTRADO);
-        falla(() -> e.preparacion.preparar(e.ctxA, comando(List.of(insumo(milanesa, "1", "ml", "0")))), CodigoError.UNIDAD_NO_CONVERTIBLE);
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(List.of(insumo(UUID.randomUUID(), "1", "g", "0")))), CodigoError.ARTICULO_NO_ENCONTRADO);
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(List.of(insumo(milanesa, "1", "ml", "0")))), CodigoError.UNIDAD_NO_CONVERTIBLE);
     }
 
     @Test
@@ -172,69 +173,69 @@ class ManejadorGuardarRecetaTest {
     @Test
     @DisplayName("RC-02 y RC-04: sin insumos, con un insumo repetido o con un rendimiento fuera de rango la receta no es valida")
     void validaciones() {
-        falla(() -> e.preparacion.preparar(e.ctxA, comando(List.of())), CodigoError.RECETA_INVALIDA);
-        falla(() -> e.preparacion.preparar(e.ctxA, comando(List.of(insumo(pan, "1", "pieza", "0"), insumo(pan, "2", "pieza", "0")))),
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(List.of())), CodigoError.RECETA_INVALIDA);
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(List.of(insumo(pan, "1", "pieza", "0"), insumo(pan, "2", "pieza", "0")))),
                 CodigoError.INSUMO_REPETIDO);
-        falla(() -> e.preparacion.preparar(e.ctxA, new GuardarRecetaComando(cemita.id(), 0, ingredientesDeLaCemita())), CodigoError.RECETA_INVALIDA);
-        falla(() -> e.preparacion.preparar(e.ctxA, new GuardarRecetaComando(cemita.id(), 501, ingredientesDeLaCemita())), CodigoError.RECETA_INVALIDA);
-        falla(() -> e.preparacion.preparar(e.ctxA, comando(List.of(insumo(pan, "0", "pieza", "0")))), CodigoError.RECETA_INVALIDA);
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, new GuardarRecetaComando(cemita.id(), 0, ingredientesDeLaCemita())), CodigoError.RECETA_INVALIDA);
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, new GuardarRecetaComando(cemita.id(), 501, ingredientesDeLaCemita())), CodigoError.RECETA_INVALIDA);
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(List.of(insumo(pan, "0", "pieza", "0")))), CodigoError.RECETA_INVALIDA);
         var masDeTreinta = new ArrayList<InsumoComando>();
         for (int i = 0; i < 31; i++) {
             masDeTreinta.add(insumo(e.inventario.articulo("Insumo " + i, "g", "1"), "1", "g", "0"));
         }
-        falla(() -> e.preparacion.preparar(e.ctxA, comando(masDeTreinta)), CodigoError.RECETA_INVALIDA);
-        assertThatThrownBy(() -> e.preparacion.preparar(e.ctxA, new GuardarRecetaComando(cemita.id(), 1, null)))
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(masDeTreinta)), CodigoError.RECETA_INVALIDA);
+        assertThatThrownBy(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, new GuardarRecetaComando(cemita.id(), 1, null)))
                 .isInstanceOf(RestaurantesException.class);
     }
 
     @Test
     @DisplayName("el platillo debe existir en el negocio y estar activo; el de otro negocio no se puede ni nombrar")
     void platillo() {
-        falla(() -> e.preparacion.preparar(e.ctxA, new GuardarRecetaComando(UUID.randomUUID(), 1, ingredientesDeLaCemita())), CodigoError.PLATILLO_NO_ENCONTRADO);
-        falla(() -> e.preparacion.preparar(e.ctxA, new GuardarRecetaComando(null, 1, ingredientesDeLaCemita())), CodigoError.PLATILLO_NO_ENCONTRADO);
-        falla(() -> e.preparacion.preparar(e.ctxB, comando(ingredientesDeLaCemita())), CodigoError.PLATILLO_NO_ENCONTRADO);
-        var token = e.preparacion.preparar(e.ctxA, comando(ingredientesDeLaCemita())).token();
-        var baja = e.preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(cemita.id())).token();
-        e.preparacion.confirmar(e.ctxA, baja);
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, new GuardarRecetaComando(UUID.randomUUID(), 1, ingredientesDeLaCemita())), CodigoError.PLATILLO_NO_ENCONTRADO);
+        falla(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, new GuardarRecetaComando(null, 1, ingredientesDeLaCemita())), CodigoError.PLATILLO_NO_ENCONTRADO);
+        falla(() -> e.preparacion.preparar(e.ctxB, Permisos.TODOS, comando(ingredientesDeLaCemita())), CodigoError.PLATILLO_NO_ENCONTRADO);
+        var token = e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(ingredientesDeLaCemita())).token();
+        var baja = e.preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(cemita.id())).token();
+        e.preparacion.confirmar(e.ctxA, Permisos.TODOS, baja);
 
-        falla(() -> e.preparacion.confirmar(e.ctxA, token), CodigoError.PLATILLO_NO_ENCONTRADO);
+        falla(() -> e.preparacion.confirmar(e.ctxA, Permisos.TODOS, token), CodigoError.PLATILLO_NO_ENCONTRADO);
     }
 
     @Test
     @DisplayName("RC-08: el permiso de editar recetas se exige al preparar y otra vez al confirmar")
     void permisoEnLosDosPasos() {
         e.permisos.concedidos = Set.of();
-        assertThatThrownBy(() -> e.preparacion.preparar(e.ctxA, comando(ingredientesDeLaCemita()))).isInstanceOf(PermisoDenegadoException.class);
+        assertThatThrownBy(() -> e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(ingredientesDeLaCemita()))).isInstanceOf(PermisoDenegadoException.class);
 
         e.permisos.concedidos = Set.of(PermisosDeRestaurantes.RECETA_EDITAR);
-        var token = e.preparacion.preparar(e.ctxA, comando(ingredientesDeLaCemita())).token();
+        var token = e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(ingredientesDeLaCemita())).token();
         e.permisos.concedidos = Set.of();
 
-        assertThatThrownBy(() -> e.preparacion.confirmar(e.ctxA, token)).isInstanceOf(PermisoDenegadoException.class);
+        assertThatThrownBy(() -> e.preparacion.confirmar(e.ctxA, Permisos.TODOS, token)).isInstanceOf(PermisoDenegadoException.class);
         assertThat(e.recetasAlmacen.porPlatillo(EntornoDeRecetas.NEGOCIO_A, cemita.id())).isEmpty();
     }
 
     @Test
     @DisplayName("RC-08: si el precio o un costo cambia entre los dos pasos, confirmar falla con COMANDO_CAMBIO y no guarda")
     void cambioEntreLosPasos() {
-        var token = e.preparacion.preparar(e.ctxA, comando(ingredientesDeLaCemita())).token();
+        var token = e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(ingredientesDeLaCemita())).token();
         e.inventario.reemplazar(new InventarioDePrueba.Articulo(milanesa, "Milanesa", "g", new BigDecimal("0.20"), true, Rastreo.NINGUNO));
 
-        falla(() -> e.preparacion.confirmar(e.ctxA, token), CodigoError.COMANDO_CAMBIO);
+        falla(() -> e.preparacion.confirmar(e.ctxA, Permisos.TODOS, token), CodigoError.COMANDO_CAMBIO);
         assertThat(e.recetasAlmacen.porPlatillo(EntornoDeRecetas.NEGOCIO_A, cemita.id())).isEmpty();
-        var otro = e.preparacion.preparar(e.ctxA, comando(ingredientesDeLaCemita())).token();
+        var otro = e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(ingredientesDeLaCemita())).token();
         e.menu.editarPlatillo(e.ctxA, e.todo, cemita.id(), cemita.version(), new DatosPlatillo("Cemita poblana", null, new BigDecimal("95"), null, Set.of(), null));
 
-        falla(() -> e.preparacion.confirmar(e.ctxA, otro), CodigoError.COMANDO_CAMBIO);
+        falla(() -> e.preparacion.confirmar(e.ctxA, Permisos.TODOS, otro), CodigoError.COMANDO_CAMBIO);
     }
 
     @Test
     @DisplayName("el token de una receta es de un solo uso")
     void tokenDeUnSoloUso() {
-        var token = e.preparacion.preparar(e.ctxA, comando(ingredientesDeLaCemita())).token();
-        e.preparacion.confirmar(e.ctxA, token);
+        var token = e.preparacion.preparar(e.ctxA, Permisos.TODOS, comando(ingredientesDeLaCemita())).token();
+        e.preparacion.confirmar(e.ctxA, Permisos.TODOS, token);
 
-        falla(() -> e.preparacion.confirmar(e.ctxA, token), CodigoError.TOKEN_USADO);
+        falla(() -> e.preparacion.confirmar(e.ctxA, Permisos.TODOS, token), CodigoError.TOKEN_USADO);
         assertThat(e.recetasAlmacen.porPlatillo(EntornoDeRecetas.NEGOCIO_A, cemita.id()).orElseThrow().versiones()).hasSize(1);
     }
 }

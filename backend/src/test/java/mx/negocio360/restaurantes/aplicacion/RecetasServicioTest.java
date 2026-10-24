@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import mx.negocio360.compartido.pruebas.Permisos;
 import mx.negocio360.compartido.seguridad.Autorizacion;
 import mx.negocio360.compartido.seguridad.PermisoDenegadoException;
 import mx.negocio360.restaurantes.dominio.CodigoError;
@@ -26,8 +27,8 @@ class RecetasServicioTest {
     }
 
     private void guardar(UUID platillo, int rendimiento, InsumoComando... insumos) {
-        var token = e.preparacion.preparar(e.ctxA, new GuardarRecetaComando(platillo, rendimiento, List.of(insumos))).token();
-        e.preparacion.confirmar(e.ctxA, token);
+        var token = e.preparacion.preparar(e.ctxA, Permisos.TODOS, new GuardarRecetaComando(platillo, rendimiento, List.of(insumos))).token();
+        e.preparacion.confirmar(e.ctxA, Permisos.TODOS, token);
     }
 
     private static InsumoComando insumo(UUID articulo, String cantidad, String unidad, String merma) {

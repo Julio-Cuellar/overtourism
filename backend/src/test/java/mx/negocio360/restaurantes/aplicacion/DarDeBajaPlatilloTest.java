@@ -11,6 +11,7 @@ import mx.negocio360.compartido.comandos.FalloPreparacion;
 import mx.negocio360.compartido.comandos.PreparacionesEnMemoria;
 import mx.negocio360.compartido.comandos.ServicioPreparacion;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
+import mx.negocio360.compartido.pruebas.Permisos;
 import mx.negocio360.restaurantes.dominio.CodigoError;
 import mx.negocio360.restaurantes.dominio.RestaurantesException;
 import mx.negocio360.restaurantes.seguridad.PermisosDeRestaurantes;
@@ -53,11 +54,11 @@ class DarDeBajaPlatilloTest {
     void baja_feliz() {
         var p = cemita();
 
-        var preparada = preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(p.id()));
+        var preparada = preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(p.id()));
         assertThat(preparada.resumen()).contains("Cemita poblana").contains("85.00");
         assertThat(e.servicio.platillo(e.ctxA, e.todo, p.id()).activo()).as("preparar no escribe").isTrue();
 
-        var resultado = preparacion.confirmar(e.ctxA, preparada.token());
+        var resultado = preparacion.confirmar(e.ctxA, Permisos.TODOS, preparada.token());
 
         assertThat(resultado.codigo()).isEqualTo("OK");
         assertThat(resultado.recursoId()).isEqualTo(p.id());
@@ -73,7 +74,7 @@ class DarDeBajaPlatilloTest {
         var p = cemita();
         e.recetas.conReceta.add(p.id());
 
-        assertThat(preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(p.id())).resumen()).contains("receta");
+        assertThat(preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(p.id())).resumen()).contains("receta");
     }
 
     @Test
@@ -81,13 +82,13 @@ class DarDeBajaPlatilloTest {
     void baja_conCuentaAbierta() {
         var p = cemita();
         e.uso.enCuenta.add(p.id());
-        falla(() -> preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(p.id())), CodigoError.PLATILLO_EN_CUENTA_ABIERTA);
+        falla(() -> preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(p.id())), CodigoError.PLATILLO_EN_CUENTA_ABIERTA);
 
         e.uso.enCuenta.clear();
-        var token = preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(p.id())).token();
+        var token = preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(p.id())).token();
         e.uso.enCuenta.add(p.id());
 
-        falla(() -> preparacion.confirmar(e.ctxA, token), CodigoError.PLATILLO_EN_CUENTA_ABIERTA);
+        falla(() -> preparacion.confirmar(e.ctxA, Permisos.TODOS, token), CodigoError.PLATILLO_EN_CUENTA_ABIERTA);
         assertThat(e.servicio.platillo(e.ctxA, e.todo, p.id()).activo()).isTrue();
     }
 
@@ -96,14 +97,14 @@ class DarDeBajaPlatilloTest {
     void baja_permisoEnLosDosPasos() {
         var p = cemita();
         permisos.concedidos = Set.of();
-        assertThatThrownBy(() -> preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(p.id())))
+        assertThatThrownBy(() -> preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(p.id())))
                 .isInstanceOf(mx.negocio360.compartido.seguridad.PermisoDenegadoException.class);
 
         permisos.concedidos = Set.of(PermisosDeRestaurantes.MENU_EDITAR);
-        var token = preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(p.id())).token();
+        var token = preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(p.id())).token();
         permisos.concedidos = Set.of();
 
-        assertThatThrownBy(() -> preparacion.confirmar(e.ctxA, token))
+        assertThatThrownBy(() -> preparacion.confirmar(e.ctxA, Permisos.TODOS, token))
                 .isInstanceOf(mx.negocio360.compartido.seguridad.PermisoDenegadoException.class);
         assertThat(e.servicio.platillo(e.ctxA, e.todo, p.id()).activo()).isTrue();
     }
@@ -113,30 +114,30 @@ class DarDeBajaPlatilloTest {
     void baja_noEncontrado() {
         var p = cemita();
 
-        falla(() -> preparacion.preparar(e.ctxB, new DarDeBajaPlatilloComando(p.id())), CodigoError.PLATILLO_NO_ENCONTRADO);
-        falla(() -> preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(UUID.randomUUID())), CodigoError.PLATILLO_NO_ENCONTRADO);
-        falla(() -> preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(null)), CodigoError.PLATILLO_NO_ENCONTRADO);
+        falla(() -> preparacion.preparar(e.ctxB, Permisos.TODOS, new DarDeBajaPlatilloComando(p.id())), CodigoError.PLATILLO_NO_ENCONTRADO);
+        falla(() -> preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(UUID.randomUUID())), CodigoError.PLATILLO_NO_ENCONTRADO);
+        falla(() -> preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(null)), CodigoError.PLATILLO_NO_ENCONTRADO);
     }
 
     @Test
     @DisplayName("el token es de un solo uso y de quien lo preparo: una segunda confirmacion falla con TOKEN_USADO")
     void baja_tokenDeUnSoloUso() {
         var p = cemita();
-        var token = preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(p.id())).token();
-        preparacion.confirmar(e.ctxA, token);
+        var token = preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(p.id())).token();
+        preparacion.confirmar(e.ctxA, Permisos.TODOS, token);
 
-        falla(() -> preparacion.confirmar(e.ctxA, token), CodigoError.TOKEN_USADO);
-        falla(() -> preparacion.confirmar(e.ctxB, token), CodigoError.TOKEN_INVALIDO);
+        falla(() -> preparacion.confirmar(e.ctxA, Permisos.TODOS, token), CodigoError.TOKEN_USADO);
+        falla(() -> preparacion.confirmar(e.ctxB, Permisos.TODOS, token), CodigoError.TOKEN_INVALIDO);
     }
 
     @Test
     @DisplayName("si el platillo cambia entre los dos pasos, confirmar falla con COMANDO_CAMBIO")
     void baja_cambioEntreLosPasos() {
         var p = cemita();
-        var token = preparacion.preparar(e.ctxA, new DarDeBajaPlatilloComando(p.id())).token();
+        var token = preparacion.preparar(e.ctxA, Permisos.TODOS, new DarDeBajaPlatilloComando(p.id())).token();
         e.servicio.editarPlatillo(e.ctxA, e.todo, p.id(), p.version(), new DatosPlatillo("Cemita poblana", null, new BigDecimal("95"), null, Set.of(), null));
 
-        falla(() -> preparacion.confirmar(e.ctxA, token), CodigoError.COMANDO_CAMBIO);
+        falla(() -> preparacion.confirmar(e.ctxA, Permisos.TODOS, token), CodigoError.COMANDO_CAMBIO);
         assertThat(e.servicio.platillo(e.ctxA, e.todo, p.id()).activo()).isTrue();
         assertThat(FalloPreparacion.values()).contains(FalloPreparacion.COMANDO_CAMBIO);
     }

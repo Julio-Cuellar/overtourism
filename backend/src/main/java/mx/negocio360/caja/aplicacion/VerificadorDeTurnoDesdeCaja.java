@@ -10,9 +10,9 @@ import mx.negocio360.ventas.VerificadorDeTurno;
 
 /**
  * Respuesta de Caja a la pregunta de Ventas «¿el turno sigue abierto?» (VT-01). Ventas define la interfaz y Caja la
- * implementa aqui, asi la dependencia sigue yendo solo de Caja hacia Ventas (D-76).
+ * implementa aqui, asi la dependencia sigue yendo solo de Caja hacia Ventas (D-135).
  *
- * <p>Usa el estado efectivo (D-81): un turno EN_CORTE no vende, pero si el corte preparado ya vencio vuelve a vender.
+ * <p>Usa el estado efectivo (D-140): un turno EN_CORTE no vende, pero si el corte preparado ya vencio vuelve a vender.
  */
 public final class VerificadorDeTurnoDesdeCaja implements VerificadorDeTurno {
 

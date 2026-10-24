@@ -10,7 +10,7 @@ import mx.negocio360.compartido.comandos.Comando;
 import org.springframework.modulith.NamedInterface;
 
 /**
- * CF-12 CerrarTurno: el corte (CJ-06 a CJ-08, CJ-12). Preparar pone el turno EN_CORTE (D-81).
+ * CF-12 CerrarTurno: el corte (CJ-06 a CJ-08, CJ-12). Preparar pone el turno EN_CORTE (D-140).
  *
  * <p>Copia su mapa al crearse (quien lo armo no puede cambiarlo despues). Admite un mapa nulo o con valores nulos,
  * porque esos casos los reporta el manejador con {@code CONTEO_INVALIDO}.

@@ -130,7 +130,7 @@ class InventarioEnMemoriaTest {
     @Test
     @DisplayName("preparaciones: un token se marca como usado una sola vez, aunque lleguen dos confirmaciones a la vez")
     void preparaciones() throws Exception {
-        var preparaciones = new PreparacionesDeInventarioEnMemoria();
+        var preparaciones = new PreparacionesEnMemoria();
         var preparacion = new Preparacion("hash", negocioA, "yo", "tipo", "h", "{}", "resumen", T.plusSeconds(300), null);
         preparaciones.guardar(preparacion);
         var gana = new AtomicInteger();

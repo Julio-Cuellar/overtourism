@@ -39,6 +39,11 @@ public final class ClientesServicio implements ClientesApi {
     }
 
     @Override
+    public Optional<String> tipoDeComando(ContextoNegocio contexto, String token) {
+        return preparacion.tipoDeComando(contexto, token);
+    }
+
+    @Override
     public PaginaClientes buscar(ContextoNegocio contexto, String texto, int primeros, String despues) {
         if (texto != null && texto.strip().length() > LimitesDeConsulta.MAX_TEXTO_BUSQUEDA) {
             throw new IllegalArgumentException("El texto de busqueda excede el maximo permitido");

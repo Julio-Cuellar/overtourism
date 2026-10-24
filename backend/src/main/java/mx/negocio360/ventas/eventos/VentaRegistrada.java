@@ -8,7 +8,7 @@ import mx.negocio360.compartido.dinero.Redondeo;
 import mx.negocio360.ventas.dominio.Venta;
 
 /**
- * {@code venta.registrada} v1 (D-77). Se publica al confirmar RegistrarVenta, en la misma transaccion (outbox).
+ * {@code venta.registrada} v1 (D-136). Se publica al confirmar RegistrarVenta, en la misma transaccion (outbox).
  *
  * <p>Campos de {@code datos}: {@code venta_id}, {@code folio} (entero), {@code serie}, {@code turno_id},
  * {@code cliente_id} (opcional, D-48), {@code cupon_id} (opcional), {@code subtotal}, {@code descuento},

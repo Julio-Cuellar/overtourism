@@ -1,6 +1,7 @@
 package mx.negocio360.caja.aplicacion;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import mx.negocio360.caja.aplicacion.puertos.LibroDeCaja;
@@ -15,6 +16,7 @@ import mx.negocio360.caja.dominio.MovimientoCaja;
 import mx.negocio360.caja.dominio.TipoMovimiento;
 import mx.negocio360.caja.dominio.Turno;
 import mx.negocio360.caja.eventos.TurnoAbierto;
+import mx.negocio360.caja.seguridad.PermisosDeCaja;
 import mx.negocio360.compartido.comandos.ManejadorComando;
 import mx.negocio360.compartido.comandos.ResultadoComando;
 import mx.negocio360.compartido.contexto.ContextoNegocio;
@@ -58,6 +60,12 @@ public final class ManejadorAbrirTurno implements ManejadorComando<AbrirTurnoCom
     @Override
     public Class<AbrirTurnoComando> claseComando() {
         return AbrirTurnoComando.class;
+    }
+
+    /** D-126: el servicio exige estos permisos al preparar y al confirmar, antes de gastar el token. */
+    @Override
+    public List<String> permisos(AbrirTurnoComando comando) {
+        return List.of(PermisosDeCaja.TURNO_ABRIR);
     }
 
     /** @throws CajaException CAJA_NO_ENCONTRADA, CAJA_INACTIVA, FONDO_INVALIDO o TURNO_YA_ABIERTO */

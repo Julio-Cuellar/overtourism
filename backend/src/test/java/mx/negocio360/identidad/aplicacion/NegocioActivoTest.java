@@ -83,7 +83,7 @@ class NegocioActivoTest {
         var perfil = e.api.yo(sesion.token());
 
         assertThat(perfil.rol()).isEqualTo("DUENO");
-        assertThat(perfil.permisos()).hasSize(48).isSorted().contains("identidad.miembro.invitar", "clientes.sugerir");
+        assertThat(perfil.permisos()).hasSize(63).isSorted().contains("identidad.miembro.invitar", "clientes.sugerir");
         assertThat(perfil.negocioActivo()).isEqualTo(sesion.negocioActivo());
     }
 
@@ -98,7 +98,7 @@ class NegocioActivoTest {
         assertThat(perfil.negocios()).extracting(n -> n.id()).containsExactly(negocio);
         assertThat(perfil.negocioActivo()).isEqualTo(negocio);
         assertThat(perfil.rol()).isEqualTo("DUENO");
-        assertThat(perfil.permisos()).hasSize(48);
+        assertThat(perfil.permisos()).hasSize(63);
         var sesion = e.api.autenticar(ana.token()).orElseThrow();
         assertThat(sesion.negocioActivo()).contains(negocio);
         assertThat(sesion.contextoNegocio()).hasValueSatisfying(c -> assertThat(c.negocioId()).isEqualTo(negocio));

@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import mx.negocio360.ventas.aplicacion.puertos.ProductoParaVenta;
+import mx.negocio360.compartido.catalogo.ProductoParaVenta;
 import mx.negocio360.ventas.dominio.CodigoError;
 import mx.negocio360.ventas.dominio.MetodoPago;
 import mx.negocio360.ventas.fakes.Fixtures;
