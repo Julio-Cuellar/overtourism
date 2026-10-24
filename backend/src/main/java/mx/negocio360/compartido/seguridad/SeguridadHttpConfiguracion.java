@@ -56,6 +56,25 @@ public class SeguridadHttpConfiguracion {
                 relojes.getIfAvailable(Clock::systemUTC));
     }
 
+    /** Prevuelos de CORS que contesta la plataforma por IP y minuto (QR-21): un navegador hace pocos y se guardan 10 minutos. */
+    static final int PREVUELOS_POR_MINUTO_IP = 60;
+
+    /**
+     * QR-21, D-211: CORS de {@code /graphql} sobre la lista de origenes que ya existe. Va antes del filtro de entrada
+     * (HIGHEST_PRECEDENCE + 20) para contestar el prevuelo sin sesion y rechazar los origenes ajenos antes de autenticar.
+     */
+    @Bean
+    public org.springframework.boot.web.servlet.FilterRegistrationBean<CorsDeGraphqlFilter> corsDeGraphql(
+            PropiedadesHttp propiedades, PropiedadesTasa tasa, ObjectProvider<Clock> relojes) {
+        var prevuelos = new LimitadorDeTasa(PREVUELOS_POR_MINUTO_IP, Duration.ofMinutes(1), tasa.maximoDeClaves(),
+                relojes.getIfAvailable(Clock::systemUTC));
+        var registro = new org.springframework.boot.web.servlet.FilterRegistrationBean<>(
+                new CorsDeGraphqlFilter(propiedades, prevuelos));
+        registro.addUrlPatterns(CorsDeGraphqlFilter.RUTA);
+        registro.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE + 10);
+        return registro;
+    }
+
     /** SG-15: conexiones WebSocket nuevas por IP. */
     @Bean(LIMITE_DE_CONEXIONES_POR_IP)
     public LimitadorDeTasa limitadorDeConexionesPorIp(PropiedadesWebSocket websocket, PropiedadesTasa tasa,

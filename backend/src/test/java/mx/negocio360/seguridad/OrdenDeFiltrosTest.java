@@ -50,6 +50,16 @@ class OrdenDeFiltrosTest {
         assertThat(posiciones.get(6) - posiciones.get(4)).isEqualTo(2);
     }
 
+    @Autowired
+    private org.springframework.boot.web.servlet.FilterRegistrationBean<mx.negocio360.compartido.seguridad.CorsDeGraphqlFilter> registroDeCors;
+
+    @Test
+    @DisplayName("QR-21: el CORS de /graphql corre antes que el filtro de entrada: contesta el prevuelo sin sesion y rechaza origenes ajenos antes de autenticar")
+    void cors_correAntesQueElFiltroDeEntrada() {
+        assertThat(registroDeCors.getOrder()).isLessThan(registroDelFiltroDeEntrada.getOrder());
+        assertThat(registroDeCors.getUrlPatterns()).containsExactly("/graphql");
+    }
+
     @Test
     @DisplayName("el filtro de entrada de /graphql corre antes que la cadena de Spring Security: ella comprueba que ya paso")
     void filtroDeEntrada_correAntesQueSpringSecurity() {
