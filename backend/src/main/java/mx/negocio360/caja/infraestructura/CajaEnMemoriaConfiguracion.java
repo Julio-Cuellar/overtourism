@@ -18,14 +18,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Enciende Caja al arrancar con sus tablas en memoria, solo con {@code caja.almacen=memoria} (el perfil
- * {@code desarrollo} lo fija): su API, el verificador de turno que pide Ventas (D-145) y la escucha de
- * {@code venta.registrada} y {@code venta.anulada}. Los permisos ya no se inyectan: cada llamada recibe la
- * {@code Autorizacion} de la sesion (D-126). La version persistente es F6.
+ * Enciende Caja con sus tablas en memoria, solo con {@code caja.almacen=memoria} (el perfil {@code desarrollo} lo fija):
+ * su API, el verificador de turno que pide Ventas (D-145) y la escucha de {@code venta.registrada} y
+ * {@code venta.anulada}, sincrona y sin outbox. Los permisos no se inyectan: cada llamada recibe la {@code Autorizacion}
+ * de la sesion (D-126). La version persistente es {@link CajaPostgresConfiguracion}.
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "caja.almacen", havingValue = "memoria")
-public class CajaConfiguracion {
+public class CajaEnMemoriaConfiguracion {
 
     /** Umbral de diferencia del corte por omision: el valor inicial propuesto en CJ-08 (luego vendra de reglas). */
     static final String UMBRAL_POR_OMISION = "50.00";

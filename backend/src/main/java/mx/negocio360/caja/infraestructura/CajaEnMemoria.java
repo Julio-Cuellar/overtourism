@@ -26,7 +26,8 @@ import mx.negocio360.compartido.paginacion.Pagina;
  * Tablas de Caja en memoria para desarrollo y demo (F4): {@code caja}, {@code turno}, {@code movimiento_caja},
  * {@code venta_aplicada}, {@code evento_procesado} y {@code corte}. Cada operacion esta sincronizada, pero una
  * secuencia de operaciones no: la carrera entre cerrar un turno y aplicar una venta (hallazgo A2 de la revision) sigue
- * pendiente para F5, con bloqueos por fila en PostgreSQL. Los datos se pierden al reiniciar.
+ * pendiente con bloqueos por fila en PostgreSQL. Los datos se pierden al reiniciar; la version persistente es
+ * {@code RepositorioCajaJdbc} y {@code LibroDeCajaJdbc}.
  */
 public final class CajaEnMemoria implements RepositorioCaja, LibroDeCaja {
 
@@ -73,7 +74,7 @@ public final class CajaEnMemoria implements RepositorioCaja, LibroDeCaja {
     @Override
     public synchronized boolean actualizarTurno(Turno turno, int versionEsperada) {
         var actual = turnos.get(turno.id());
-        if (actual == null || actual.version() != versionEsperada) {
+        if (actual == null || !actual.negocioId().equals(turno.negocioId()) || actual.version() != versionEsperada) {
             return false;
         }
         turnos.put(turno.id(), turno);
