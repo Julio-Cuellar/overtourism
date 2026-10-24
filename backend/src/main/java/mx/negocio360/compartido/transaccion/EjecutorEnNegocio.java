@@ -1,4 +1,4 @@
-package mx.negocio360.clientes.infraestructura;
+package mx.negocio360.compartido.transaccion;
 
 import java.util.Objects;
 import java.util.UUID;

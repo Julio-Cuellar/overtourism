@@ -15,29 +15,34 @@ public interface RepositorioPreparaciones {
     void guardar(Preparacion preparacion);
 
     /**
-     * Busca por hash del token.
+     * Busca por hash del token dentro de un negocio. Con PostgreSQL la seguridad por fila no muestra una fila sin el
+     * negocio, y la preparacion de un negocio no la ve otro.
      *
+     * @param negocioId negocio del contexto autenticado
      * @param tokenHash SHA-256 del token
-     * @return la fila, si existe
+     * @return la fila, si existe en ese negocio
      */
-    Optional<Preparacion> porHash(String tokenHash);
+    Optional<Preparacion> porHash(UUID negocioId, String tokenHash);
 
     /**
      * Marca el token como usado solo si todavia no lo estaba. Debe ser atomico: es lo que hace que un token se use
-     * una sola vez aunque lleguen dos confirmaciones a la vez.
+     * una sola vez aunque lleguen dos confirmaciones a la vez. La fila deja de conservar el comando y el resumen (SC-10).
+     * Con PostgreSQL se confirma en su propia transaccion: un fallo del comando no devuelve el token a la vida.
      *
+     * @param negocioId negocio del contexto autenticado
      * @param tokenHash SHA-256 del token
      * @param ahora     instante de uso
      * @return verdadero si esta llamada lo marco; falso si otra peticion ya lo habia usado
      */
-    boolean marcarUsada(String tokenHash, Instant ahora);
+    boolean marcarUsada(UUID negocioId, String tokenHash, Instant ahora);
 
     /**
-     * Vacia el comando y el resumen y conserva el resto de la fila.
+     * Vacia el comando y el resumen y conserva el resto de la fila. Con PostgreSQL corre en su propia transaccion.
      *
+     * @param negocioId negocio del contexto autenticado
      * @param tokenHash SHA-256 del token
      */
-    void vaciar(String tokenHash);
+    void vaciar(UUID negocioId, String tokenHash);
 
     /**
      * Cuenta las preparaciones sin usar y sin vencer de un tipo y ambito (CJ-07).

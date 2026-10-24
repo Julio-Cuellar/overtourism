@@ -73,4 +73,49 @@ class CursoresTest {
         assertThat(Cursores.valido(100, null)).isTrue();
         assertThat(Cursores.valido(1, null)).isTrue();
     }
+
+    @Test
+    @DisplayName("por consulta: pide una fila de mas para saber si hay mas, y recorre todo sin repetir ni saltar")
+    void porConsulta_recorreTodo() {
+        var pedidos = new ArrayList<int[]>();
+        Cursores.Consulta<Integer> consulta = (limite, desplazamiento) -> {
+            pedidos.add(new int[] {limite, desplazamiento});
+            return CINCUENTA.stream().skip(desplazamiento).limit(limite).toList();
+        };
+        var vistos = new ArrayList<Integer>();
+        String cursor = null;
+        Pagina<Integer> pagina;
+        do {
+            pagina = Cursores.pagina(consulta, 20, cursor);
+            vistos.addAll(pagina.elementos());
+            cursor = pagina.cursorFinal();
+        } while (pagina.hayMas());
+
+        assertThat(vistos).containsExactlyElementsOf(CINCUENTA);
+        assertThat(pagina.cursorFinal()).isNull();
+        assertThat(pedidos).extracting(p -> p[0]).containsOnly(21);
+        assertThat(pedidos).extracting(p -> p[1]).containsExactly(0, 20, 40);
+    }
+
+    @Test
+    @DisplayName("por consulta: el cursor es el mismo que el de la lista en memoria")
+    void porConsulta_mismoCursorQueLaLista() {
+        Cursores.Consulta<Integer> consulta = (limite, desplazamiento) ->
+                CINCUENTA.stream().skip(desplazamiento).limit(limite).toList();
+
+        assertThat(Cursores.pagina(consulta, 20, null)).isEqualTo(Cursores.pagina(CINCUENTA, 20, null));
+        var segunda = Cursores.pagina(CINCUENTA, 20, null).cursorFinal();
+        assertThat(Cursores.pagina(consulta, 20, segunda)).isEqualTo(Cursores.pagina(CINCUENTA, 20, segunda));
+    }
+
+    @Test
+    @DisplayName("por consulta: un cursor ajeno o un tamano fuera de rango se rechaza antes de consultar")
+    void porConsulta_invalido() {
+        Cursores.Consulta<Integer> consulta = (limite, desplazamiento) -> {
+            throw new AssertionError("no debe consultar");
+        };
+
+        assertThatThrownBy(() -> Cursores.pagina(consulta, 20, "ajeno")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Cursores.pagina(consulta, 101, null)).isInstanceOf(IllegalArgumentException.class);
+    }
 }

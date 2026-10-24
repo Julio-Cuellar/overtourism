@@ -1,5 +1,6 @@
 package mx.negocio360.clientes.infraestructura;
 
+import mx.negocio360.compartido.transaccion.EjecutorEnNegocio;
 import java.time.Clock;
 import java.util.List;
 import mx.negocio360.clientes.ClientesApi;

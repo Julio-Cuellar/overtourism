@@ -10,7 +10,7 @@ import java.util.UUID;
 /**
  * Tabla {@code preparacion} en memoria para desarrollo y demo (F4, sin base de datos). Solo guarda el hash del token,
  * como la tabla real, y sincroniza cada operacion para que {@link #marcarUsada} sea atomica (un token, un uso). Los
- * datos se pierden al reiniciar; la version con PostgreSQL es F5.
+ * datos se pierden al reiniciar; la version con PostgreSQL es {@code RepositorioPreparacionesJdbc}.
  */
 public final class PreparacionesEnMemoria implements RepositorioPreparaciones {
 
@@ -22,24 +22,24 @@ public final class PreparacionesEnMemoria implements RepositorioPreparaciones {
     }
 
     @Override
-    public synchronized Optional<Preparacion> porHash(String tokenHash) {
-        return Optional.ofNullable(filas.get(tokenHash));
+    public synchronized Optional<Preparacion> porHash(UUID negocioId, String tokenHash) {
+        return Optional.ofNullable(filas.get(tokenHash)).filter(f -> f.negocioId().equals(negocioId));
     }
 
     @Override
-    public synchronized boolean marcarUsada(String tokenHash, Instant ahora) {
+    public synchronized boolean marcarUsada(UUID negocioId, String tokenHash, Instant ahora) {
         var fila = filas.get(tokenHash);
-        if (fila == null || fila.usadoEn() != null) {
+        if (fila == null || !fila.negocioId().equals(negocioId) || fila.usadoEn() != null) {
             return false;
         }
-        filas.put(tokenHash, fila.usada(ahora));
+        filas.put(tokenHash, fila.usada(ahora).vaciada());
         return true;
     }
 
     @Override
-    public synchronized void vaciar(String tokenHash) {
+    public synchronized void vaciar(UUID negocioId, String tokenHash) {
         var fila = filas.get(tokenHash);
-        if (fila != null) {
+        if (fila != null && fila.negocioId().equals(negocioId)) {
             filas.put(tokenHash, fila.vaciada());
         }
     }

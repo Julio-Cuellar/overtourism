@@ -1,7 +1,8 @@
 package mx.negocio360.clientes.infraestructura;
 
-import static mx.negocio360.clientes.infraestructura.MomentosJdbc.instante;
-import static mx.negocio360.clientes.infraestructura.MomentosJdbc.momento;
+import mx.negocio360.compartido.transaccion.EjecutorEnNegocio;
+import static mx.negocio360.compartido.transaccion.MomentosJdbc.instante;
+import static mx.negocio360.compartido.transaccion.MomentosJdbc.momento;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

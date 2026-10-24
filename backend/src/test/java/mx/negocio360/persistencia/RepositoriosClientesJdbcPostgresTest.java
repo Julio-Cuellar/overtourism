@@ -26,7 +26,7 @@ import mx.negocio360.clientes.eventos.EstadoConsentimiento;
 import mx.negocio360.clientes.eventos.Finalidad;
 import mx.negocio360.clientes.eventos.MedioConsentimiento;
 import mx.negocio360.clientes.eventos.OrigenCliente;
-import mx.negocio360.clientes.infraestructura.EjecutorEnNegocio;
+import mx.negocio360.compartido.transaccion.EjecutorEnNegocio;
 import mx.negocio360.compartido.identidad.UuidV7;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

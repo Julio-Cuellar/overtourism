@@ -27,9 +27,10 @@ import mx.negocio360.compartido.seguridad.TokenOpaco;
  * comando y a su ambito. Confirmar rechaza el token desconocido, ajeno, usado, vencido o cuyo comando cambio; consume
  * el token antes de ejecutar y despues vacia el comando guardado, pase lo que pase.
  *
- * <p><b>Transacciones (pendiente con los adaptadores reales):</b> {@code marcarUsada} y {@code vaciar} deben
- * confirmarse aparte de la transaccion del manejador, para que un fallo del comando no devuelva el token a la vida; y
- * cada {@code confirmar} de un manejador debe ser una sola transaccion que incluya sus eventos (outbox).
+ * <p><b>Transacciones:</b> {@code marcarUsada} y {@code vaciar} se confirman aparte de la transaccion del manejador
+ * (el repositorio de PostgreSQL abre una propia), para que un fallo del comando no devuelva el token a la vida. Cada
+ * llamada a la API del modulo es una sola transaccion que incluye los eventos (outbox), gracias a
+ * {@code FronteraTransaccional}.
  */
 public final class ServicioPreparacion {
 
@@ -114,20 +115,20 @@ public final class ServicioPreparacion {
             throw traductor.apply(FalloPreparacion.TOKEN_INVALIDO);
         }
         var tokenHash = TokenOpaco.hash(token);
-        var fila = repositorio.porHash(tokenHash)
-                .filter(f -> f.negocioId().equals(contexto.negocioId()) && f.actor().equals(contexto.actor()))
+        var fila = repositorio.porHash(contexto.negocioId(), tokenHash)
+                .filter(f -> f.actor().equals(contexto.actor()))
                 .orElseThrow(() -> traductor.apply(FalloPreparacion.TOKEN_INVALIDO));
         if (fila.usadoEn() != null) {
             throw traductor.apply(FalloPreparacion.TOKEN_USADO);
         }
         var ahora = reloj.instant();
         if (!ahora.isBefore(fila.expiraEn())) {
-            repositorio.vaciar(tokenHash);
+            repositorio.vaciar(fila.negocioId(), tokenHash);
             throw traductor.apply(FalloPreparacion.TOKEN_EXPIRADO);
         }
         var manejador = porTipo.get(fila.comandoTipo());
         if (fila.comando() == null || manejador == null || !TokenOpaco.hash(fila.comando()).equals(fila.comandoHash())) {
-            repositorio.vaciar(tokenHash);
+            repositorio.vaciar(fila.negocioId(), tokenHash);
             throw traductor.apply(FalloPreparacion.COMANDO_CAMBIO);
         }
         return confirmarComando(manejador, contexto, autorizacion, fila, tokenHash, ahora);
@@ -142,15 +143,15 @@ public final class ServicioPreparacion {
                                                                   ContextoNegocio contexto,
                                                                   Autorizacion autorizacion, Preparacion fila,
                                                                   String tokenHash, java.time.Instant ahora) {
-        var comando = leer(manejador, fila.comando(), tokenHash);
+        var comando = leer(manejador, fila);
         exigirPermisos(manejador, autorizacion, comando);
-        if (!repositorio.marcarUsada(tokenHash, ahora)) {
+        if (!repositorio.marcarUsada(contexto.negocioId(), tokenHash, ahora)) {
             throw traductor.apply(FalloPreparacion.TOKEN_USADO);
         }
         try {
             return manejador.confirmar(contexto, comando, fila.resumen());
         } finally {
-            repositorio.vaciar(tokenHash);
+            repositorio.vaciar(fila.negocioId(), tokenHash);
         }
     }
 
@@ -176,12 +177,12 @@ public final class ServicioPreparacion {
     }
 
     /** Reconstruye el comando guardado; si ya no se puede leer, el comando cambio y se vacia la preparacion. */
-    private <C extends Comando> C leer(ManejadorComando<C> manejador, String json, String tokenHash) {
+    private <C extends Comando> C leer(ManejadorComando<C> manejador, Preparacion fila) {
         try {
-            return mapeador.readValue(json, manejador.claseComando());
+            return mapeador.readValue(fila.comando(), manejador.claseComando());
         } catch (JsonProcessingException e) {
             // Sin la causa: el mensaje de Jackson puede citar el contenido del comando.
-            repositorio.vaciar(tokenHash);
+            repositorio.vaciar(fila.negocioId(), fila.tokenHash());
             throw traductor.apply(FalloPreparacion.COMANDO_CAMBIO);
         }
     }
