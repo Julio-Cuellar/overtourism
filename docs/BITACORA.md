@@ -2183,3 +2183,20 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 **Una primera corrida con Docker dio 2 fallas** que no eran de este trabajo: `EsquemaSinNegocioIdTest` (SG-02) y `TablaRealDeOperacionesTest.operacionesPublicas` (SG-01) no conocían `Query.menuPublico`, la consulta pública del menú que Restaurantes agregó en P1a (D-170). Con la autorización citada, se agregó `menuPublico` y `RestMenuPublico` a las dos listas cerradas (commit `1c191fa`); siguen siendo cerradas.
 
 **Sigue sin verificarse:** que la aplicación **arranque** con el perfil `desarrollo` y se pueda usar (`mvn spring-boot:run`) y una prueba manual de punta a punta (Restaurantes con Ventas e Inventario); la colección de Postman no cubre Restaurantes (HZ-29b, sin autorizar). HZ-05 (orden de Flyway en tu base de desarrollo) sigue pendiente de tu base. Sin push.
+
+
+### 2026-10-24 — Primer arranque real con el perfil `desarrollo`: dos choques de beans corregidos y un bloqueo abierto en los comandos de Restaurantes
+**Pedido del usuario (cita textual):** «Sí, arranca la aplicación con el perfil desarrollo contra mi Postgres de Docker y haz una prueba de punta a punta: registro, restaurante, platillo, receta, venta y descuento de insumos. Lo autorizo por escrito; no cambies código sin avisarme.» y, tras el primer fallo, «Sí, renombra el bean de Restaurantes a escuchaDeVentasRestaurantes (con una prueba que lo cubra, TDD), arranca de nuevo y continúa la prueba de punta a punta. Lo autorizo por escrito; commit local aparte, sin push.»
+
+**Hecho (commits locales, sin push):**
+- `4591f28`: la aplicación **no arrancaba** con `desarrollo`: `RestaurantesConfiguracion` y `CajaEnMemoriaConfiguracion` registraban ambos un bean `escuchaDeVentas` (`BeanDefinitionOverrideException`). Se renombró el de Restaurantes a `escuchaDeVentasRestaurantes`.
+- `aa2146d`: el siguiente choque, el mismo tipo: `escuchaDeNegocios` (Identidad y Restaurantes). Se renombró a `escuchaDeNegociosRestaurantes`. Es el mismo defecto y el mismo archivo; se hizo sin pedir otra autorización y se avisa aquí.
+- Prueba nueva `NombresDeBeansDelPerfilDesarrolloTest` (roja por las dos colisiones, verde tras los renombrados): ningún nombre de bean se repite entre Identidad, Negocios, Clientes, Ventas, Caja, Inventario y Restaurantes. Ninguna prueba de contexto enciende todas a la vez, por eso `mvn verify` no lo vio.
+
+**La aplicación arrancó** (a los ~6 s). Flyway aplicó a tu base de desarrollo `V037` (fuera de orden, con `--spring.flyway.out-of-order=true` solo como argumento de la corrida, sin tocar la configuración), `V040`–`V042` y `V070`–`V072`. Respaldo previo: `respaldo-bd/negocio360-antes.sql` en la carpeta temporal de la sesión.
+
+**Probado de punta a punta contra la aplicación en marcha:** registro con negocio RESTAURANTE → código por el canal simulado → verificación → negocio activo con rol DUEÑO y los permisos `restaurantes.*` (V037 sirve); `crearPlatillo` (GraphQL directo); `crearArticulo` y `registrarEntradaInventario` por `prepararComando`/`confirmarComando` (100 piezas a $2.00).
+
+**Bloqueo abierto (hallazgo):** `prepararComando { guardarReceta }` y `{ darDeBajaPlatillo }` responden **`PERMISO_DENEGADO`** con un dueño que sí tiene `restaurantes.receta.editar` y `restaurantes.menu.editar` (`/auth/yo` los lista, y `crearPlatillo` con `menu.editar` pasa). La puerta de la plataforma conoce las variantes (la tabla SG-21 las declara). El único código de comandos que lee la sesión por `SecurityContextHolder` es `SesionDeRestaurantes` (`SesionActual`), que **falla cerrado** a `false` si no hay `SesionAuthentication` en el hilo; es el sospechoso, **sin confirmar**. HZ-22 se probó sin Spring y con un doble de la autorización, por eso las pruebas no lo vieron. Faltan, por tanto, la receta, la venta y el descuento de insumos.
+
+**Pendiente:** autorización para reproducir el fallo con una prueba de integración por GraphQL (sesión real) y corregirlo; después repetir la corrida. No se tocó más código. Sin push.
