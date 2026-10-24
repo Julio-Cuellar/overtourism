@@ -15,6 +15,7 @@ import mx.negocio360.restaurantes.aplicacion.ManejadorGuardarReceta;
 import mx.negocio360.restaurantes.aplicacion.MenuPublicoServicio;
 import mx.negocio360.restaurantes.aplicacion.RecetasServicio;
 import mx.negocio360.restaurantes.aplicacion.MenuServicio;
+import mx.negocio360.compartido.catalogo.FuenteDeProductos;
 import mx.negocio360.restaurantes.aplicacion.PlatillosParaVenta;
 import mx.negocio360.restaurantes.aplicacion.RepositorioMenu;
 import mx.negocio360.restaurantes.aplicacion.RepositorioRestaurantes;
@@ -40,7 +41,8 @@ class RestaurantesConfiguracionTest {
             assertThat(c).hasSingleBean(RepositorioMenu.class).hasSingleBean(RepositorioRestaurantes.class)
                     .hasSingleBean(ConsultaDeRecetas.class).hasSingleBean(UsoDeLosPlatillos.class)
                     .hasSingleBean(MenuServicio.class).hasSingleBean(MenuPublicoServicio.class)
-                    .hasSingleBean(PlatillosParaVenta.class).hasSingleBean(SeguimientoDeNegocios.class)
+                    .hasSingleBean(PlatillosParaVenta.class).hasSingleBean(FuenteDeProductos.class)
+                    .hasSingleBean(SeguimientoDeNegocios.class)
                     .hasSingleBean(EscuchaDeNegocios.class).hasSingleBean(RecetasServicio.class)
                     .hasSingleBean(ManejadorGuardarReceta.class).hasSingleBean(ManejadorDarDeBajaPlatillo.class)
                     .hasSingleBean(InventarioPuerto.class).hasSingleBean(RepositorioConsumos.class)

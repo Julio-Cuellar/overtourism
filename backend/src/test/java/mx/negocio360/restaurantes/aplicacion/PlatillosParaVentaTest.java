@@ -8,6 +8,7 @@ import java.time.MonthDay;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import mx.negocio360.compartido.catalogo.ProductoParaVenta;
 import mx.negocio360.restaurantes.dominio.Temporada;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -109,7 +110,7 @@ class PlatillosParaVentaTest {
 
         var encontrados = fuente.buscar(EntornoDeMenu.NEGOCIO_A, "CEMITA", 50);
 
-        assertThat(encontrados).extracting(ProductoDePlatillo::descripcion).containsExactly("Cemita poblana");
+        assertThat(encontrados).extracting(ProductoParaVenta::descripcion).containsExactly("Cemita poblana");
     }
 
     @Test
@@ -119,7 +120,7 @@ class PlatillosParaVentaTest {
             crear("Platillo " + String.format("%02d", i), "10");
         }
 
-        assertThat(fuente.buscar(EntornoDeMenu.NEGOCIO_A, "", 5)).extracting(ProductoDePlatillo::descripcion)
+        assertThat(fuente.buscar(EntornoDeMenu.NEGOCIO_A, "", 5)).extracting(ProductoParaVenta::descripcion)
                 .containsExactly("Platillo 00", "Platillo 01", "Platillo 02", "Platillo 03", "Platillo 04");
         assertThat(fuente.buscar(EntornoDeMenu.NEGOCIO_A, null, 500)).hasSize(50);
         assertThatThrownBy(() -> fuente.buscar(EntornoDeMenu.NEGOCIO_A, "x", 0)).isInstanceOf(IllegalArgumentException.class);
