@@ -767,7 +767,7 @@ Reglas para quien consume (plan de integración §10.4): lector propio sin impor
 | R-I3 | Inventario | CPP de varios artículos en una llamada | **Hecho (2026-10-16)**: `articulosPorId` trae el CPP de hasta 100 artículos por llamada | El adaptador pide por tandas de 100 |
 | R-I4 | Inventario | `@NamedInterface` para los tipos de `InventarioApi` (M6) | **Hecho (2026-10-16)**: `@NamedInterface("api")` en los tipos expuestos (D-203) | `verify()` pasa |
 | R-I5 | Inventario | Evento o consulta cuando se da de baja un artículo usado en recetas | No existe | Opcional (H-R12) |
-| R-V1 | Ventas (Pista A) | Campo opcional `referencia` (texto de hasta 80) en `registrarVenta`, guardado y devuelto en `venta.registrada` v1 | Aceptado (respuesta 3). **Falta** pedirlo y congelarlo con la Pista A antes del hito H-0 | **Bloqueante** de P1b (H-R1) |
+| R-V1 | Ventas (Pista A) | Campo opcional `referencia` (texto de hasta 80) en `registrarVenta`, guardado y devuelto en `venta.registrada` v1 | **Hecho (2026-10-24)**: campo opcional de hasta 80 caracteres de `[A-Za-z0-9._:-]` en `registrarVenta`, en `Venta` y en `venta.registrada` v1; migración `V043` | Era el bloqueo de P1b (H-R1); lo consume `VinculoDeCuentasConVentas` |
 | R-V2 | Plataforma (Pista A) | `FuenteDeProductos` con método opcional `modoInventario(negocioId, productoId)` (por omisión `NINGUNO`) para que Inventario valide K-05 sin conocer verticales | **Falta** | H-R5 |
 | R-V3 | Plataforma (Pista A) | `FuenteDeProductos`, `ProductoParaVenta`, `CatalogoCompuesto`, despachador de comandos, kit de contrato | Planeado (F3 y F4) | Dependencia de P1a |
 | R-N1 | Negocios | Consumir `negocio.disponibilidad_cambiada` desde P1 (hoy P2) | Aceptado (respuesta 9). Es un cambio en Negocios y su responsable es el autor de este diseño | Para mostrar mesas libres en el stand |
@@ -776,8 +776,8 @@ Reglas para quien consume (plan de integración §10.4): lector propio sin impor
 | R-ID1 | Identidad | Permisos `restaurantes.*` y el rol base `MESERO_CAJA` en `RolesBase`, con migración `V037` | Por hacer (archivo compartido, serializado) | Sección 11 |
 | R-C1 | Caja | **[P2]** Propina: tipo de movimiento o método | No existe | H-R3 |
 | R-N4 | Negocios | ~~Puesto `BARTENDER`~~ | **Retirado** (D-191): la barra usa `COCINERO` | |
-| R-F1 | Plataforma (Pista A) | Límite de tasa por **token y por dispositivo** para operaciones públicas **con escritura** (`pedirPorQr`, `pedirCuentaPorQr`); hoy la puerta limita por cuenta y por IP | **Falta** | QR-16, SG-10 |
-| R-F2 | Plataforma (Pista A) | CORS acotado al origen de la web pública para las consultas y mutaciones públicas, y que `X-Dispositivo-Id` o `dispositivoId` no se registre en los avisos | **Falta** | QR-21, D-185 |
+| R-F1 | Plataforma (Pista A) | Límite de tasa por **token y por dispositivo** para operaciones públicas **con escritura** (`pedirPorQr`, `pedirCuentaPorQr`); hoy la puerta limita por cuenta y por IP | **Hecho dentro de Restaurantes (2026-10-24)**: 5 pedidos por minuto por token y por dispositivo, en la memoria de un nodo (`PedidosQrServicio`). El límite compartido entre nodos y fuera de Restaurantes sigue siendo HZ-27 | QR-16, SG-10 |
+| R-F2 | Plataforma (Pista A) | CORS acotado al origen de la web pública para las consultas y mutaciones públicas, y que `X-Dispositivo-Id` o `dispositivoId` no se registre en los avisos | **Hecho (2026-10-24)**: `CorsDeGraphqlFilter` sobre `seguridad.http.origenes-permitidos`. El `dispositivoId` no viaja en ningún aviso ni evento: solo se guarda su hash con clave (QR-12) | QR-21, D-185 |
 | R-N5 | Negocios | La web pública usa `negocioPublico` y `resenasDeNegocio` sin cambios | Existen | QR-04 |
 
 ---
