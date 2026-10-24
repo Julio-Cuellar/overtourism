@@ -159,7 +159,7 @@ public class RestaurantesConfiguracion {
     }
 
     @Bean
-    EscuchaDeNegocios escuchaDeNegocios(SeguimientoDeNegocios seguimiento) {
+    EscuchaDeNegocios escuchaDeNegociosRestaurantes(SeguimientoDeNegocios seguimiento) {
         return new EscuchaDeNegocios(seguimiento);
     }
 }

@@ -9,7 +9,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import mx.negocio360.caja.infraestructura.CajaEnMemoriaConfiguracion;
+import mx.negocio360.clientes.infraestructura.ClientesConfiguracion;
+import mx.negocio360.identidad.infraestructura.IdentidadConfiguracion;
 import mx.negocio360.inventario.infraestructura.InventarioEnMemoriaConfiguracion;
+import mx.negocio360.negocios.infraestructura.NegociosConfiguracion;
 import mx.negocio360.restaurantes.infraestructura.RestaurantesConfiguracion;
 import mx.negocio360.ventas.infraestructura.VentasConfiguracion;
 import mx.negocio360.ventas.infraestructura.VentasEnMemoriaConfiguracion;
@@ -18,14 +21,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 
 /**
- * El perfil {@code desarrollo} enciende a la vez los almacenes en memoria de Ventas, Caja, Inventario y Restaurantes. Spring
- * no permite que dos configuraciones registren un bean con el mismo nombre, aunque sean de tipos distintos: la aplicacion no
- * arranca ({@code BeanDefinitionOverrideException}). Ninguna prueba de contexto enciende los cuatro a la vez, asi que se
- * revisa aqui, sin base de datos: ningun nombre de bean puede repetirse entre ellas.
+ * El perfil {@code desarrollo} enciende a la vez las configuraciones de Identidad, Negocios y Clientes y los almacenes en
+ * memoria de Ventas, Caja, Inventario y Restaurantes. Spring no permite que dos configuraciones registren un bean con el
+ * mismo nombre, aunque sean de tipos distintos: la aplicacion no arranca ({@code BeanDefinitionOverrideException}). Ninguna
+ * prueba de contexto enciende todas a la vez, asi que se revisa aqui, sin base de datos: ningun nombre de bean puede
+ * repetirse entre ellas.
  */
 class NombresDeBeansDelPerfilDesarrolloTest {
 
-    private static final List<Class<?>> CONFIGURACIONES = List.of(VentasConfiguracion.class,
+    private static final List<Class<?>> CONFIGURACIONES = List.of(IdentidadConfiguracion.class, NegociosConfiguracion.class,
+            ClientesConfiguracion.class, VentasConfiguracion.class,
             VentasEnMemoriaConfiguracion.class, CajaEnMemoriaConfiguracion.class,
             InventarioEnMemoriaConfiguracion.class, RestaurantesConfiguracion.class);
 
