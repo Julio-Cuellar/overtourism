@@ -2171,3 +2171,15 @@ La actualización de `CLAUDE.md` se hizo el 2026-10-08 (ver el registro). Sigue 
 **Sin commitear (a propósito):** HZ-22, HZ-23 y HZ-28, el cambio del diseño de Restaurantes, la guía, el plan y estas entradas, porque la autorización de commit era solo para F5/F6. Sin push.
 
 **Actualización (mismo día):** con la autorización del usuario («Sí, haz commit local de HZ-22, HZ-23 y HZ-28 (y la guía, el plan y el diseño de Restaurantes en commits aparte), sin push.») lo que decía «sin commitear» quedó comiteado en `1748754` (HZ-28), `9c044e1` (HZ-23), `7376888` (HZ-22), `9b50c9f` (diseño de Restaurantes), `19a9bcf` (guía del front) y `424f795` (plan v2, evidencia y Bitácora). **Siguen sin push**: `julio` local va 11 commits por delante de `origin/julio`. Quedan sin commitear solo dos cambios de `frontend/` que no son de este trabajo (`analysis_options.yaml` y `pubspec.lock`).
+
+
+### 2026-10-24 — Primera verificación completa con Docker: `mvn -B verify` en verde (HZ-02)
+**Pedido del usuario (cita textual):** «ya encendí el docker desktop» y después «Sí, actualiza EsquemaSinNegocioIdTest y TablaRealDeOperacionesTest para que incluyan menuPublico y RestMenuPublico (D-170). Lo autorizo por escrito; haz commit local aparte, sin push.»
+
+**Resultado:** `mvn -B verify` con JDK 21 y PostgreSQL de Testcontainers sobre `julio` local (HEAD `1c191fa`): **BUILD SUCCESS, 2883 pruebas, 0 fallas, 0 errores, 2 omitidas** (las dos pruebas opcionales del kit de `FuenteDeProductos` que la fuente simulada no puede cumplir), `All coverage checks have been met`, 1 min 50 s.
+
+**Lo que esta corrida verificó por primera vez:** `V072`, `InventarioJdbc` (rastreo y consumos) y `ConsumoInventarioPostgresTest` (idempotencia, reversa, anulación previa, atomicidad y carrera de 4 hilos) contra una base real; el aislamiento por fila de `inventario.consumo`; la migración `V037` de Restaurantes; y todos los contextos completos de Spring, que sin Docker daban 744 errores.
+
+**Una primera corrida con Docker dio 2 fallas** que no eran de este trabajo: `EsquemaSinNegocioIdTest` (SG-02) y `TablaRealDeOperacionesTest.operacionesPublicas` (SG-01) no conocían `Query.menuPublico`, la consulta pública del menú que Restaurantes agregó en P1a (D-170). Con la autorización citada, se agregó `menuPublico` y `RestMenuPublico` a las dos listas cerradas (commit `1c191fa`); siguen siendo cerradas.
+
+**Sigue sin verificarse:** que la aplicación **arranque** con el perfil `desarrollo` y se pueda usar (`mvn spring-boot:run`) y una prueba manual de punta a punta (Restaurantes con Ventas e Inventario); la colección de Postman no cubre Restaurantes (HZ-29b, sin autorizar). HZ-05 (orden de Flyway en tu base de desarrollo) sigue pendiente de tu base. Sin push.
