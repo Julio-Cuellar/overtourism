@@ -31,9 +31,10 @@ import mx.negocio360.inventario.dominio.InventarioException;
  * <p>Esta clase repite la de Clientes a proposito: R1 impide compartir codigo entre modulos fuera de
  * {@code compartido}. Moverla alli es el pendiente HTC-89.
  *
- * <p><b>Contrato transaccional (a confirmar al conectar la base):</b> {@code marcarUsada} debe confirmarse en su propia
- * transaccion, aparte de la del manejador, para que un fallo del comando no devuelva el token a la vida; y cada
- * {@code confirmar} de un manejador debe ser una sola transaccion que incluya sus eventos (outbox).
+ * <p><b>Contrato transaccional:</b> {@code marcarUsada} se confirma en su propia transaccion (el repositorio de
+ * PostgreSQL abre una), aparte de la del manejador, para que un fallo del comando no devuelva el token a la vida; y cada
+ * llamada a la API del modulo es una sola transaccion que incluye los eventos (outbox), gracias a
+ * {@code FronteraTransaccional}.
  */
 public final class ServicioPreparacion {
 
@@ -91,8 +92,8 @@ public final class ServicioPreparacion {
             return Optional.empty();
         }
         var ahora = reloj.instant();
-        return repositorio.porHash(hash(token))
-                .filter(f -> f.negocioId().equals(contexto.negocioId()) && f.actor().equals(contexto.actor()))
+        return repositorio.porHash(contexto.negocioId(), hash(token))
+                .filter(f -> f.actor().equals(contexto.actor()))
                 .filter(f -> f.usadoEn() == null && ahora.isBefore(f.expiraEn()))
                 .map(Preparacion::comandoTipo);
     }
@@ -103,8 +104,8 @@ public final class ServicioPreparacion {
             throw new InventarioException(CodigoError.TOKEN_INVALIDO);
         }
         var tokenHash = hash(token);
-        var fila = repositorio.porHash(tokenHash)
-                .filter(f -> f.negocioId().equals(contexto.negocioId()) && f.actor().equals(contexto.actor()))
+        var fila = repositorio.porHash(contexto.negocioId(), tokenHash)
+                .filter(f -> f.actor().equals(contexto.actor()))
                 .orElseThrow(() -> new InventarioException(CodigoError.TOKEN_INVALIDO));
         if (fila.usadoEn() != null) {
             throw new InventarioException(CodigoError.TOKEN_USADO);
@@ -118,7 +119,7 @@ public final class ServicioPreparacion {
         if (json == null || manejador == null || !hash(json).equals(fila.comandoHash())) {
             throw new InventarioException(CodigoError.COMANDO_CAMBIO);
         }
-        if (!repositorio.marcarUsada(tokenHash, ahora)) {
+        if (!repositorio.marcarUsada(contexto.negocioId(), tokenHash, ahora)) {
             throw new InventarioException(CodigoError.TOKEN_USADO);
         }
         return ejecutar(manejador, contexto, json, fila.resumen());

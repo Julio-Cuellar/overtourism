@@ -60,7 +60,7 @@ public final class InventarioEnMemoria implements RepositorioArticulos, Reposito
     @Override
     public synchronized void actualizar(Articulo nuevo, long versionEsperada) {
         var actual = articulos.get(nuevo.id());
-        if (actual == null || actual.version() != versionEsperada) {
+        if (actual == null || !actual.negocioId().equals(nuevo.negocioId()) || actual.version() != versionEsperada) {
             throw new InventarioException(CodigoError.CONCURRENCIA);
         }
         articulos.put(nuevo.id(), nuevo);
@@ -94,7 +94,7 @@ public final class InventarioEnMemoria implements RepositorioArticulos, Reposito
     @Override
     public synchronized void actualizar(Saldo nuevo, long versionEsperada) {
         var actual = saldos.get(nuevo.articuloId());
-        if (actual == null || actual.version() != versionEsperada) {
+        if (actual == null || !actual.negocioId().equals(nuevo.negocioId()) || actual.version() != versionEsperada) {
             throw new InventarioException(CodigoError.CONCURRENCIA);
         }
         saldos.put(nuevo.articuloId(), nuevo);

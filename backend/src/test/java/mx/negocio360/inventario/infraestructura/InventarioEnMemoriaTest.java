@@ -141,7 +141,7 @@ class InventarioEnMemoriaTest {
         for (var i = 0; i < 8; i++) {
             tareas.add(hilos.submit(() -> {
                 salida.await();
-                if (preparaciones.marcarUsada("hash", T)) {
+                if (preparaciones.marcarUsada(negocioA, "hash", T)) {
                     gana.incrementAndGet();
                 }
                 return null;
@@ -154,8 +154,8 @@ class InventarioEnMemoriaTest {
         hilos.shutdown();
 
         assertThat(gana).hasValue(1);
-        assertThat(preparaciones.porHash("hash")).map(Preparacion::usadoEn).contains(T);
-        assertThat(preparaciones.marcarUsada("no existe", T)).isFalse();
-        assertThat(preparaciones.porHash("no existe")).isEmpty();
+        assertThat(preparaciones.porHash(negocioA, "hash")).map(Preparacion::usadoEn).contains(T);
+        assertThat(preparaciones.marcarUsada(negocioA, "no existe", T)).isFalse();
+        assertThat(preparaciones.porHash(negocioA, "no existe")).isEmpty();
     }
 }

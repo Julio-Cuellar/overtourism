@@ -18,12 +18,12 @@ import org.springframework.context.annotation.Profile;
  * fija) y nunca con el perfil {@code produccion}: sin base de datos los saldos se pierden al reiniciar, asi que no se
  * enciende por accidente. Expone {@link InventarioApi}, que es lo que usan los demas modulos (el canal GraphQL y
  * Restaurantes, R-I1 a R-I4). Los permisos no se inyectan: cada llamada del canal recibe la {@code Autorizacion} de la
- * sesion. La version con PostgreSQL llega despues.
+ * sesion. La version con PostgreSQL es {@link InventarioPostgresConfiguracion}.
  */
 @Configuration(proxyBeanMethods = false)
 @Profile("!produccion")
 @ConditionalOnProperty(name = "inventario.almacen", havingValue = "memoria")
-public class InventarioConfiguracion {
+public class InventarioEnMemoriaConfiguracion {
 
     /**
      * Tablas de Inventario en memoria.

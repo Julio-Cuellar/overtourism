@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import mx.negocio360.inventario.aplicacion.Preparacion;
 import mx.negocio360.inventario.aplicacion.puertos.RepositorioPreparaciones;
 
@@ -21,14 +22,14 @@ public final class PreparacionesEnMemoria implements RepositorioPreparaciones {
     }
 
     @Override
-    public synchronized Optional<Preparacion> porHash(String tokenHash) {
-        return Optional.ofNullable(filas.get(tokenHash));
+    public synchronized Optional<Preparacion> porHash(UUID negocioId, String tokenHash) {
+        return Optional.ofNullable(filas.get(tokenHash)).filter(f -> f.negocioId().equals(negocioId));
     }
 
     @Override
-    public synchronized boolean marcarUsada(String tokenHash, Instant ahora) {
+    public synchronized boolean marcarUsada(UUID negocioId, String tokenHash, Instant ahora) {
         var fila = filas.get(tokenHash);
-        if (fila == null || fila.usadoEn() != null) {
+        if (fila == null || !fila.negocioId().equals(negocioId) || fila.usadoEn() != null) {
             return false;
         }
         filas.put(tokenHash, fila.usada(ahora));

@@ -36,7 +36,7 @@ class InventarioConfiguracionTest {
     }
 
     private final ApplicationContextRunner contexto = new ApplicationContextRunner()
-            .withUserConfiguration(InventarioConfiguracion.class).withBean(Clock.class, Clock::systemUTC)
+            .withUserConfiguration(InventarioEnMemoriaConfiguracion.class).withBean(Clock.class, Clock::systemUTC)
             .withBean(Escucha.class);
 
     @Test
