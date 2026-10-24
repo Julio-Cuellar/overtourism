@@ -14,7 +14,7 @@ extend type Query {
 }
 
 enum TipoMovimientoInventario { ENTRADA SALIDA MERMA AJUSTE_POS AJUSTE_NEG }
-enum CausaMovimientoInventario { VENTA COMPRA CONTEO MERMA MANUAL }
+enum CausaMovimientoInventario { VENTA COMPRA CONTEO MERMA MANUAL REVERSION }
 enum MotivoMermaInventario { CADUCIDAD DANO ROBO }
 
 type ArticuloDeInventario {

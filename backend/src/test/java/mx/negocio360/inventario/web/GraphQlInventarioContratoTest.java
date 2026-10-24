@@ -12,7 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import mx.negocio360.compartido.contexto.ContextoNegocio;
 import mx.negocio360.identidad.IdentidadApi;
+import mx.negocio360.inventario.InventarioApi;
+import mx.negocio360.inventario.aplicacion.LineaDeConsumo;
 import mx.negocio360.identidad.SesionAutenticada;
 import mx.negocio360.identidad.dominio.RolesBase;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +41,8 @@ public abstract class GraphQlInventarioContratoTest {
 
     @Autowired
     private MockMvc mvc;
+    @Autowired
+    private InventarioApi inventario;
     @MockitoBean
     private IdentidadApi identidad;
 
@@ -214,5 +219,30 @@ public abstract class GraphQlInventarioContratoTest {
         assertThat(sinSaldo.at("/errors/0/extensions/codigo").asText()).isNotEqualTo("ERROR_INTERNO");
         assertThat(codigo(graphql(admin, "query($t: String) { inventario(texto: $t, primeros: 5) { nodos { id } } }",
                 Map.of("t", "x".repeat(81))))).isEqualTo("CONSULTA_INVALIDA");
+    }
+
+    @Test
+    @DisplayName("el kardex de un articulo con un consumo revertido (venta anulada) lista la REVERSION sin error")
+    void kardexConReversion() throws Exception {
+        var negocio = UUID.randomUUID();
+        var dueno = sesion(negocio, "DUENO");
+        var articulo = harina(dueno);
+        comando(dueno, Map.of("registrarEntradaInventario", Map.of("articuloId", articulo, "cantidad", "10",
+                "unidad", "kg", "costoUnitario", "18.50")));
+        var contexto = new ContextoNegocio(negocio, dueno.cuentaId().toString());
+        var venta = UUID.randomUUID();
+        inventario.registrarConsumo(contexto, "restaurantes", venta, Instant.parse("2026-10-16T16:00:00Z"),
+                List.of(new LineaDeConsumo(UUID.fromString(articulo), new java.math.BigDecimal("2"), "kg")));
+        inventario.revertirConsumo(contexto, "restaurantes", venta);
+
+        var kardex = graphql(dueno, "query($i: ID!) { kardex(articuloId: $i) { nodos { tipo causaTipo cantidadBase "
+                + "saldoResultante } } }", Map.of("i", articulo));
+
+        assertThat(kardex.has("errors")).as(kardex.toString()).isFalse();
+        var nodos = kardex.at("/data/kardex/nodos");
+        assertThat(nodos).hasSize(3);
+        assertThat(nodos.get(1).get("causaTipo").asText()).isEqualTo("VENTA");
+        assertThat(nodos.get(2).get("causaTipo").asText()).isEqualTo("REVERSION");
+        assertThat(nodos.get(2).get("saldoResultante").asText()).isEqualTo("10000.0000");
     }
 }
