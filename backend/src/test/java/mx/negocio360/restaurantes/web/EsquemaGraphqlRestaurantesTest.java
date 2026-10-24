@@ -61,12 +61,14 @@ class EsquemaGraphqlRestaurantesTest {
     }
 
     @Test
-    @DisplayName("las consultas y mutaciones del esquema son exactamente las que Restaurantes declara en R1")
+    @DisplayName("las consultas y mutaciones del esquema son exactamente las que Restaurantes declara hasta R4")
     void operaciones() {
         assertThat(campos(esquema.getQueryType())).containsExactlyInAnyOrder("categoriasDeMenu", "platillos", "platillo",
-                "resumenDeMenu", "menuPublico", "receta", "costoDeReceta", "consumosFallidos");
+                "resumenDeMenu", "menuPublico", "receta", "costoDeReceta", "consumosFallidos", "salon", "qrDeMesa");
         assertThat(campos(esquema.getMutationType())).contains("crearCategoria", "editarCategoria", "crearPlatillo",
-                "editarPlatillo", "marcarAgotado", "publicarPlatillo", "cambiarModoDeInventario", "desactivarReceta");
+                "editarPlatillo", "marcarAgotado", "publicarPlatillo", "cambiarModoDeInventario", "desactivarReceta",
+                "crearZona", "darDeBajaZona", "crearMesa", "editarMesa", "darDeBajaMesa", "bloquearMesa", "abrirServicio",
+                "cerrarServicio", "configurarModoDeServicio", "regenerarQrDeMesa", "pausarQrDeMesa", "habilitarQr");
     }
 
     @Test

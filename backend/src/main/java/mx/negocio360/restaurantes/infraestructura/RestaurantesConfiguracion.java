@@ -2,6 +2,7 @@ package mx.negocio360.restaurantes.infraestructura;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 import mx.negocio360.compartido.comandos.PreparacionesEnMemoria;
 import mx.negocio360.compartido.comandos.ServicioPreparacion;
 import mx.negocio360.compartido.eventos.PublicadorEnBus;
@@ -12,7 +13,11 @@ import mx.negocio360.restaurantes.aplicacion.AutorizacionDeRestaurantes;
 import mx.negocio360.restaurantes.aplicacion.ConsumidorDeVentas;
 import mx.negocio360.inventario.InventarioApi;
 import mx.negocio360.restaurantes.aplicacion.ConsumosServicio;
+import mx.negocio360.restaurantes.aplicacion.GeneradorDeTokens;
+import mx.negocio360.restaurantes.aplicacion.OcupacionDeMesas;
 import mx.negocio360.restaurantes.aplicacion.PublicadorEventos;
+import mx.negocio360.restaurantes.aplicacion.RepositorioSalon;
+import mx.negocio360.restaurantes.aplicacion.SalonServicio;
 import mx.negocio360.restaurantes.aplicacion.RepositorioConsumos;
 import mx.negocio360.restaurantes.aplicacion.InventarioPuerto;
 import mx.negocio360.restaurantes.aplicacion.ManejadorDarDeBajaPlatillo;
@@ -28,6 +33,7 @@ import mx.negocio360.restaurantes.aplicacion.SeguimientoDeNegocios;
 import mx.negocio360.restaurantes.aplicacion.UsoDeLosPlatillos;
 import mx.negocio360.restaurantes.aplicacion.VinculoDeSesion;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
@@ -137,6 +143,26 @@ public class RestaurantesConfiguracion {
     PublicadorEventos publicadorEventos(ApplicationEventPublisher bus) {
         var publicador = new PublicadorEnBus(bus);
         return publicador::publicar;
+    }
+
+    /** Zonas, mesas y servicio en memoria hasta que llegue la persistencia (R7). */
+    @Bean
+    SalonEnMemoria salonEnMemoria() {
+        return new SalonEnMemoria();
+    }
+
+    /** Hasta que existan las cuentas, ninguna mesa tiene una sin pagar. */
+    @Bean
+    @ConditionalOnMissingBean(OcupacionDeMesas.class)
+    OcupacionDeMesas ocupacionDeMesas() {
+        return negocioId -> Map.of();
+    }
+
+    @Bean
+    SalonServicio salonServicio(RepositorioSalon salon, OcupacionDeMesas ocupacion, PublicadorEventos eventos,
+                                @Value("${restaurantes.qr.base-url:https://servicial.example/m/}") String baseDelQr,
+                                Clock reloj) {
+        return new SalonServicio(salon, ocupacion, eventos, GeneradorDeTokens.ALEATORIO, baseDelQr, reloj);
     }
 
     @Bean

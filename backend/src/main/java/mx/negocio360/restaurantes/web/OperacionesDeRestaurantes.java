@@ -30,6 +30,9 @@ public final class OperacionesDeRestaurantes implements OperacionesGraphql {
                 OperacionDeclarada.de(QUERY, "consumosFallidos", PermisosDeRestaurantes.CONSUMO_VER),
                 OperacionDeclarada.de(QUERY, "receta", PermisosDeRestaurantes.RECETA_VER),
                 OperacionDeclarada.de(QUERY, "costoDeReceta", PermisosDeRestaurantes.COSTO_VER),
+                // Salon (R4)
+                OperacionDeclarada.de(QUERY, "salon", PermisosDeRestaurantes.SALON_VER),
+                OperacionDeclarada.de(QUERY, "qrDeMesa", PermisosDeRestaurantes.SALON_CONFIGURAR),
                 // Superficie publica del turista: sin sesion, sobre lo publicado
                 OperacionDeclarada.publica(QUERY, "menuPublico"),
                 OperacionDeclarada.de(MUTATION, "crearCategoria", PermisosDeRestaurantes.MENU_EDITAR),
@@ -39,7 +42,19 @@ public final class OperacionesDeRestaurantes implements OperacionesGraphql {
                 OperacionDeclarada.de(MUTATION, "publicarPlatillo", PermisosDeRestaurantes.MENU_EDITAR),
                 OperacionDeclarada.de(MUTATION, "cambiarModoDeInventario", PermisosDeRestaurantes.MENU_EDITAR),
                 OperacionDeclarada.de(MUTATION, "marcarAgotado", PermisosDeRestaurantes.MENU_AGOTAR),
-                OperacionDeclarada.de(MUTATION, "desactivarReceta", PermisosDeRestaurantes.RECETA_EDITAR));
+                OperacionDeclarada.de(MUTATION, "desactivarReceta", PermisosDeRestaurantes.RECETA_EDITAR),
+                OperacionDeclarada.de(MUTATION, "crearZona", PermisosDeRestaurantes.SALON_CONFIGURAR),
+                OperacionDeclarada.de(MUTATION, "darDeBajaZona", PermisosDeRestaurantes.SALON_CONFIGURAR),
+                OperacionDeclarada.de(MUTATION, "crearMesa", PermisosDeRestaurantes.SALON_CONFIGURAR),
+                OperacionDeclarada.de(MUTATION, "editarMesa", PermisosDeRestaurantes.SALON_CONFIGURAR),
+                OperacionDeclarada.de(MUTATION, "darDeBajaMesa", PermisosDeRestaurantes.SALON_CONFIGURAR),
+                OperacionDeclarada.de(MUTATION, "configurarModoDeServicio", PermisosDeRestaurantes.SALON_CONFIGURAR),
+                OperacionDeclarada.de(MUTATION, "regenerarQrDeMesa", PermisosDeRestaurantes.SALON_CONFIGURAR),
+                OperacionDeclarada.de(MUTATION, "bloquearMesa", PermisosDeRestaurantes.SERVICIO_OPERAR),
+                OperacionDeclarada.de(MUTATION, "abrirServicio", PermisosDeRestaurantes.SERVICIO_OPERAR),
+                OperacionDeclarada.de(MUTATION, "cerrarServicio", PermisosDeRestaurantes.SERVICIO_OPERAR),
+                OperacionDeclarada.de(MUTATION, "pausarQrDeMesa", PermisosDeRestaurantes.SERVICIO_OPERAR),
+                OperacionDeclarada.de(MUTATION, "habilitarQr", PermisosDeRestaurantes.SERVICIO_OPERAR));
     }
 
     /** Las variantes de {@code ComandoInput} de Restaurantes y el permiso que pide la puerta de la plataforma (SG-04). */

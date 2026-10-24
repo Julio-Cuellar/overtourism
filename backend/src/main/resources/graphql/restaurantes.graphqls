@@ -20,6 +20,10 @@ extend type Query {
   consumosFallidos(primeros: Int! = 20, despues: String): RestConsumoFallidoConexion!
   "Sin sesion. Nulo si el negocio no es un restaurante visible (publicado y activo)."
   menuPublico(negocioId: ID!, idioma: String = "es-MX"): RestMenuPublico
+  "Todo el salon: servicio, disponibilidad, zonas y mesas con su estado derivado (MS-02). Requiere restaurantes.salon.ver."
+  salon: RestSalon!
+  "El enlace del QR de una mesa; el cliente dibuja el codigo (QR-21). Requiere restaurantes.salon.configurar."
+  qrDeMesa(mesaId: ID!): String!
 }
 
 extend type Mutation {
@@ -34,6 +38,29 @@ extend type Mutation {
   cambiarModoDeInventario(id: ID!, modo: RestModoInventario!): RestPlatillo!
   "Cierra la version abierta de la receta. Falla si el platillo descuenta por receta. Requiere restaurantes.receta.editar."
   desactivarReceta(platilloId: ID!): RestReceta!
+
+  "Requiere restaurantes.salon.configurar. Hasta 10 zonas (MS-01)."
+  crearZona(nombre: String!, orden: Int! = 0): RestZona!
+  "Falla si la zona tiene mesas activas (MS-07). Requiere restaurantes.salon.configurar."
+  darDeBajaZona(id: ID!): Boolean!
+  "Hasta 60 mesas; crea su QR (MS-01, QR-01). Requiere restaurantes.salon.configurar."
+  crearMesa(input: RestMesaInput!): RestMesa!
+  editarMesa(id: ID!, version: Int!, input: RestMesaInput!): RestMesa!
+  "Falla si la mesa tiene una cuenta sin pagar (MS-07). Su QR deja de servir (MS-09)."
+  darDeBajaMesa(id: ID!): Boolean!
+  "Marca manual (MS-02). Requiere restaurantes.servicio.operar."
+  bloquearMesa(id: ID!, bloquear: Boolean!): RestMesa!
+  "Requiere restaurantes.servicio.operar (MS-05)."
+  abrirServicio: RestDisponibilidad!
+  "Con cuentas abiertas exige ademas restaurantes.linea.anular_preparada y un motivo (MS-05)."
+  cerrarServicio(motivo: String): RestDisponibilidad!
+  configurarModoDeServicio(modo: RestModoServicio!): RestModoServicio!
+  "El token anterior deja de servir de inmediato (QR-02). Requiere restaurantes.salon.configurar."
+  regenerarQrDeMesa(mesaId: ID!): String!
+  "Pausa el QR de la mesa una hora, o lo reanuda (QR-17). Requiere restaurantes.servicio.operar."
+  pausarQrDeMesa(mesaId: ID!, pausar: Boolean! = true): RestMesa!
+  "Enciende o apaga los pedidos por QR de todo el local (QR-17). Requiere restaurantes.servicio.operar."
+  habilitarQr(habilitado: Boolean!): Boolean!
 }
 
 enum RestModoInventario { NINGUNO RECETA VINCULO_DIRECTO }
@@ -238,4 +265,66 @@ input RestRecetaInsumoInput {
 
 input RestBajaPlatilloInput {
   platilloId: ID!
+}
+
+# ---------- Salon (R4): zonas, mesas, servicio y disponibilidad ----------
+enum RestModoServicio { MESAS MOSTRADOR AMBOS }
+"Derivado de la cuenta de la mesa; no se guarda (MS-02)."
+enum RestEstadoDeMesa { LIBRE OCUPADA BLOQUEADA }
+enum RestEstadoDeCuenta { ABIERTA POR_COBRAR }
+
+type RestZona {
+  id: ID!
+  nombre: String!
+  orden: Int!
+  activa: Boolean!
+  version: Int!
+}
+
+type RestMesa {
+  id: ID!
+  zonaId: ID!
+  etiqueta: String!
+  capacidad: Int!
+  estado: RestEstadoDeMesa!
+  bloqueada: Boolean!
+  "Verdadero si su QR no acepta pedidos en este momento (QR-17)."
+  qrPausado: Boolean!
+  version: Int!
+  "La cuenta abierta o por cobrar de la mesa, o nulo."
+  cuenta: RestResumenDeCuenta
+}
+
+type RestResumenDeCuenta {
+  cuentaId: ID!
+  numero: Int!
+  estado: RestEstadoDeCuenta!
+  total: Decimal!
+  abiertaEn: DateTime!
+  porQr: Boolean!
+  presenciaConfirmada: Boolean!
+}
+
+"Mesas libres de un restaurante (MS-04); lo que ve el turista."
+type RestDisponibilidad {
+  libres: Int!
+  total: Int!
+  abierto: Boolean!
+}
+
+type RestSalon {
+  servicioAbierto: Boolean!
+  qrHabilitado: Boolean!
+  modo: RestModoServicio!
+  disponibilidad: RestDisponibilidad!
+  zonas: [RestZona!]!
+  mesas: [RestMesa!]!
+}
+
+input RestMesaInput {
+  zonaId: ID!
+  "De 1 a 20 caracteres, unica entre las mesas activas del negocio."
+  etiqueta: String!
+  "De 1 a 20 personas."
+  capacidad: Int!
 }

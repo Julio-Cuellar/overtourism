@@ -51,6 +51,15 @@ class OperacionesDeRestaurantesTest {
         esperado.put("Query.receta", "NEGOCIO:" + PermisosDeRestaurantes.RECETA_VER);
         esperado.put("Query.costoDeReceta", "NEGOCIO:" + PermisosDeRestaurantes.COSTO_VER);
         esperado.put("Mutation.desactivarReceta", "NEGOCIO:" + PermisosDeRestaurantes.RECETA_EDITAR);
+        esperado.put("Query.salon", "NEGOCIO:" + PermisosDeRestaurantes.SALON_VER);
+        esperado.put("Query.qrDeMesa", "NEGOCIO:" + PermisosDeRestaurantes.SALON_CONFIGURAR);
+        for (var configurar : new String[] {"crearZona", "darDeBajaZona", "crearMesa", "editarMesa", "darDeBajaMesa",
+                "configurarModoDeServicio", "regenerarQrDeMesa"}) {
+            esperado.put("Mutation." + configurar, "NEGOCIO:" + PermisosDeRestaurantes.SALON_CONFIGURAR);
+        }
+        for (var operar : new String[] {"bloquearMesa", "abrirServicio", "cerrarServicio", "pausarQrDeMesa", "habilitarQr"}) {
+            esperado.put("Mutation." + operar, "NEGOCIO:" + PermisosDeRestaurantes.SERVICIO_OPERAR);
+        }
 
         var real = porNombre();
         esperado.forEach((nombre, regla) -> assertThat(real).as(nombre).containsKey(nombre));
@@ -73,7 +82,11 @@ class OperacionesDeRestaurantesTest {
                 "Query.platillo", "Query.resumenDeMenu", "Query.menuPublico", "Mutation.crearCategoria",
                 "Mutation.editarCategoria", "Mutation.crearPlatillo", "Mutation.editarPlatillo",
                 "Mutation.publicarPlatillo", "Mutation.cambiarModoDeInventario", "Mutation.marcarAgotado", "Query.receta",
-                "Query.costoDeReceta", "Mutation.desactivarReceta", "Query.consumosFallidos");
+                "Query.costoDeReceta", "Mutation.desactivarReceta", "Query.consumosFallidos", "Query.salon", "Query.qrDeMesa",
+                "Mutation.crearZona", "Mutation.darDeBajaZona", "Mutation.crearMesa", "Mutation.editarMesa",
+                "Mutation.darDeBajaMesa", "Mutation.configurarModoDeServicio", "Mutation.regenerarQrDeMesa",
+                "Mutation.bloquearMesa", "Mutation.abrirServicio", "Mutation.cerrarServicio", "Mutation.pausarQrDeMesa",
+                "Mutation.habilitarQr");
     }
 
     @Test
