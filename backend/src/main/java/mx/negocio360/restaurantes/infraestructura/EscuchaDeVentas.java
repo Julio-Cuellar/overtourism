@@ -7,7 +7,6 @@ import mx.negocio360.restaurantes.aplicacion.ConsumidorDeVentas;
 import mx.negocio360.restaurantes.aplicacion.ResultadoConsumo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.modulith.ApplicationModuleListener;
 
 /**
  * Recibe de Ventas, por el bus, {@code venta.registrada} y {@code venta.anulada} y se los pasa a {@link ConsumidorDeVentas}
@@ -38,7 +37,7 @@ public class EscuchaDeVentas {
      *
      * @throws IllegalStateException si Inventario no respondio y el evento debe reintentarse
      */
-    @ApplicationModuleListener
+    @EscuchaDeEventos
     public void alRecibir(SobreEvento evento) {
         var resultado = consumidor.apply(evento);
         if (resultado.reintentable()) {
