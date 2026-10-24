@@ -129,7 +129,8 @@ class TablaRealDeOperacionesTest {
         var publicas = accesos().entrySet().stream().filter(e -> e.getValue() == Acceso.PUBLICA)
                 .map(Map.Entry::getKey).sorted().toList();
 
-        assertThat(publicas).containsExactly("Mutation.confirmarComando", "Query.negocioPublico",
+        // Query.menuPublico es el menu del turista de Restaurantes (D-170): sin sesion, sobre una vista de solo lectura.
+        assertThat(publicas).containsExactly("Mutation.confirmarComando", "Query.menuPublico", "Query.negocioPublico",
                 "Query.negociosPublicos", "Query.resenasDeNegocio");
         assertThat(tabla.variantesPublicas()).containsExactly("publicarResena");
     }
